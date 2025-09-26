@@ -1,0 +1,14 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Common build artifacts
+dist/
+build/
+venv/
+.env
+.env.*
+node_modules/
