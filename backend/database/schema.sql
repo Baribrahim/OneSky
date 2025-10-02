@@ -64,14 +64,5 @@ create table EventRegistration
     Foreign Key(UserID) references User(ID)
     );
     
-
-    
-    
-    
-    
-    
-    
-    
-    
     
     
