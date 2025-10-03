@@ -20,3 +20,13 @@ class DataAccess:
         user=DB_USER,
         database=DB_DATABASE
     )
+
+    def get_event_details(self):
+        with self.conn.cursor() as cursor:
+            cursor.execute("select ID, Title, About from Event limit 1")
+            return cursor.fetchall()
+
+if __name__ == "__main__":
+
+    da = DataAccess()
+    print(da.get_event_details())
