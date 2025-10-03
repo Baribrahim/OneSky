@@ -64,5 +64,4 @@ create table EventRegistration
     Foreign Key(UserID) references User(ID)
     );
     
-    
-    
+-- INSERTING values for DB functionality testing purposes [THIS CAN BE IGNORED/DELETED]
