@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% block body_content %}
+  <h2>Register</h2>
+  {% if error %}
+    <div style="color: red; margin-bottom: 10px;">
+        {{ error }}
+    </div>
+  {% endif %}
+  <form method="POST" action="/register">
+      <div class="register">
+          <label for="email">Enter your email:</label>
+          <input type="email" id="email" name="email"><br>
+
+          <label for="password">Enter your password:</label>
+          <input type="password" id="password" name="password"><br>
+
+          <label for="first_name">Enter your First Name:</label>
+          <input type="text" id="first_name" name="first_name"><br>
+
+          <label for="last_name">Enter your Last Name:</label>
+          <input type="text" id="last_name" name="last_name"><br>
+
+          <input type="submit" id="submit" name="submit"><br>
+      </div>
+      <br>
+  </form>
+{% endblock %}
