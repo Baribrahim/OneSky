@@ -40,13 +40,6 @@
                     {% endfor %}
                 </select>
 
-<!--                <select name="tag">-->
-<!--                    <option value="">Select Tag</option>-->
-<!--                    {% for tag in tags %}-->
-<!--                        <option value="{{ tag }}">{{ tag }}</option>-->
-<!--                    {% endfor %}-->
-<!--                </select>-->
-
             </div>
 
             <div>
@@ -55,14 +48,37 @@
             </div>
 
             <button type="submit">Filter</button>
+
+            
         </form>
+        <div class="results">
+                {% if events %}
+                    <ul>
+                        {% for event in events %}
+                            <li>
+                                <strong>{{ event[1] }}</strong><br>
+                                {{ event[2] }}<br>
+                                {{ event[3] }} | {{ event[4] }} - {{ event[5] }}<br>
+                                {{ event[6] }}, {{ event[7] }}<br>
+                                Capacity: {{ event[8] }}<br>
+                                Cause: {{ event[9] }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No events found.</p>
+                {% endif %}
+            </div>
     </div>
-
-    <!-- Results or content will go here -->
-<!--    <div class="results">-->
-<!--        <h2>Filtered Events</h2>-->
-
-    <!--    </div>-->
 
 </body>
 </html>
+
+<!-- REANNA'S WORKSPACE -->
+
+<!--                <select name="tag">-->
+<!--                    <option value="">Select Tag</option>-->
+<!--                    {% for tag in tags %}-->
+<!--                        <option value="{{ tag }}">{{ tag }}</option>-->
+<!--                    {% endfor %}-->
+<!--                </select>-->

@@ -28,7 +28,41 @@ class DataAccess:
         cursor.execute(query)
 
         result_set = cursor.fetchall()
-        location_list = [row[0] for row in result_set]
+        # location_list = [row[0] for row in result_set]
+        location_list = list(set(row[0] for row in result_set))  # Removes duplicates
         self.conn.close()
 
         return location_list
+    
+    
+    def search_events(self, keyword=None, location=None, date=None):
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            query = """
+                SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime,
+                    e.LocationCity, e.Address, e.Capacity, c.Name AS CauseName
+                FROM Event e
+                JOIN Cause c ON e.CauseID = c.ID
+                WHERE 1=1
+            """
+            params = []
+
+            if keyword:
+                query += " AND (e.Title LIKE %s OR e.About LIKE %s)"
+                keyword_param = f"%{keyword}%"
+                params.extend([keyword_param, keyword_param])
+
+            if location:
+                query += " AND e.LocationCity = %s"
+                params.append(location)
+
+            if date:
+                query += " AND e.Date = %s"
+                params.append(date)
+
+            cursor.execute(query, params)
+            result_set = cursor.fetchall()
+
+            conn.close()
+            return result_set
