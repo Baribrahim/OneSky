@@ -1,6 +1,7 @@
 # app.py
 from flask import Flask, jsonify
 from flask_cors import CORS
+from connector import Connector
 
 app = Flask(__name__)
 CORS(app)
@@ -18,5 +19,14 @@ def health():
 def favicon():
     return ("", 204)
 
+@app.route("/api/events")
+def get_events():
+    con = Connector()
+    data = con.extract_event_details()
+    results = [{"title": data[1], "about": data[2]} for row in data]
+    return jsonify(results)
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)
+
+
