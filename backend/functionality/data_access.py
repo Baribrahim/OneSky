@@ -2,7 +2,7 @@
 This file includes all database interactions. 
 """
 
-import bcrypt
+# import bcrypt
 from dotenv import load_dotenv
 import os
 import pymysql
@@ -20,3 +20,15 @@ class DataAccess:
         user=DB_USER,
         database=DB_DATABASE
     )
+
+    def get_location(self):
+        cursor = self.conn.cursor()
+
+        query = "SELECT LocationCity FROM event"
+        cursor.execute(query)
+
+        result_set = cursor.fetchall()
+        location_list = [row[0] for row in result_set]
+        self.conn.close()
+
+        return location_list
