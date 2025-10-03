@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover Opportunities</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            padding: 20px;
+        }
+        .search-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Discover Opportunities</h1>
+    </div>
+
+    <div class="container">
+        <form>
+            <input type="text" name="keyword" placeholder="Search by keyword...">
+
+            <div class="search-filters">
+                <select name="location">
+                    <option value="">Select Location</option>
+                    {% for location in locations %}
+                        <option value="{{ location }}">{{ location }}</option>
+                    {% endfor %}
+                </select>
+
+<!--                <select name="tag">-->
+<!--                    <option value="">Select Tag</option>-->
+<!--                    {% for tag in tags %}-->
+<!--                        <option value="{{ tag }}">{{ tag }}</option>-->
+<!--                    {% endfor %}-->
+<!--                </select>-->
+
+            </div>
+
+            <div>
+                <label for="date">Date:</label>
+                <input type="date" name="date" id="date">
+            </div>
+
+            <button type="submit">Filter</button>
+        </form>
+    </div>
+
+    <!-- Results or content will go here -->
+<!--    <div class="results">-->
+<!--        <h2>Filtered Events</h2>-->
+
+    <!--    </div>-->
+
+</body>
+</html>
