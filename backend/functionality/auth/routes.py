@@ -51,7 +51,7 @@ def generate_token(user_data: dict):
     token = jwt.encode(payload, secret, algorithm="HS256")
     return token if isinstance(token, str) else token.decode("utf-8")
 
-"""Me Route"""
+"""Me Route - this is for react to get user info"""
 @bp.route("/api/me", methods=["GET"])
 @token_required
 def me():
