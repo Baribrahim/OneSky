@@ -54,3 +54,50 @@ class DataAccess:
         if bcrypt.checkpw(password.encode("utf-8"), stored_hashed):
             return user  # return full user dict (Email, FirstName, etc.)
         return None
+    
+    """Dashboard Methods"""
+    def get_user_id_by_email(self, email):
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT ID FROM User WHERE Email = %s LIMIT 1", (email,))
+            row = cursor.fetchone()
+            return row["ID"] if row else None
+    
+    def get_upcoming_events(self, user_id: int, limit: int = 5):
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT 
+                  e.ID,
+                  e.Title,
+                  DATE_FORMAT(TIMESTAMP(e.Date, e.StartTime), '%%Y-%%m-%%dT%%H:%%i:%%s') AS StartAt,
+                  e.LocationCity
+                FROM Event e
+                JOIN EventRegistration er ON er.EventID = e.ID
+                WHERE er.UserID = %s
+                  AND TIMESTAMP(e.Date, e.StartTime) > NOW()
+                ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
+                LIMIT %s
+            """, (user_id, int(limit)))
+            return cursor.fetchall()
+    
+    def get_total_hours(self, user_id: int):
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT COALESCE(SUM(TIME_TO_SEC(e.Duration)) / 3600, 0) AS TotalHours
+                FROM Event e
+                JOIN EventRegistration er ON er.EventID = e.ID
+                WHERE er.UserID = %s
+                  AND TIMESTAMP(e.Date, e.StartTime) < NOW()
+            """, (user_id,))
+            row = cursor.fetchone()
+            return float(row["TotalHours"]) if row and row["TotalHours"] is not None else 0.0
+
+    def get_badges(self, user_id: int):
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT b.ID, b.Name, b.Description, b.IconURL
+                FROM UserBadge ub
+                JOIN Badge b ON b.ID = ub.BadgeID
+                WHERE ub.UserID = %s
+                ORDER BY b.Name ASC
+            """, (user_id,))
+            return cursor.fetchall()
