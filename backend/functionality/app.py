@@ -39,13 +39,6 @@ def create_app():
 
     return app
 
-@app.route("/api/events")
-def get_events():
-    con = Connector()
-    data = con.extract_event_details()
-    results = [{"title": data[1], "about": data[2]} for row in data]
-    return jsonify(results)
-
 if __name__ == "__main__":
     app = create_app()
     app.run(host="127.0.0.1", port=5000, debug=True)
