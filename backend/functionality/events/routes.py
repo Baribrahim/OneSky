@@ -15,3 +15,14 @@ def get_events():
     data = con.extract_event_details()
     first_name = g.current_user.get("first_name", "User")    
     return render_template("events.html", data=data, first_name=first_name)
+
+
+@bp.route("/signup", methods=["POST"])
+@token_required  
+def signup_event():
+    event_id = request.form.get("event_id")
+    user_email = g.current_user.get("sub", "User") 
+    con = Connector()
+    con.register_user_for_event(user_email, event_id)
+    flash("Successfully registered for event!", "success")
+    return redirect(url_for("events.get_events"))

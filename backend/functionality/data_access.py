@@ -54,9 +54,23 @@ class DataAccess:
         if bcrypt.checkpw(password.encode("utf-8"), stored_hashed):
             return user  # return full user dict (Email, FirstName, etc.)
         return None
-    
 
+    
     def get_event_details(self):
         with self.conn.cursor() as cursor:
             cursor.execute("select ID, Title, About from Event")
             return cursor.fetchall(), [col[0] for col in cursor.description]
+    
+    """Gets the users id by querying the table by email"""
+    def get_id_by_email(self, email):
+        with self.conn.cursor() as cursor:
+            cursor.execute("SELECT ID FROM User WHERE Email = %s", (email,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+
+    """Stores the user id and corresponding event id in database"""
+    def store_user_event_id(self, user_email, event_id):
+        user_id = self.get_id_by_email(user_email)
+        with self.conn.cursor() as cursor:
+            cursor.execute("INSERT INTO EventRegistration (UserID, EventID) VALUES (%s, %s)", (user_id, event_id))
+            self.conn.commit()

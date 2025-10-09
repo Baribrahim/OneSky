@@ -10,6 +10,18 @@
     <title>{{title}} Page</title>
 </head>
 <body>
+      <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+  </div>
 <nav>
     <ul>
       <li><a href="/home">Home</a></li>
