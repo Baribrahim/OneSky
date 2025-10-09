@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block body_content %}
+  <h2>Hi {{ first_name }} 👋</h2>
+{% for item in data %}
+  <div class="card" style="width: 18rem; margin-bottom: 1rem;">
+    <div class="card-body">
+      <h3 class="card-subtitle mb-2 text-muted">{{ item.Title }}</h3>
+      <p class="card-text">{{ item.About }}</p>
+      <a href="#" class="card-link">Sign up</a>
+    </div>
+  </div>
+{% endfor %}
+
+{% endblock %}

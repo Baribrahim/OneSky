@@ -54,3 +54,9 @@ class DataAccess:
         if bcrypt.checkpw(password.encode("utf-8"), stored_hashed):
             return user  # return full user dict (Email, FirstName, etc.)
         return None
+    
+
+    def get_event_details(self):
+        with self.conn.cursor() as cursor:
+            cursor.execute("select ID, Title, About from Event")
+            return cursor.fetchall(), [col[0] for col in cursor.description]
