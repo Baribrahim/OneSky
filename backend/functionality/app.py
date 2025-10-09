@@ -1,32 +1,43 @@
 # app.py
-from flask import Flask, render_template, request, flash, jsonify, current_app, redirect, url_for
+from flask import Flask, jsonify, redirect, url_for, request, current_app
 from flask_cors import CORS
-from connector import Connector
+import jwt
 
-app = Flask(__name__)
-CORS(app)
 
-@app.get("/")
-def home():
-    return jsonify({"message": "Flask API is running", "routes": ["/health"]})
+# Import blueprints from feature packages
+from auth.routes import bp as auth_bp
+# from search.routes import bp as search_bp           # (later)
+# from eventregistration.routes import bp as er_bp     # (later)
 
-@app.get('/events')
-def events():   
-    conn = Connector()
-    result = conn.extract_event_details()
-    inner = result[0]
-    print(inner[1])
-    print(inner[2])
-    return render_template('event.html', title='Events', event_title=inner[1], event_about=inner[2])
+def create_app():
+    app = Flask(__name__, template_folder="templates", static_folder="static")
+    app.config["SECRET_KEY"] = "supersecret"
+    CORS(app,
+        supports_credentials=True,  # if you want the browser to also send/receive cookies
+        resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:3000"]}})
 
-@app.get("/health")
-def health():
-    return jsonify({"status": "ok"})
+    # Register feature blueprints
+    app.register_blueprint(auth_bp)
+    # app.register_blueprint(search_bp)
+    # app.register_blueprint(er_bp)
 
-# Optional: avoid favicon 404s
-@app.get("/favicon.ico")
-def favicon():
-    return ("", 204)
+    @app.route("/")
+    def root():
+        token = request.cookies.get("access_token")
+        if not token:
+            # no cookie → not logged in
+            return redirect(url_for("auth.login_page"))
+
+        try:
+            jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+            # valid token → go home
+            return redirect(url_for("auth.home"))
+        except jwt.ExpiredSignatureError:
+            return redirect(url_for("auth.login_page"))
+        except jwt.InvalidTokenError:
+            return redirect(url_for("auth.login_page"))
+
+    return app
 
 @app.route("/api/events")
 def get_events():
@@ -36,6 +47,7 @@ def get_events():
     return jsonify(results)
 
 if __name__ == "__main__":
+    app = create_app()
     app.run(host="127.0.0.1", port=5000, debug=True)
 
 

@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block body_content %}
+  <h2>Login</h2>
+  <form method="POST" action="/login">
+      <div class="login">
+          <label for="email">Enter your email:</label>
+          <input type="email" id="email" name="email"><br>
+
+          <label for="password">Enter your password:</label>
+          <input type="password" id="password" name="password"><br>
+
+          <input type="submit" id="submit" name="submit"><br>
+      </div>
+      <br>
+  </form>
+{% endblock %}
