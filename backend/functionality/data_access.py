@@ -10,19 +10,39 @@ import random
 
 class DataAccess:
 
-    load_dotenv()
-    DB_HOST = os.getenv("MYSQL_HOST")
-    DB_USER = os.getenv("MYSQL_USER")
-    DB_DATABASE = os.getenv("MYSQL_DB")
+# This should be in an initialization function:
+    # load_dotenv()
+    # DB_HOST = os.getenv("MYSQL_HOST")
+    # DB_USER = os.getenv("MYSQL_USER")
+    # DB_DATABASE = os.getenv("MYSQL_DB")
 
-    conn = pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        database=DB_DATABASE
-    )
+# This should also be a function:
+    # conn = pymysql.connect(
+    #     host=DB_HOST,
+    #     user=DB_USER,
+    #     database=DB_DATABASE
+    # )
+
+# Without having them like this it kept crashing as when we were creating a single connection
+# it would time out after a while and we would have to restart the server
+# By creating a new connection for each function it works fine
+    def __init__(self):
+        load_dotenv()
+        self.DB_HOST = os.getenv("MYSQL_HOST")
+        self.DB_USER = os.getenv("MYSQL_USER")
+        self.DB_DATABASE = os.getenv("MYSQL_DB")
+        self.conn = self.get_connection()
+
+    def get_connection(self):
+        return pymysql.connect(
+            host=self.DB_HOST,
+            user=self.DB_USER,
+            database=self.DB_DATABASE
+        )
 
     def get_location(self):
-        cursor = self.conn.cursor()
+        conn = self.get_connection()
+        cursor = conn.cursor()
 
         query = "SELECT LocationCity FROM event"
         cursor.execute(query)
@@ -30,8 +50,8 @@ class DataAccess:
         result_set = cursor.fetchall()
         # location_list = [row[0] for row in result_set]
         location_list = list(set(row[0] for row in result_set))  # Removes duplicates
-        self.conn.close()
 
+        conn.close()
         return location_list
     
     

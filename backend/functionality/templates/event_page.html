@@ -72,13 +72,103 @@
     </div>
 
 </body>
-</html>
+</html> 
 
-<!-- REANNA'S WORKSPACE -->
+ <!-- REANNA'S WORKSPACE  -->
 
 <!--                <select name="tag">-->
 <!--                    <option value="">Select Tag</option>-->
 <!--                    {% for tag in tags %}-->
 <!--                        <option value="{{ tag }}">{{ tag }}</option>-->
 <!--                    {% endfor %}-->
-<!--                </select>-->
+               <!-- </select>  -->
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover Opportunities</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .search-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            padding: 8px;
+            font-size: 1em;
+        }
+
+        .results ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .results li {
+            background-color: #fff;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Discover Opportunities</h1>
+    </div>
+
+    <div class="container">
+        <form method="GET" action="">
+            <input type="text" name="keyword" placeholder="Search by keyword..." value="{{ request.args.get('keyword', '') }}">
+
+            <div class="search-filters">
+                <select name="location">
+                    <option value="">Select Location</option>
+                    {% for location in locations %}
+                        <option value="{{ location }}" {% if request.args.get('location') == location %}selected{% endif %}>{{ location }}</option>
+                    {% endfor %}
+                </select>
+
+                <div>
+                    <label for="date">Date:</label>
+                    <input type="date" name="date" id="date" value="{{ request.args.get('date', '') }}">
+                </div>
+            </div>
+
+            <button type="submit">Filter</button>
+        </form>
+
+        <div class="results">
+            {% if events %}
+                <ul>
+                    {% for event in events %}
+                        <li>
+                            <strong>{{ event['Title'] }}</strong><br>
+                            {{ event['About'] }}<br>
+                            {{ event['Date'] }} | {{ event['StartTime'] }} - {{ event['EndTime'] }}<br>
+                            {{ event['LocationCity'] }}, {{ event['Address'] }}<br>
+                            Capacity: {{ event['Capacity'] }}<br>
+                            Cause: {{ event['CauseName'] }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No events found.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html> -->

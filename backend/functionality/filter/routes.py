@@ -18,3 +18,5 @@ def search_events():
     data_access = DataAccess()
     events = data_access.search_events(keyword, location, date)
     locations = data_access.get_location()
+
+
