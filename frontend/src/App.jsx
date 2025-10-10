@@ -17,7 +17,6 @@ function App() {
       <h1>OneSky</h1>
       <p>Frontend is running ✅</p>
       <p>Backend health: <strong>{apiMsg}</strong></p>
-      <div><EventCard /></div>
     </div>
   );
 }
