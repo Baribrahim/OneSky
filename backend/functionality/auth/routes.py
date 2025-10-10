@@ -155,3 +155,4 @@ def logout():
     resp = redirect(url_for("auth.login_page"))
     resp.delete_cookie(TOKEN_COOKIE_NAME, path="/")
     return resp
+
