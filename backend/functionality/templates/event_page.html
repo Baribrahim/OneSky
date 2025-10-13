@@ -30,7 +30,7 @@
 
     <div class="container">
         <form method="GET" action="/search">
-            <input type="text" name="keyword" placeholder="Search by keyword..." value="{{ request.args.get('keyword', '') }}">
+            <input type="text" name="keyword" placeholder="Search by keyword..." value="{{ request.args.get('keyword', 'location') }}">
 
             <div class="search-filters">
                 <select name="location">

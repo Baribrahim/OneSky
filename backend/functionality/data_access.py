@@ -8,6 +8,7 @@ import os
 import pymysql
 import random
 
+
 class DataAccess:
 
 # This should be in an initialization function:
@@ -60,7 +61,7 @@ class DataAccess:
         event_list = []
         try:
             with self.get_connection() as conn:
-                with self.cursor () as cursor:
+                with conn.cursor () as cursor:
                     if location:
                         query = """
                         SELECT event.ID, event.Title, event.About, event.Date, event.StartTime, event.EndTime, event.LocationCity, event.Address, event.Capacity, Cause.Name as CauseName, Tag.TagName as TagName
@@ -107,7 +108,8 @@ class DataAccess:
         events = []
         try:
             with self.get_connection() as conn:
-                with conn.cursor as cursor:            
+                cursor = conn.cursor()
+                try:
                     query = """
                         
                     SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name AS CauseName, GROUP_CONCAT(t.TagName SEPARATOR ', ') AS TagNames
@@ -126,7 +128,7 @@ class DataAccess:
                         params.extend([keyword_param, keyword_param])
 
                     if location:
-                        query += " AND e.LocationCity = %s"
+                        query += " AND LOWER(TRIM(e.LocationCity)) = %s"
                         params.append(location)
 
                     if date:
@@ -135,8 +137,13 @@ class DataAccess:
 
                     query += " GROUP BY e.ID ORDER BY e.Date ASC"
 
+                    print("Executing query with params:", query)
+
                     cursor.execute(query, params)
                     events = cursor.fetchall()
+
+                finally:
+                    cursor.close()
         except pymysql.MySQLError as e:
             print(f"Database error in search_events: {e}")
                    
