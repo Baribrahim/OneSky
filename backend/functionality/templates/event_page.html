@@ -29,14 +29,14 @@
     </div>
 
     <div class="container">
-        <form>
-            <input type="text" name="keyword" placeholder="Search by keyword...">
+        <form method="GET" action="/search">
+            <input type="text" name="keyword" placeholder="Search by keyword..." value="{{ request.args.get('keyword', '') }}">
 
             <div class="search-filters">
                 <select name="location">
                     <option value="">Select Location</option>
                     {% for location in locations %}
-                        <option value="{{ location }}">{{ location }}</option>
+                        <option value="{{ location }}" {% if request.args.get('location') == location %}selected{% endif%}>{{ location }}</option>
                     {% endfor %}
                 </select>
 
@@ -44,24 +44,24 @@
 
             <div>
                 <label for="date">Date:</label>
-                <input type="date" name="date" id="date">
+                <input type="date" name="date" id="date" value="{{ request.args.get('date', '') }}">
             </div>
 
             <button type="submit">Filter</button>
 
-            
         </form>
+
         <div class="results">
                 {% if events %}
                     <ul>
                         {% for event in events %}
                             <li>
-                                <strong>{{ event[1] }}</strong><br>
-                                {{ event[2] }}<br>
-                                {{ event[3] }} | {{ event[4] }} - {{ event[5] }}<br>
-                                {{ event[6] }}, {{ event[7] }}<br>
-                                Capacity: {{ event[8] }}<br>
-                                Cause: {{ event[9] }}
+                                <strong>{{ event['Title'] }}</strong><br>
+                            {{ event['About'] }}<br>
+                            {{ event['Date'] }} | {{ event['StartTime'] }} - {{ event['EndTime'] }}<br>
+                            {{ event['LocationCity'] }}, {{ event['Address'] }}<br>
+                            Capacity: {{ event['Capacity'] }}<br>
+                            Cause: {{ event['CauseName'] }}
                             </li>
                         {% endfor %}
                     </ul>
