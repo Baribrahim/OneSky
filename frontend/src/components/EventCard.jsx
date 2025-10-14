@@ -6,13 +6,13 @@ import { useAuth } from '../context/AuthProvider'
 
 function EventCard() {
   const [events, setEvents] = useState([]);
-  const { user} = useAuth();
+  const {user} = useAuth();
+  const [signupEvents, setSignupEvents] = useState([]);
 
   const fetchEvents = async () => {
     try {
       const { data, error } = await toResult(api.get("/api/events"));
       
-      //Currently when not authenticated data is null
       if (error || !Array.isArray(data)) {
         console.warn("Not authenticated", data);
         setEvents([]); 
@@ -25,9 +25,26 @@ function EventCard() {
     }
   };
 
+
+  const fetchStatuses = async () => {
+    const { data, error } = await toResult(api.get(`/api/events/signup-status`));
+    setSignupEvents(data);
+  };
+
+
   useEffect(() => {
     fetchEvents();
   }, []);
+
+  useEffect(() => {
+    if (events.length > 0) {
+      fetchStatuses()
+    }
+  }, [events])
+
+
+
+
  
   //Debugging     
   useEffect(() => {
@@ -36,12 +53,64 @@ function EventCard() {
   }, [events]);
 
 
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+
+    const months = [
+      'Jan', 'Feb', 'March', 'April', 'May', 'June',
+      'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'
+    ];
+
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    const getOrdinal = (n) => {
+      const s = ["th", "st", "nd", "rd"],
+            v = n % 100;
+      return s[(v - 20) % 10] || s[v] || s[0];
+    };
+
+    return `${month} ${day}${getOrdinal(day)} ${year}`;
+  }
+
+  function timeUnicode(time) {
+      const unicode_clocks = [
+      '\u{1F55B}',
+      '\u{1F550}',
+      '\u{1F551}',
+      '\u{1F552}',
+      '\u{1F553}',
+      '\u{1F554}',
+      '\u{1F555}',
+      '\u{1F556}',
+      '\u{1F557}',
+      '\u{1F558}',
+      '\u{1F559}',
+      '\u{1F55A}',
+    ];
+    
+    const hour = parseInt(time.slice(0,2)) % 12
+
+    return unicode_clocks[hour]
+
+  }
+
+
+  function formatTime(time) {
+    return time.length == 7 ? time.slice(0, 4) : time.slice(0, 5)
+  }
+
+
   const handleSignup = async (event_id) => {
     try {
       const { data, error } = await toResult(api.post("api/events/signup", { event_id}));
       if (error) {
         console.error("Signup failed:", error.message);
       } 
+      else {
+        setSignupEvents(prev => ({ ...prev, [event_id]: true }))
+      }
     } 
     catch (err) {
       console.error("Unexpected error during signup:", err);
@@ -51,17 +120,31 @@ function EventCard() {
 
   return (
     <>
-    <h1> Hello {user?.email || "there"} 👋</h1>
+    <div className="cards-container">
     {events?.map(events =>
     <div key = {events.ID} className="card">
       <div className="card-body">
         <h3 className="card-subtitle mb-2 text-muted">{events.Title}</h3>
         <p className="card-text">{events.About}</p>
-        <button className="button" onClick ={() => handleSignup(events.ID)}>
-          Sign up
-        </button>
+        <div className="event-info">
+        <p className="card-text">{'\u{1F4CD}'} {events.LocationCity}</p> 
+        <p className="card-text">{'\u{1F4C5}'} {formatDate(events.Date)}</p>
+        <p className="card-text">{timeUnicode(events.StartTime)} {formatTime(events.StartTime)} - {formatTime(events.EndTime)}</p>
+        <p className="card-text">{'\u{1F465}'} {events.Capacity}</p>
+        </div> 
+        {signupEvents[events.ID]? (
+                      <button className="button" disabled>
+                        Signed Up
+                      </button>
+                    ) : (
+                      <button className="button" onClick={() => handleSignup(events.ID)}>
+                        Sign Up
+                      </button>
+        )}
       </div>
-    </div>)}
+    </div>
+    )}
+    </div>
     </>
   );
 }

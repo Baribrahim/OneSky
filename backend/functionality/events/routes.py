@@ -1,5 +1,6 @@
 import datetime
 from functools import wraps
+import json
 
 import jwt
 from flask import Blueprint, render_template, request, flash, jsonify, current_app, redirect, url_for, g
@@ -13,8 +14,9 @@ bp = Blueprint("api_events", __name__, url_prefix="/api/events")
 @token_required
 def get_events():
     con = Connector()
-    resp = con.extract_event_details()
-    return jsonify(resp)
+    data = con.extract_event_details()
+    resp = json.dumps(data, default=str)
+    return resp, 200
 
 @bp.route("/signup", methods=["POST"])
 @token_required  
@@ -29,3 +31,12 @@ def signup_event():
     con = Connector()
     con.register_user_for_event(user_email, event_id)
     return jsonify({"message": "Successfully registered for event!"}), 200
+
+
+@bp.route("/signup-status", methods=["GET"])
+@token_required
+def check_signup_status():
+    user_email = g.current_user.get("sub", "User")
+    con = Connector()
+    is_signed_up = con.user_signed_up_for_events(user_email)
+    return jsonify(is_signed_up), 200

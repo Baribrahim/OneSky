@@ -10,6 +10,7 @@ import random
 
 class DataAccess:
 
+
     load_dotenv()
     DB_HOST = os.getenv("MYSQL_HOST")
     DB_USER = os.getenv("MYSQL_USER")
@@ -20,6 +21,18 @@ class DataAccess:
         user=DB_USER,
         database=DB_DATABASE
     )
+
+    def reconnect(self):
+        try:
+            self.conn.ping(reconnect=True)
+        except:
+            self.conn = pymysql.connect(
+                host=DB_HOST,
+                user=DB_USER,
+                database=DB_DATABASE
+    )
+
+    print("Connected to database")
 
     """Authentication Methods"""
     def create_user(self, email, password, FirstName, LastName):
@@ -55,22 +68,48 @@ class DataAccess:
             return user  # return full user dict (Email, FirstName, etc.)
         return None
 
-    
+    """Gets all fields from event table"""    
     def get_event_details(self):
-        with self.conn.cursor() as cursor:
-            cursor.execute("select ID, Title, About from Event")
-            return cursor.fetchall(), [col[0] for col in cursor.description]
-    
+        try:
+            with self.conn.cursor() as cursor:
+                cursor.execute("select * from Event")
+                return cursor.fetchall(), [col[0] for col in cursor.description]
+        except Exception as e:
+            print(f"Error in get_event_details: {e}")
+            raise
+
     """Gets the users id by querying the table by email"""
     def get_id_by_email(self, email):
-        with self.conn.cursor() as cursor:
-            cursor.execute("SELECT ID FROM User WHERE Email = %s", (email,))
-            result = cursor.fetchone()
-            return result[0] if result else None
+        try:
+            with self.conn.cursor() as cursor:
+                cursor.execute("SELECT ID FROM User WHERE Email = %s", (email,))
+                result = cursor.fetchone()
+                return result[0] if result else None
+        except Exception as e:
+            print(f"Error in get_id_by_email: {e}")
+            raise
 
     """Stores the user id and corresponding event id in database"""
     def store_user_event_id(self, user_email, event_id):
-        user_id = self.get_id_by_email(user_email)
-        with self.conn.cursor() as cursor:
-            cursor.execute("INSERT INTO EventRegistration (UserID, EventID) VALUES (%s, %s)", (user_id, event_id))
-            self.conn.commit()
+        try:
+            user_id = self.get_id_by_email(user_email)
+            print('USER EMAIL:', user_email)
+            print("USER ID: ", user_id)
+            with self.conn.cursor() as cursor:
+                cursor.execute("INSERT INTO EventRegistration (UserID, EventID) VALUES (%s, %s)", (user_id, event_id))
+                self.conn.commit()
+        except Exception as e:
+            print(f"Error in store_user_event_id: {e}")
+            raise
+
+    """Get all events a user is signed up for"""
+    def get_user_events(self, user_email):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            with self.conn.cursor() as cursor:
+                cursor.execute("SELECT EventID FROM EventRegistration WHERE UserID = %s", (user_id))
+                result = cursor.fetchall()
+                return result
+        except Exception as e:
+            print(f"Error in check_user_event_signup: {e}")
+            raise

@@ -28,6 +28,9 @@ class Connector():
         dao = DataAccess()
         dao.store_user_event_id(user_email, event_id)
 
-
-ca = Connector()
-ca.extract_event_details()
+    """ Passes events user is signed up for"""
+    def user_signed_up_for_events(self, user_email):
+        dao = DataAccess()
+        data_tuple_of_tuple = dao.get_user_events(user_email)
+        flat_data = [x[0] for x in data_tuple_of_tuple]
+        return flat_data
