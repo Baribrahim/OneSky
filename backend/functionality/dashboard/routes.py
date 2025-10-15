@@ -1,35 +1,96 @@
 # dashboard/routes.py
 from flask import Blueprint, request, jsonify, g, render_template
 from dashboard.connector import DashboardConnector
-from auth.routes import token_required  # reuse your decorator
+from auth.routes import token_required 
+
 
 bp = Blueprint("dashboard", __name__, url_prefix="")
 dc = DashboardConnector()
 
-@bp.get("/dashboard")
+# Impact: stats summary
+@bp.get("/dashboard/impact")
 @token_required
-def dashboard_api():
+def dashboard_impact():
     """
-    GET /dashboard?limit=5
-    Returns JSON for React or Postman.
+    GET /dashboard/impact
+    Returns user's impact summary:
+    - total_hours: total hours from past events
+    - events_completed: number of past events
+    - counts: upcoming_events, badges
+    - first_name: for greeting
+    - as_of: timestamp for clarity
     """
+    from datetime import datetime, timezone
+
     email = g.current_user.get("sub")
     first_name = g.current_user.get("first_name", "User")
     limit = request.args.get("limit", default=5, type=int)
 
     try:
         data = dc.get_dashboard(email, limit=limit)
+
+        total_hours = float(data.get("total_hours", 0.0))
+        events_completed = int(data.get("completed_events", 0))
+        upcoming = data.get("upcoming_events", [])
+        badges = data.get("badges", [])
+
         payload = {
             "first_name": first_name,
-            "upcoming_events": data.get("upcoming_events", []),
-            "total_hours": float(data.get("total_hours", 0.0)),
-            "badges": data.get("badges", []),
+            "total_hours": total_hours,
+            "events_completed": events_completed,
             "counts": {
-                "upcoming_events": len(data.get("upcoming_events", [])),
-                "badges": len(data.get("badges", [])),
+                "upcoming_events": len(upcoming),
+                "badges": len(badges),
             },
+            "as_of": datetime.now(timezone.utc).isoformat()
         }
         return jsonify(payload), 200
+
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception:
+        return jsonify({"error": "Something went wrong"}), 500
+
+
+# UPCOMING: timeline/cards data
+@bp.get("/dashboard/upcoming")
+@token_required
+def dashboard_upcoming():
+    """
+    GET /dashboard/upcoming?limit=5
+    Returns upcoming events for the user with key details:
+    - Count, ID, Title, Date, StartTime, EndTime, LocationCity
+    """
+    email = g.current_user.get("sub")
+    limit = request.args.get("limit", default=5, type=int)
+
+    try:
+        items = dc.get_upcoming_events(email, limit=limit)
+        return jsonify({
+            "upcoming_events": items,
+            "count": len(items)
+        }), 200
+
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception:
+        return jsonify({"error": "Something went wrong"}), 500
+
+
+# ACHIEVEMENTS: badges with icon/title/description
+@bp.get("/dashboard/achievements")
+@token_required
+def dashboard_achievements():
+    """
+    GET /dashboard/achievements
+    Returns badges for the user (with IconURL if available).
+    """
+    email = g.current_user.get("sub")
+
+    try:
+        badges = dc.get_badges(email)
+        # Badges are: ID, Name, Description, IconURL
+        return jsonify({"badges": badges, "count": len(badges)}), 200
 
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
@@ -40,9 +101,7 @@ def dashboard_api():
 @token_required
 def dashboard_page():
     """
-    GET /api/dashboard_page
     Renders dashboard.html with user data (for Jinja testing).
-    Uses same backend logic as API.
     """
     email = g.current_user.get("sub")
     first_name = g.current_user.get("first_name", "User")
@@ -54,7 +113,8 @@ def dashboard_page():
             title="Dashboard",
             first_name=first_name,
             upcoming_events=data.get("upcoming_events", []),
-            total_hours=float(data.get("total_hours", 0.0)),
+            total_hours=float(data.get("total_hours", 0.0)), 
+            events_completed=int(data.get("completed_events", 0)),
             badges=data.get("badges", []),
         ), 200
 
@@ -64,7 +124,7 @@ def dashboard_page():
             title="Dashboard",
             first_name=first_name,
             upcoming_events=[],
-            total_hours=0.0,
+            events_completed=0,
             badges=[],
             error=str(ve),
         ), 400
@@ -75,7 +135,7 @@ def dashboard_page():
             title="Dashboard",
             first_name=first_name,
             upcoming_events=[],
-            total_hours=0.0,
+            events_completed=0,
             badges=[],
             error="Could not load dashboard data.",
         ), 500

@@ -23,13 +23,20 @@ class DashboardConnector:
         user_id = self._get_user_id_or_raise(email)
         return self.da.get_total_hours(user_id)
 
+    def get_completed_events_count(self, email: str) -> int:
+        user_id = self._get_user_id_or_raise(email)
+        return self.da.get_completed_events_count(user_id)
+
     def get_badges(self, email: str) -> List[dict]:
         user_id = self._get_user_id_or_raise(email)
         return self.da.get_badges(user_id)
 
     def get_dashboard(self, email: str, limit: int = 5) -> Dict[str, Any]:
+        """Aggregate all dashboard data into one structure."""
+        user_id = self._get_user_id_or_raise(email)
         return {
-            "upcoming_events": self.get_upcoming_events(email, limit),
-            "total_hours": self.get_total_hours(email),
-            "badges": self.get_badges(email),
+            "upcoming_events": self.da.get_upcoming_events(user_id, limit),
+            "total_hours": self.da.get_total_hours(user_id),
+            "completed_events": self.da.get_completed_events_count(user_id),
+            "badges": self.da.get_badges(user_id),
         }
