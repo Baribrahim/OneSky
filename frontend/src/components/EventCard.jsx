@@ -29,6 +29,8 @@ function EventCard() {
   const fetchStatuses = async () => {
     const { data, error } = await toResult(api.get(`/api/events/signup-status`));
     setSignupEvents(data);
+    console.log("Fetched signup statuses:", signupEvents);
+    console.log(signupEvents[3] ? "User signed up for event 3" : "User not signed up for event 3")
   };
 
 
@@ -42,10 +44,6 @@ function EventCard() {
     }
   }, [events])
 
-
-
-
- 
   //Debugging     
   useEffect(() => {
     console.log("Updated events:", events);
@@ -109,13 +107,15 @@ function EventCard() {
         console.error("Signup failed:", error.message);
       } 
       else {
-        setSignupEvents(prev => ({ ...prev, [event_id]: true }))
+        setSignupEvents(prev => ([...prev, event_id])); 
       }
     } 
     catch (err) {
       console.error("Unexpected error during signup:", err);
     }
   };
+
+
 
 
   return (
@@ -132,9 +132,9 @@ function EventCard() {
         <p className="card-text">{timeUnicode(events.StartTime)} {formatTime(events.StartTime)} - {formatTime(events.EndTime)}</p>
         <p className="card-text">{'\u{1F465}'} {events.Capacity}</p>
         </div> 
-        {signupEvents[events.ID]? (
+        {signupEvents.includes(events.ID)? (
                       <button className="button" disabled>
-                        Signed Up
+                        Unregister
                       </button>
                     ) : (
                       <button className="button" onClick={() => handleSignup(events.ID)}>
