@@ -40,3 +40,17 @@ def check_signup_status():
     con = Connector()
     is_signed_up = con.user_signed_up_for_events(user_email)
     return jsonify(is_signed_up), 200
+
+@bp.route("/unregister", methods=["POST"])
+@token_required
+def unregister_from_event():
+    data = request.get_json(silent=True) or {}
+    event_id = data.get("event_id")
+    
+    if not event_id:
+        return jsonify({"error": "Missing event_id"}), 400
+    
+    user_email = g.current_user.get("sub", "User")
+    con = Connector()
+    con.unregister_user_from_event(user_email, event_id)
+    return jsonify({"message": "Successfully unregistered for event"}), 200

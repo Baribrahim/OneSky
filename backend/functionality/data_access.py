@@ -93,8 +93,6 @@ class DataAccess:
     def store_user_event_id(self, user_email, event_id):
         try:
             user_id = self.get_id_by_email(user_email)
-            print('USER EMAIL:', user_email)
-            print("USER ID: ", user_id)
             with self.conn.cursor() as cursor:
                 cursor.execute("INSERT INTO EventRegistration (UserID, EventID) VALUES (%s, %s)", (user_id, event_id))
                 self.conn.commit()
@@ -112,4 +110,15 @@ class DataAccess:
                 return result
         except Exception as e:
             print(f"Error in check_user_event_signup: {e}")
+            raise
+    
+    """Removes userId and eventId from EventRegistration table"""
+    def delete_user_from_event(self, user_email, event_id):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            with self.conn.cursor() as cursor:
+                cursor.execute("DELETE FROM EventRegistration WHERE UserID = %s AND EventID = %s", (user_id, event_id))
+                self.conn.commit()
+        except Exception as e:
+            print(f"Error in unregister_user_from_event: {e}")
             raise
