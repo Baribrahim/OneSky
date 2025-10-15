@@ -1,5 +1,6 @@
 import React from "react";
 import { useAuth } from "../context/AuthProvider";
+import UpcomingEvents from "../components/UpcomingEvents";
 
 export default function Home() {
   const { user, logout } = useAuth();
@@ -12,6 +13,7 @@ export default function Home() {
           Log out
         </button>
       </div>
+      <UpcomingEvents />
     </div>
   );
 }

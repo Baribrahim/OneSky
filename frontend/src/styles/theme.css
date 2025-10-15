@@ -203,3 +203,58 @@ a:hover { color: var(--brand-primary-600); }
   h1 { font-size: 1.75rem; }
   h2 { font-size: 1.25rem; }
 }
+
+/* Timeline Styles (UpcomingEvents) */
+.timeline-container {
+  position: relative;
+  padding-left: 30px;
+}
+
+
+.timeline-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 15px; 
+  width: 3px;
+  background: linear-gradient(120deg, var(--brand-start), var(--brand-mid));
+  z-index: 0;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 30px;
+  padding-left: 20px;
+}
+
+.timeline-dot {
+  width: 14px;
+  height: 14px;
+  background-color: var(--brand-start);
+  border: 3px solid white;
+  border-radius: 50%;
+  position: absolute;
+  left: -20px;
+  top: 35px;
+  z-index: 1;
+}
+
+.timeline-content {
+  background-color: #f5f7ff;
+  padding: 15px 20px;
+  border-radius: 10px;
+  border-left: 4px solid var(--brand-start);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.timeline-content h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.timeline-content p {
+  margin: 4px 0;
+  color: #555;
+}
