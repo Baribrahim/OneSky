@@ -22,6 +22,10 @@
   --brand-primary: #2f6fb2;
   --brand-primary-600: #285f98;
   --brand-primary-050: #eaf2fb;
+  
+  /* Button Variants */
+  --button-inverse: #3672e2;
+
 
   /* Gradient for headings/brand text */
   --brand-start: #ff7a59;
@@ -197,6 +201,12 @@ a:hover { color: var(--brand-primary-600); }
 .button--secondary:hover {
   background: var(--brand-primary-050);
   color: var(--brand-primary-600);
+}
+
+.button.inverse{
+  background: transparent;
+  border: 1px solid var(--button-inverse);
+  color: var(--button-inverse);
 }
 
 /* Helper & error text */

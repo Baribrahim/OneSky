@@ -115,6 +115,17 @@ function EventCard() {
     }
   };
 
+  const handleUnregister = async (event_id) => {
+    const { data, error } = await toResult(api.post("api/events/unregister", {event_id}));
+    if (error) {
+      console.error("Unregister failed:", error.message);
+    } 
+    else {
+      setSignupEvents(prev => prev.filter(id => id !== event_id)); 
+    }
+    
+  }
+
 
 
 
@@ -133,7 +144,7 @@ function EventCard() {
         <p className="card-text">{'\u{1F465}'} {events.Capacity}</p>
         </div> 
         {signupEvents.includes(events.ID)? (
-                      <button className="button" disabled>
+                      <button className="button inverse" onClick={() => handleUnregister(events.ID)}>
                         Unregister
                       </button>
                     ) : (
