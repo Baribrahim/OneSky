@@ -1,6 +1,6 @@
-"""
-This file includes all database interactions. 
-"""
+# """
+# This file includes all database interactions. 
+# """
 
 # import bcrypt
 from dotenv import load_dotenv
@@ -125,7 +125,7 @@ class DataAccess:
                     if keyword:
                         query += " AND (e.Title LIKE %s OR e.About LIKE %s)"
                         keyword_param = f"%{keyword}%"
-                        params.extend([keyword_param, keyword_param])
+                    params.extend([keyword_param, keyword_param])
 
                     if location:
                         query += " AND LOWER(TRIM(e.LocationCity)) = %s"
@@ -152,7 +152,7 @@ class DataAccess:
 
 
 
-    """Authentication Methods"""
+    # """Authentication Methods"""
     def create_user(self, email, password, FirstName, LastName):
         with self.conn.cursor() as cursor:
             print("DATA ACCESS: adding user to database")
@@ -164,7 +164,7 @@ class DataAccess:
             self.conn.commit()
     
     def user_exists(self, email):
-        """Check if a user with this email already exists."""
+        # """Check if a user with this email already exists."""
         with self.conn.cursor() as cursor:
             cursor.execute("SELECT 1 FROM user WHERE Email = %s LIMIT 1", (email,))
             return cursor.fetchone() is not None
@@ -192,14 +192,14 @@ class DataAccess:
             cursor.execute("select ID, Title, About from Event")
             return cursor.fetchall(), [col[0] for col in cursor.description]
     
-    """Gets the users id by querying the table by email"""
+    # """Gets the users id by querying the table by email"""
     def get_id_by_email(self, email):
         with self.conn.cursor() as cursor:
             cursor.execute("SELECT ID FROM User WHERE Email = %s", (email,))
             result = cursor.fetchone()
             return result[0] if result else None
 
-    """Stores the user id and corresponding event id in database"""
+    # """Stores the user id and corresponding event id in database"""
     def store_user_event_id(self, user_email, event_id):
         user_id = self.get_id_by_email(user_email)
         with self.conn.cursor() as cursor:
