@@ -12,17 +12,17 @@ import random
 class DataAccess:
 
 # This should be in an initialization function:
-    # load_dotenv()
-    # DB_HOST = os.getenv("MYSQL_HOST")
-    # DB_USER = os.getenv("MYSQL_USER")
-    # DB_DATABASE = os.getenv("MYSQL_DB")
+    load_dotenv()
+    DB_HOST = os.getenv("MYSQL_HOST")
+    DB_USER = os.getenv("MYSQL_USER")
+    DB_DATABASE = os.getenv("MYSQL_DB")
 
 # This should also be a function:
-    # conn = pymysql.connect(
-    #     host=DB_HOST,
-    #     user=DB_USER,
-    #     database=DB_DATABASE
-    # )
+    conn = pymysql.connect(
+        host=DB_HOST,
+        user=DB_USER,
+        database=DB_DATABASE
+    )
 
 # Without having them like this it kept crashing as when we were creating a single connection
 # it would time out after a while and we would have to restart the server
