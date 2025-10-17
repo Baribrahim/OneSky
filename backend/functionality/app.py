@@ -7,6 +7,7 @@ import jwt
 # Import blueprints from feature packages
 from auth.routes import bp as auth_bp
 from events.routes import bp as events_bp
+from dashboard.routes import bp as dashboard_bp
 # from search.routes import bp as search_bp           # (later)
 # from eventregistration.routes import bp as er_bp     # (later)
 
@@ -20,6 +21,7 @@ def create_app():
     # Register feature blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(events_bp)
+    app.register_blueprint(dashboard_bp)
     # app.register_blueprint(search_bp)
     # app.register_blueprint(er_bp)
 
