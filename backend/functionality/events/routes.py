@@ -32,7 +32,6 @@ def signup_event():
     con.register_user_for_event(user_email, event_id)
     return jsonify({"message": "Successfully registered for event!"}), 200
 
-
 @bp.route("/signup-status", methods=["GET"])
 @token_required
 def check_signup_status():

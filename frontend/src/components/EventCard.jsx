@@ -3,6 +3,7 @@ import Button from 'react-bootstrap/Button';
 import React, { useEffect, useState } from "react";
 import {api, toResult} from '../lib/apiClient.js';
 import { useAuth } from '../context/AuthProvider'
+import { formatDate, formatTime, timeUnicode } from '../utils/format.jsx';
 
 function EventCard() {
   const [events, setEvents] = useState([]);
@@ -15,13 +16,11 @@ function EventCard() {
       
       if (error || !Array.isArray(data)) {
         console.warn("Not authenticated", data);
-        setEvents([]); 
         return;
       }
       setEvents(data);
     } catch (error) {
       console.error("Error fetching events:", error);
-      setEvents([]);
     }
   };
 
@@ -30,7 +29,6 @@ function EventCard() {
     const { data, error } = await toResult(api.get(`/api/events/signup-status`));
     setSignupEvents(data);
     console.log("Fetched signup statuses:", signupEvents);
-    console.log(signupEvents[3] ? "User signed up for event 3" : "User not signed up for event 3")
   };
 
 
@@ -44,61 +42,11 @@ function EventCard() {
     }
   }, [events])
 
-  //Debugging     
-  useEffect(() => {
-    console.log("Updated events:", events);
-    console.log(Array.isArray(events) ? "events is an array" : "events is not an array");
-  }, [events]);
-
-
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-
-    const months = [
-      'Jan', 'Feb', 'March', 'April', 'May', 'June',
-      'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'
-    ];
-
-    const day = date.getDate();
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-
-    const getOrdinal = (n) => {
-      const s = ["th", "st", "nd", "rd"],
-            v = n % 100;
-      return s[(v - 20) % 10] || s[v] || s[0];
-    };
-
-    return `${month} ${day}${getOrdinal(day)} ${year}`;
-  }
-
-  function timeUnicode(time) {
-      const unicode_clocks = [
-      '\u{1F55B}',
-      '\u{1F550}',
-      '\u{1F551}',
-      '\u{1F552}',
-      '\u{1F553}',
-      '\u{1F554}',
-      '\u{1F555}',
-      '\u{1F556}',
-      '\u{1F557}',
-      '\u{1F558}',
-      '\u{1F559}',
-      '\u{1F55A}',
-    ];
-    
-    const hour = parseInt(time.slice(0,2)) % 12
-
-    return unicode_clocks[hour]
-
-  }
-
-
-  function formatTime(time) {
-    return time.length == 7 ? time.slice(0, 4) : time.slice(0, 5)
-  }
-
+  // //Debugging     
+  // useEffect(() => {
+  //   console.log("Updated events:", events);
+  //   console.log(Array.isArray(events) ? "events is an array" : "events is not an array");
+  // }, [events]);
 
   const handleSignup = async (event_id) => {
     try {
@@ -125,8 +73,6 @@ function EventCard() {
     }
     
   }
-
-
 
 
   return (
