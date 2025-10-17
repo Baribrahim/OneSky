@@ -95,7 +95,7 @@ function EventCard() {
                       </button>
                     ) : (
                       <button className="button" onClick={() => handleSignup(events.ID)}>
-                        Sign Up
+                        Register
                       </button>
         )}
       </div>
