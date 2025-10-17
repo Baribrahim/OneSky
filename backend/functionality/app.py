@@ -15,7 +15,7 @@ def create_app():
     app.config["SECRET_KEY"] = "supersecret"
     CORS(app,
         supports_credentials=True,  # if you want the browser to also send/receive cookies
-        resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:3000"]}})
+        resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:3000", "http://localhost:5174"]}})
 
     # Register feature blueprints
     app.register_blueprint(auth_bp)
