@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+console.log("API_BASE_URL:", API_BASE_URL);
 
 if (!API_BASE_URL) {
   console.warn("VITE_API_BASE_URL is not set. Check your .env.");
@@ -42,10 +43,9 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/**
- * Normalizes axios responses into a consistent format:
- *   { data: <object|null>, error: <object|null> }
- */
+api.defaults.withCredentials = true;
+
+// Normalization helper that converts a promise into a {data, error} object
 export function toResult(promise) {
   return promise
     .then((res) => ({ data: res.data?.data ?? res.data ?? null, error: null }))

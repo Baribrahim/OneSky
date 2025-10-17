@@ -13,6 +13,9 @@
   --color-text: #1f2430;
   --color-text-muted: #5f6b7a;
 
+  /* Font */
+  --font-family-base: "Sky Text", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
   /* Feedback */
   --color-danger: #e03131;
   --color-success: #2fb380;
@@ -22,6 +25,10 @@
   --brand-primary: #2f6fb2;
   --brand-primary-600: #285f98;
   --brand-primary-050: #eaf2fb;
+  
+  /* Button Variants */
+  --button-inverse: #3672e2;
+
 
   /* Gradient for headings/brand text */
   --brand-start: #ff7a59;
@@ -53,13 +60,18 @@
 }
 
 * { box-sizing: border-box; }
-html, body, #root { height: 100%; }
+html, body, #root { 
+  height: 100%; 
+}
+
+html, body {
+  font-family: var(--font-family-base);
+}
 
 body {
   margin: 0;
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -67,30 +79,88 @@ body {
 a { color: var(--brand-primary); text-decoration: none; }
 a:hover { color: var(--brand-primary-600); }
 
-/* Layout */
+/* Restore the global container to be a standard page container */
 .container {
   width: 30%;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-4);
+  max-width: 1200px;
+  margin: auto;
+  padding: var(--space-10) var(--space-10);
 }
 
 @media (max-width: 640px) {
   .container { padding: var(--space-6) var(--space-3); }
 }
 
+/* New utility: a narrower wrapper ONLY for sections that should be slim */
+.page-narrow {
+  width: 100%;
+  max-width: 760px;             /* tweak 680–820px if you like */
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+}
+
 /* Card */
 .card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-8);
-  box-shadow: var(--shadow-2);
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: var(--radius-lg, 8px);
+  padding: var(--space-8, 20px);
+  box-shadow: var(--shadow-2, 0 2px 8px rgba(0,0,0,0.1));
+  max-width: 400px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-subtitle {
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin: 0;
+  color: #222;
+}
+
+.card-text {
+  color: #444;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.event-info {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+  color: #555;
+  flex-wrap: wrap; 
+}
+
+.event-info p {
+  margin: 0;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cards-container {
+  display: flex;
+  flex-wrap: wrap;  
+  gap: 1.5rem;         
+  justify-content: center; 
 }
 
 @media (max-width: 640px) {
-  .card { padding: var(--space-6); }
+  .event-info {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }
+
 
 /* Brand gradient text (for big headings if desired) */
 .brand-gradient {
@@ -147,6 +217,12 @@ a:hover { color: var(--brand-primary-600); }
 .button--secondary:hover {
   background: var(--brand-primary-050);
   color: var(--brand-primary-600);
+}
+
+.button.inverse{
+  background: transparent;
+  border: 1px solid var(--button-inverse);
+  color: var(--button-inverse);
 }
 
 /* Helper & error text */
