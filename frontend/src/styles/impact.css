@@ -1,0 +1,52 @@
+/* Impact section (full width with horizontal gutters) */
+.impact {
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 500px;                      
+  /* background: var(--color-surface-alt, #f9fafb);
+  border-top: 1px solid var(--color-border, #e6e8f0);
+  border-bottom: 1px solid var(--color-border, #e6e8f0);
+  border-radius: 12px;                      */
+  box-sizing: border-box;
+}
+
+/* Centered content area with max width */
+.impact__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Header block */
+.impact__header {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+/* Status cards (loading/error) */
+.impact__status {
+  padding: 16px;
+}
+
+/* Grid layout for the four StatCards */
+.impact__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;                                /* balanced spacing */
+  align-items: stretch;
+}
+
+/* Timestamp centered under grid */
+.impact__timestamp {
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* Responsiveness */
+@media (max-width: 1024px) {
+  .impact__grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .impact__grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,50 @@
+/* Root card: square, compact padding */
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px;
+  aspect-ratio: 1 / 1;        /* keep square shape */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Icon bubble */
+.stat-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--brand-primary-050);
+  color: var(--brand-primary);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+/* Title + value + helper */
+.stat-card__label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.stat-card__value {
+  font-size: 26px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.stat-card__helper {
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+/* On smaller screens, allow a bit more height when stacked */
+@media (max-width: 640px) {
+  .stat-card {
+    aspect-ratio: auto;
+    min-height: 180px;
+  }
+}
