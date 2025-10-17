@@ -1,24 +1,46 @@
-// Header Component Code
-// Will need to link to css and logo asset, a few other things,
-// just put most of them in as placeholders until it was linked up
-// to debug and fix so change as required
+import React from "react";
+import { Link } from "react-router-dom";
+import "../styles/header.css";
+import logo from "../assets/OneSky-logo.png";
+import { useAuth } from "../context/AuthProvider";
 
-import React from 'react';
-import './Header.css';
-import logo from 'assets/OneSky-logo.png';
-
-function Header() {
+/**
+ * Header
+ * Full-width top bar with three sections:
+ * - Left: Brand logo
+ * - Center: Navigation links
+ * - Right: Logout button
+ */
+export default function Header() {
+  const { user, logout } = useAuth();
   return (
-    <div className='header'>
-      <div className='logo-container'>
-        <img src={logo} alt='OneSky Logo' className='logo' />
+    <header className="header" role="banner">
+      {/* Left: Logo */}
+      <div className="logo-container">
+        <Link to="/" aria-label="OneSky Home">
+          <img src={logo} alt="OneSky Logo" className="logo" />
+        </Link>
       </div>
-      <nav className='nav-links'>
-        <a href='/home'>Home</a>
-        <a href='/logout'>Log Out</a>
+
+      {/* Center: Nav links */}
+      <nav className="nav-links" aria-label="Primary navigation">
+        <Link to="/">Home</Link>
+        <Link to="/events">Events</Link>
       </nav>
-    </div>
+
+      {/* Right: Logout */}
+      <div className="logout-container">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();   // prevent full page reload
+            logout();          // call your logout handler
+          }}
+          className="logout-btn"
+        >
+          Log out
+        </a>
+      </div>
+    </header>
   );
 }
-
-export default Header;
