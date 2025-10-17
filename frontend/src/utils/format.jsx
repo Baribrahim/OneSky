@@ -1,5 +1,4 @@
-  
- function formatDate(dateString) {
+function formatDate(dateString) {
     const date = new Date(dateString);
 
     const months = [
@@ -35,7 +34,7 @@
       '\u{1F559}',
       '\u{1F55A}',
     ];
-    
+
     const hour = parseInt(time.slice(0,2)) % 12
 
     return unicode_clocks[hour]

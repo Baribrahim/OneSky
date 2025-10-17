@@ -73,7 +73,8 @@ def dashboard_upcoming():
 
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
-    except Exception:
+    except Exception as e:
+        print("Error: ", e)
         return jsonify({"error": "Something went wrong"}), 500
 
 
