@@ -1,0 +1,76 @@
+/* --- Overall bar --- */
+.header {
+  width: 100%;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  /* Flex container: three main sections */
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* left, center, right */
+  padding: var(--space-3) var(--space-6);
+}
+
+/* --- Left: logo --- */
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+.logo {
+  height: 32px;
+  width: auto;
+}
+
+/* --- Center: nav links --- */
+.nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1; /* let this section expand so links stay centered */
+  gap: var(--space-4);
+}
+
+.nav-links a {
+  color: var(--color-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nav-links a:hover {
+  color: var(--brand-primary);
+}
+
+/* --- Right: logout --- */
+.logout-container {
+  display: flex;
+  align-items: center;
+}
+
+.logout-btn {
+  background: var(--brand-primary);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: var(--brand-primary-hover, #4c55f5);
+}
+
+/* --- Responsive adjustments --- */
+@media (max-width: 768px) {
+  .nav-links {
+    display: none; /* hide nav links on small screens if needed */
+  }
+  .logout-btn {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+}

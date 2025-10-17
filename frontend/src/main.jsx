@@ -4,6 +4,7 @@ import "./index.css";
 import { BrowserRouter, Routes, Route } from "react-router";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider.jsx";
+import Layout from "./components/Layout.jsx";
 
 import Home from "./pages/Home.jsx";
 import Events from "./pages/Events.jsx";
@@ -17,8 +18,10 @@ createRoot(document.getElementById("root")).render(
         <Routes>
           {/* ✅ Protected routes (require login) */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/events" element={<Events />} />
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/events" element={<Events />} />
+            </Route>
           </Route>
 
           {/* ✅ Public routes */}
