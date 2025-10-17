@@ -67,16 +67,24 @@ body {
 a { color: var(--brand-primary); text-decoration: none; }
 a:hover { color: var(--brand-primary-600); }
 
-/* Layout */
+/* Restore the global container to be a standard page container */
 .container {
-  width: 30%;
-  max-width: 1100px;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
   padding: var(--space-8) var(--space-4);
 }
 
 @media (max-width: 640px) {
   .container { padding: var(--space-6) var(--space-3); }
+}
+
+/* New utility: a narrower wrapper ONLY for sections that should be slim */
+.page-narrow {
+  width: 100%;
+  max-width: 760px;             /* tweak 680–820px if you like */
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
 }
 
 /* Card */
