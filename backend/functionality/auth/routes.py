@@ -10,8 +10,12 @@ bp = Blueprint("auth", __name__, url_prefix="")
 TOKEN_COOKIE_NAME = "access_token"
 COOKIE_MAX_AGE = 3600  # 1 hour
 
-"""Token Handling"""
 def token_required(f):
+    """
+    Decorator that ensures a valid JWT token is present
+    before allowing access to a route. Supports both
+    Authorization headers and cookies.
+    """
     @wraps(f)
     def decorated(*args, **kwargs):
         token = _get_token_from_request()
@@ -33,12 +37,21 @@ def token_required(f):
 
 
 def _get_token_from_request():
+    """
+    Extract token from either:
+    - Authorization header ("Bearer <token>")
+    - Cookie (fallback)
+    """
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
         return auth.split(" ", 1)[1]
     return request.cookies.get(TOKEN_COOKIE_NAME)
 
 def generate_token(user_data: dict):
+    """
+    Generate a signed JWT token containing user's email and firstname.
+    Includes expiration time and uses the app's SECRET_KEY.
+    """
     payload = {
         "sub": user_data["email"],
         "first_name": user_data["first_name"],
@@ -66,6 +79,7 @@ def me():
 @bp.route('/home')
 @token_required
 def home():
+    """Protected home page rendered via Jinja (for internal testing)."""
     first_name = g.current_user.get("first_name", "User")
     return render_template("home.html", title="Home", first_name=first_name)
 
@@ -77,7 +91,11 @@ def register_page():
 
 @bp.route("/register", methods=["POST"])
 def register():
-    # support both JSON and form submissions
+    """
+    Handles user registration.
+    Accepts both JSON (React) and form data (Jinja).
+    Returns a JWT token on success.
+    """
     data = request.get_json(silent=True) or request.form
     email = data.get("email")
     password = data.get("password")
@@ -94,10 +112,11 @@ def register():
 
     token = generate_token({"email": email, "first_name": first_name})
 
+    # Decide response shape
     if request.is_json:
-        resp = jsonify({"token": token})
+        resp = jsonify({"token": token})          # React expects JSON
     else:
-        resp = redirect(url_for("auth.home"))
+        resp = redirect(url_for("auth.home"))     # Jinja expects redirect
 
     resp.set_cookie(
         TOKEN_COOKIE_NAME,
@@ -117,6 +136,12 @@ def login_page():
 
 @bp.route("/login", methods=["POST"])
 def login():
+    """
+    Authenticates user credentials.
+    - Validates email/password
+    - Issues a JWT token if valid
+    - Supports both JSON (React) and form (Jinja)
+    """
     data = request.get_json(silent=True) or request.form
     email = data.get("email")
     password = data.get("password")
@@ -137,7 +162,7 @@ def login():
     else:
         resp = redirect(url_for("auth.home"))     # Jinja expects redirect
 
-    # Always set cookie (Jinja depends on it; fine for React too if same-origin/CORS configured)
+    # Always set cookie (Jinja depends on it)
     resp.set_cookie(
         TOKEN_COOKIE_NAME,
         token,

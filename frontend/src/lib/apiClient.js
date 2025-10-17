@@ -28,6 +28,13 @@ export function getAuthToken() {
   return authToken;
 }
 
+/**
+ * Request interceptor
+ * Automatically attaches the `Authorization: Bearer <token>` header
+ * before each API call if a token exists.
+ *
+ * This ensures all protected routes work once the user logs in.
+ */
 api.interceptors.request.use((config) => {
   if (authToken) {
     config.headers.Authorization = `Bearer ${authToken}`;
@@ -35,7 +42,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Normalization helper that converts a promise into a {data, error} object
+/**
+ * Normalizes axios responses into a consistent format:
+ *   { data: <object|null>, error: <object|null> }
+ */
 export function toResult(promise) {
   return promise
     .then((res) => ({ data: res.data?.data ?? res.data ?? null, error: null }))
