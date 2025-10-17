@@ -1,0 +1,8 @@
+/* Use the actual font names you see in the files/specimen; this is an example */
+@font-face {
+  font-family: "Sky Text";
+  src: url("/fonts/SkyRegular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap; /* avoids FOIT; shows fallback then swaps in */
+}
