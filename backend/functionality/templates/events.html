@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block body_content %}
+  <h2>Hi {{ first_name }} 👋</h2>
+{% for item in data %}
+  <div class="card" style="width: 18rem; margin-bottom: 1rem;">
+    <div class="card-body">
+      <h3 class="card-subtitle mb-2 text-muted">{{ item.Title }}</h3>
+      <p class="card-text">{{ item.About }}</p>
+      <form method="POST" action="{{ url_for('events.signup_event') }}">
+          <input type="hidden" name="event_id" value="{{ item.ID }}">
+        <button type="submit" class="btn btn-primary">Sign up</button>
+      </form>
+    </div>
+  </div>
+{% endfor %}
+
+{% endblock %}
