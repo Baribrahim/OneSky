@@ -33,7 +33,7 @@ class DashboardConnector:
 
     def get_dashboard(self, email: str, limit: int = 5) -> Dict[str, Any]:
         """Aggregate all dashboard data into one structure"""
-        user_id = self._get_user_id_or_raise(email)
+        user_id = self.get_user_id(email)
         return {
             "upcoming_events": self.da.get_upcoming_events(user_id, limit),
             "total_hours": self.da.get_total_hours(user_id),
