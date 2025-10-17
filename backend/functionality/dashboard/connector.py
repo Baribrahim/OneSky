@@ -6,7 +6,7 @@ class DashboardConnector:
     def __init__(self):
         self.da = DataAccess()
 
-    def _get_user_id_or_raise(self, email: str) -> int:
+    def get_user_id(self, email: str) -> int:
         if not email or "@" not in email:
             raise ValueError("Invalid user identity")
         user_id = self.da.get_user_id_by_email(email)
@@ -32,7 +32,7 @@ class DashboardConnector:
         return self.da.get_badges(user_id)
 
     def get_dashboard(self, email: str, limit: int = 5) -> Dict[str, Any]:
-        """Aggregate all dashboard data into one structure."""
+        """Aggregate all dashboard data into one structure"""
         user_id = self._get_user_id_or_raise(email)
         return {
             "upcoming_events": self.da.get_upcoming_events(user_id, limit),
