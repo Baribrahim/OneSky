@@ -121,4 +121,132 @@ class DataAccess:
                 self.conn.commit()
         except Exception as e:
             print(f"Error in unregister_user_from_event: {e}")
-            raise
+            raise    
+
+    """Dashboard Methods"""
+
+    def get_user_id_by_email(self, email):
+        """
+        Retrieve the unique user ID from the database using the user's email.
+
+        SQL Logic:
+        - Selects the ID column from the User table where the Email matches the input.
+        - LIMIT 1 ensures only one result is returned (since email should be unique).
+
+        Args:
+            email (str): The user's email address.
+        Returns:
+            int | None: The user's ID if found, otherwise None.
+        """
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT ID FROM User WHERE Email = %s LIMIT 1", (email,))
+            row = cursor.fetchone()
+            return row["ID"] if row else None
+    
+
+    def get_upcoming_events(self, user_id: int, limit: int = 5):
+        """
+        Get all upcoming events that a user has registered for.
+
+        SQL Logic:
+        - Joins Event and EventRegistration tables to find events the user is signed up for.
+        - Filters only future events (TIMESTAMP(e.Date, e.StartTime) > NOW()).
+        - Returns readable date and time strings for frontend use.
+        """
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT 
+                e.ID,
+                e.Title,
+                DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
+                DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
+                DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                e.LocationCity
+                FROM Event e
+                JOIN EventRegistration er ON er.EventID = e.ID
+                WHERE er.UserID = %s
+                AND TIMESTAMP(e.Date, e.StartTime) > NOW()
+                ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
+                LIMIT %s
+            """, (user_id, int(limit)))
+            return cursor.fetchall()
+  
+
+    def get_total_hours(self, user_id: int):
+        """
+        Calculate the total number of hours a user has *completed* from past events.
+
+        SQL Logic:
+        - Sums up the Duration (stored as TIME) of all events linked to the user.
+        - Converts TIME values to seconds, then divides by 3600 to get hours.
+        - Includes only past events (event start time < NOW()).
+        - Uses COALESCE to return 0 if there are no results.
+
+        Args:
+            user_id (int): The ID of the user.
+        Returns:
+            float: The total completed hours (e.g., 12.5 hours).
+        """
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT COALESCE(SUM(TIME_TO_SEC(e.Duration)) / 3600, 0) AS TotalHours
+                FROM Event e
+                JOIN EventRegistration er ON er.EventID = e.ID
+                WHERE er.UserID = %s
+                  AND TIMESTAMP(e.Date, e.StartTime) < NOW()
+            """, (user_id,))
+            row = cursor.fetchone()
+            return float(row["TotalHours"]) if row and row["TotalHours"] is not None else 0.0
+
+
+    def get_completed_events_count(self, user_id: int):
+        """
+        Get the total number of completed events for a given user.
+
+        SQL Logic:
+        - Selects all events joined with EventRegistration for this user.
+        - Counts events that are already finished (start time < NOW()).
+        - Returns the total count of completed events.
+
+        Args:
+            user_id (int): The ID of the user.
+
+        Returns:
+            int: Number of completed events.
+        """
+        query = """
+            SELECT COUNT(*) AS CompletedEvents
+            FROM Event e
+            JOIN EventRegistration er ON er.EventID = e.ID
+            WHERE er.UserID = %s
+            AND TIMESTAMP(e.Date, e.StartTime) < NOW()
+        """
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(query, (user_id,))
+            result = cursor.fetchone()
+            return int(result["CompletedEvents"]) if result and result["CompletedEvents"] is not None else 0
+
+
+
+    def get_badges(self, user_id: int):
+        """
+        Retrieve all badges earned by the user.
+
+        SQL Logic:
+        - Joins UserBadge and Badge tables to get badge info linked to the user.
+        - Orders results alphabetically by badge name.
+
+        Args:
+            user_id (int): The ID of the user.
+        Returns:
+            list[dict]: A list of badges with ID, Name, Description, and IconURL.
+        """
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT b.ID, b.Name, b.Description, b.IconURL
+                FROM UserBadge ub
+                JOIN Badge b ON b.ID = ub.BadgeID
+                WHERE ub.UserID = %s
+                ORDER BY b.Name ASC
+            """, (user_id,)) 
+            return cursor.fetchall()
