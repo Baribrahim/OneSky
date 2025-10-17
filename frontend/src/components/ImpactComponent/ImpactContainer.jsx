@@ -5,19 +5,17 @@ import "../../styles/impact.css";
 
 /**
  * ImpactContainer
- * ------------------------------------------------------------
  * Displays a compact summary of the user’s volunteering impact.
  * - Fetches /dashboard/impact
  * - Renders four StatCard components
- * - Uses a clean centered layout with balanced spacing (4 → 2 → 1)
  */
 export default function ImpactContainer() {
-  // --- Local state for API data and UI states ---
+  // Local state for API data and UI states
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // --- Fetch dashboard data on mount ---
+  // Fetch dashboard data on mount
   useEffect(() => {
     let active = true;
     (async () => {
@@ -30,18 +28,18 @@ export default function ImpactContainer() {
     return () => { active = false; };
   }, []);
 
-  // --- Format hours neatly (e.g., 12h or 12.5h) ---
+  // Format hours neatly (e.g., 12h or 12.5h)
   const hoursLabel = useMemo(() => {
     const h = Math.max(0, Number(data?.total_hours ?? 0));
     return `${Number.isFinite(h) ? h.toFixed(h % 1 === 0 ? 0 : 1) : 0} h`;
   }, [data]);
 
-  // --- Predefined stats (keeps JSX declarative) ---
+  // Predefined stats (keeps JSX declarative)
   const stats = useMemo(() => ([
-    { key: "hours",     label: "Total Hours",      value: hoursLabel,                           icon: "⏱️", helper: "Completed volunteering time" },
-    { key: "completed", label: "Completed Events", value: String(data?.events_completed ?? 0),  icon: "✅", helper: "Events you've finished" },
-    { key: "upcoming",  label: "Upcoming Events",  value: String(data?.counts?.upcoming_events ?? 0), icon: "📅", helper: "Next events you're attending" },
-    { key: "badges",    label: "Badges",           value: String(data?.counts?.badges ?? 0),    icon: "🏅", helper: "Achievements earned" },
+    { key: "hours", label: "Total Hours", value: hoursLabel, icon: "⏱️", helper: "Completed volunteering time" },
+    { key: "completed", label: "Completed Events", value: String(data?.events_completed ?? 0), icon: "✅", helper: "Events you've completed" },
+    { key: "upcoming", label: "Upcoming Events",  value: String(data?.counts?.upcoming_events ?? 0), icon: "📅", helper: "Next events you're attending" },
+    { key: "badges", label: "Badges", value: String(data?.counts?.badges ?? 0), icon: "🏅", helper: "Achievements earned" },
   ]), [data, hoursLabel]);
 
   return (

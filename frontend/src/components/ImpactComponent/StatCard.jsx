@@ -3,10 +3,8 @@ import "../../styles/statCard.css";
 
 /**
  * StatCard
- * ------------------------------------------------------------
- * Square, compact stat card aligned with theme tokens.
+ * Square, compact stat card.
  * - Icon, label, big value, helper text
- * - Uses aspect-ratio to remain a square in the grid
  */
 export default function StatCard({ icon, label, value, helper }) {
   return (
