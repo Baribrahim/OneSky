@@ -81,10 +81,10 @@ a:hover { color: var(--brand-primary-600); }
 
 /* Restore the global container to be a standard page container */
 .container {
-  width: 100%;
+  width: 30%;
   max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-4);
+  margin: auto;
+  padding: var(--space-10) var(--space-10);
 }
 
 @media (max-width: 640px) {
