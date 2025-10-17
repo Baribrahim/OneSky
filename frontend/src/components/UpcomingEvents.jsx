@@ -2,6 +2,7 @@ import React from 'react'
 import { useEffect, useState } from 'react'
 import {api, toResult} from '../lib/apiClient.js';
 import '../styles/theme.css'
+import {formatDate, formatTime} from '../utils/format.jsx'
 
 const UpcomingEvents = () => {
 
@@ -36,8 +37,8 @@ const UpcomingEvents = () => {
           <div className="timeline-dot"></div>
           <div className="timeline-content">
             <h3>{event.Title}</h3>
-            <p>{event.Date}</p>
-            <p>{event.StartTime} • {event.LocationCity}</p>
+            <p>{formatDate(event.Date)}</p>
+            <p>{formatTime(event.StartTime)} • {event.LocationCity}</p>
           </div>
         </div>
       ))}
