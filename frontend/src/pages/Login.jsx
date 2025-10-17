@@ -1,77 +1,74 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../context/AuthProvider";
-import SkyBrand from "../components/SkyBrand";
+import FormCard from "../components/FormComponents/FormCard";
+import TextField from "../components/FormComponents/TextField";
+import SubmitButton from "../components/FormComponents/SubmitButton";
 
 export default function Login() {
+  // Form state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
 
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = location.state?.from?.pathname || "/";
 
+  // Handle form submission
   const onSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setFormError("");
 
     if (!email || !password) {
-      setError("Email and password are required.");
+      setFormError("Email and password are required.");
       return;
     }
+
     setSubmitting(true);
-    const { error: err } = await login(email.trim(), password);
+    const { error } = await login(email.trim(), password);
     setSubmitting(false);
 
-    if (err) {
-      setError(err.message || "Invalid credentials");
+    if (error) {
+      setFormError(error.message || "Invalid credentials");
       return;
     }
     navigate(redirectTo, { replace: true });
   };
 
   return (
-    <div className="container">
-      <div className="card" role="region" aria-label="Login">
-        <SkyBrand size={40} />
-        <h1 className="brand-gradient" style={{ marginTop: 16 }}>Welcome back</h1>
-        <p className="helper">Log in to discover volunteering opportunities.</p>
-        <form onSubmit={onSubmit} noValidate style={{ marginTop: 24 }}>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            className="input"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ marginTop: 8, marginBottom: 16 }}
-          />
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            className="input"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            style={{ marginTop: 8 }}
-          />
-          {error && <div className="error" role="alert">{error}</div>}
-          <button className="button" disabled={submitting} style={{ marginTop: 16 }}>
-            {submitting ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-        <p className="helper" style={{ marginTop: 16 }}>
-          New to OneSky? <Link to="/register">Create an account</Link>
-        </p>
-      </div>
-    </div>
+    <FormCard title="Welcome back" subtitle="Log in to discover volunteering opportunities.">
+      <form onSubmit={onSubmit} noValidate className="stack">
+        <TextField
+          id="email"
+          label="Email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <TextField
+          id="password"
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={8}
+        />
+        {formError && <div className="error" role="alert">{formError}</div>}
+        <SubmitButton loading={submitting} loadingLabel="Signing in…">
+          Sign in
+        </SubmitButton>
+      </form>
+
+      <p className="helper" style={{ marginTop: 16 }}>
+        New to OneSky? <Link to="/register">Create an account</Link>
+      </p>
+    </FormCard>
   );
 }
