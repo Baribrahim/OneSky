@@ -1,5 +1,6 @@
 import React from "react";
 import { useAuth } from "../context/AuthProvider";
+import ImpactSection from "../components/ImpactComponent/ImpactSection";
 
 export default function Home() {
   const { user, logout } = useAuth();
@@ -12,6 +13,8 @@ export default function Home() {
           Log out
         </button>
       </div>
+
+      <ImpactSection />
     </div>
   );
 }
