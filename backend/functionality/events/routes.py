@@ -4,10 +4,14 @@ import jwt
 from flask import Blueprint, render_template, request, flash, jsonify, current_app, redirect, url_for, g
 from .connector import Connector
 from auth.routes import token_required
+from flask_cors import CORS
+import json
 
 
 bp = Blueprint("events", __name__, url_prefix="/events")
+CORS(bp, supports_credentials=True)
 
+# not being used
 @bp.route("/")
 @token_required
 def get_events():
@@ -16,7 +20,7 @@ def get_events():
     first_name = g.current_user.get("first_name", "User")    
     return render_template("events.html", data=data, first_name=first_name)
 
-
+# not being used
 @bp.route("/signup", methods=["POST"])
 @token_required  
 def signup_event():
@@ -28,31 +32,30 @@ def signup_event():
     return redirect(url_for("events.get_events"))
 
 # Reanna's addition for search and filter functionality #
+from data_access import DataAccess
 data_access = DataAccess()
 
 @bp.route('/filter_events', methods=['GET', 'POST'])
 def filter_events():
     locations = data_access.get_location()
-    # return render_template('event_page.html', locations=locations, events=[])
-    return jsonify({"locations": locations, "events": []})
+    return jsonify(locations)
 
 
 @bp.route('/events', methods=['GET'])
-def get_events():
+def get_filtered_events():
     location = request.args.get('location')
     events = data_access.get_all_events(location)
-    locations = data_access.get_location()
-    # return render_template('event_page.html', events=events, locations=locations)
-    return jsonify({"events": events, "locations": locations})
+    # locations = data_access.get_location()
+    print("===Events===")
+    print(events)
+    # events2 = json.dumps(events, default=str)
+    return jsonify(events)
 
 
 @bp.route('/search', methods=['GET'])
 def search_events():
-    keyword = request.args.get('keyword')
-    location = request.args.get('location')
-    date = request.args.get('date')
-
+    keyword = request.args.get('keyword', '')
+    location = request.args.get('location', '')
+    date = request.args.get('date', '')
     events = data_access.search_events(keyword, location, date)
-    locations = data_access.get_location()
-    # return render_template('event_page.html', events=events, locations=locations)
-    return jsonify({"events": events, "locations": locations})
+    return jsonify(events)

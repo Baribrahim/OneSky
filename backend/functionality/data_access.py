@@ -10,6 +10,7 @@ import random
 
 class DataAccess:
 
+
     load_dotenv()
     DB_HOST = os.getenv("MYSQL_HOST")
     DB_USER = os.getenv("MYSQL_USER")
@@ -75,6 +76,9 @@ class DataAccess:
             cursor.execute("INSERT INTO EventRegistration (UserID, EventID) VALUES (%s, %s)", (user_id, event_id))
             self.conn.commit()
 
+
+
+
     """Search and Filter Methods"""
 
     def __init__(self):
@@ -111,7 +115,7 @@ class DataAccess:
         event_list = []
         try:
             with self.get_connection() as conn:
-                with conn.cursor () as cursor:
+                with conn.cursor (pymysql.cursors.DictCursor) as cursor:
                     if location:
                         query = """
                         SELECT event.ID, event.Title, event.About, event.Date, event.StartTime, event.EndTime, event.LocationCity, event.Address, event.Capacity, Cause.Name as CauseName, Tag.TagName as TagName
@@ -128,6 +132,7 @@ class DataAccess:
                         JOIN Cause ON event.CauseID = Cause.ID
                         JOIN CauseTag ON Cause.ID = CauseTag.CauseID
                         JOIN Tag ON CauseTag.TagID = Tag.ID
+                        GROUP BY Event.ID
                         ORDER BY Event.Date ASC"""
                         cursor.execute(query)
                     result_set = cursor.fetchall()
@@ -137,9 +142,9 @@ class DataAccess:
                             'ID': item['ID'],
                             'Title': item["Title"],
                             'About': item["About"],
-                            'Date': item["Date"],
-                            'StartTime': item["StartTime"],
-                            'EndTime': item["EndTime"],
+                            'Date': str(item["Date"]),
+                            'StartTime': str(item["StartTime"]),
+                            'EndTime': str(item["EndTime"]),
                             'LocationCity': item["LocationCity"],
                             'Address': item["Address"],
                             'Capacity': item["Capacity"],
@@ -151,8 +156,47 @@ class DataAccess:
             print(f"Database error in get_all_events: {e}")
     
         return event_list
-
     
+    # testing
+    # def get_all_events2(self, location=None):
+    #     event_list = []
+    #     try:
+    #         with self.get_connection() as conn:
+    #             with conn.cursor (pymysql.cursors.DictCursor) as cursor:
+                
+    #                     query = """
+    #                     SELECT Event.ID, Event.Title, Event.About, Event.Date, Event.StartTime, Event.EndTime, Event.LocationCity, Event.Address, Event.Capacity, Cause.Name as CauseName, GROUP_CONCAT(Tag.TagName SEPARATOR ',') AS TagName
+    #                     FROM Event 
+    #                     JOIN Cause ON Event.CauseID = Cause.ID
+    #                     JOIN CauseTag ON Cause.ID = CauseTag.CauseID
+    #                     JOIN Tag ON CauseTag.TagID = Tag.ID
+    #                     GROUP BY Event.ID
+    #                     ORDER BY Event.Date ASC"""
+    #                     cursor.execute(query)
+    #                     result_set = cursor.fetchall()
+        
+    #                     for item in result_set:
+    #                         event = {
+    #                         'ID': item['ID'],
+    #                         'Title': item["Title"],
+    #                         'About': item["About"],
+    #                         'Date': str(item["Date"]),
+    #                         'StartTime': str(item["StartTime"]),
+    #                         'EndTime': str(item["EndTime"]),
+    #                         'LocationCity': item["LocationCity"],
+    #                         'Address': item["Address"],
+    #                         'Capacity': item["Capacity"],
+    #                         'CauseName': item['CauseName'],
+    #                         'TagName': item["TagName"]}
+    #                         event_list.append(event)
+                        
+                        
+    #                     print("Printing all events", result_set)
+    #     except pymysql.MySQLError as e:
+    #         print(f"Database error in get_all_events: {e}")
+        
+    #     return event_list
+
     
     def search_events(self, keyword=None, location=None, date=None):
         events = []
@@ -188,6 +232,9 @@ class DataAccess:
                     query += " GROUP BY e.ID ORDER BY e.Date ASC"
 
                     print("Executing query with params:", query)
+
+                    print("Executing query:", query)
+                    print("Params:", params)
 
                     cursor.execute(query, params)
                     events = cursor.fetchall()

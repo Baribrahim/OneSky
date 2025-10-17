@@ -25,6 +25,7 @@ function EventCard() {
         <Button className="me-2">Another Link</Button>
       </Card.Body>
     </Card>
+
   );
 }
 

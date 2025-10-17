@@ -203,3 +203,37 @@ a:hover { color: var(--brand-primary-600); }
   h1 { font-size: 1.75rem; }
   h2 { font-size: 1.25rem; }
 }
+
+
+/* Reanna */
+.events-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 40px;
+  background-color: #f5f5f5;
+}
+
+.card.large-card {
+  width: 100%;
+  max-width: 1500px;
+  padding: 40px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+}
+
+.brand-gradient {
+  background: linear-gradient(to right, #0072c6, #00c6ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 2rem;
+  font-weight: bold;
+}
