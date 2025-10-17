@@ -30,9 +30,15 @@ def test_password_at_least_8_characters_valid(client):
     assert "token" in data
 
 def test_email_already_in_use_invalid(client):
-    response = client.post("/register", json={"email": "test@test.com", "password": "123456789"})
+    #Create user first
+    user_email= f"test{random.randint(0,999)}{random.randint(0,999)}@test.com"
+    response = client.post("/register", json={"email": user_email, "password": "12345678", "first_name": "Test", "last_name": "User"})
+
+    #Try to create user again with same email
+    response = client.post("/register", json={"email": user_email, "password": "12345678", "first_name": "Test", "last_name": "User"})
     assert response.status_code == 400
     data = response.get_json()
+    print("DATA:", data)
     assert data["error"] == "User already exists"
 
 
