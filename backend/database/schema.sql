@@ -64,14 +64,17 @@ create table EventRegistration
     Foreign Key(UserID) references User(ID)
     );
     
+create table Badge (
+  ID INT PRIMARY KEY AUTO_INCREMENT,
+  Name VARCHAR(100) NOT NULL UNIQUE,
+  Description VARCHAR(255) NOT NULL,
+  IconURL VARCHAR(500)
+);
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+create table UserBadge (
+  ID INT PRIMARY KEY AUTO_INCREMENT,
+  UserID INT NOT NULL,
+  BadgeID INT NOT NULL,
+  FOREIGN KEY (UserID) REFERENCES User(ID),
+  FOREIGN KEY (BadgeID) REFERENCES Badge(ID)
+);
