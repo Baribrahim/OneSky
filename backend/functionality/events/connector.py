@@ -28,6 +28,14 @@ class Connector():
         dao = DataAccess()
         dao.store_user_event_id(user_email, event_id)
 
+    """ Passes events user is signed up for"""
+    def user_signed_up_for_events(self, user_email):
+        dao = DataAccess()
+        data_tuple_of_tuple = dao.get_user_events(user_email)
+        flat_data = [x[0] for x in data_tuple_of_tuple]
+        return flat_data
 
-ca = Connector()
-ca.extract_event_details()
+    """ Passes users email and event id to unregister from event"""
+    def unregister_user_from_event(self, user_email, event_id):
+        dao = DataAccess()
+        dao.delete_user_from_event(user_email, event_id)
