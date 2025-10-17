@@ -11,10 +11,10 @@ export default function Events() {
     date: '',
   });
   const [events, setEvents] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [error, setError] = useState('');
 
-  const locations = ['London', 'Manchester', 'Birmingham', 'Glasgow', 'Portsmouth']; // Add your actual locations
-
+  // gets events when filters change
   useEffect(() => {
     axios.get('http://127.0.0.1:5000/events/events', {
       params: filters,
@@ -27,7 +27,15 @@ export default function Events() {
       });
   }, [filters]);
 
-  const handleChange = (e) => {
+// gets locations for filter drop down
+  useEffect(() => {
+    axios.get('http://127.0.0.1:5000/events/filter_events')
+      .then(res => setLocations(res.data))
+      .catch(err => console.error('Error fetching locations', err));
+  }, []);
+
+
+   const handleChange = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
   };
 
@@ -58,8 +66,8 @@ export default function Events() {
             style={{ marginTop: 8, marginBottom: 16 }}
           >
             <option value="">All Locations</option>
-            {locations.map(loc => (
-              <option key={loc} value={loc.toLowerCase()}>{loc}</option>
+            {locations.map((loc, index) => (
+              <option key={index} value={loc.city}>{loc.city}</option>
             ))}
           </select>
 
@@ -79,8 +87,9 @@ export default function Events() {
 
         <div className="event-list" style={{ marginTop: 24 }}>
           {events.length > 0 ? (
-            events.map(event => (
-              <EventCard key={event.ID} event={event} />
+            events.map((event, index) => (
+              <EventCard key={event.ID ? `${event.ID}-${index}` :  `event-${index}`}
+              event={event} />
             ))
           ) : (
             <p>No events found.</p>

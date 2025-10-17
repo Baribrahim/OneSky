@@ -20,7 +20,7 @@ create table Cause
     Description varchar(1000) not null
     );
     
-create table `Event`
+create table Event
 	(
     ID int primary key auto_increment,
     CauseID int,

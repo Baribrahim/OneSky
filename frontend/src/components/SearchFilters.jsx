@@ -7,8 +7,7 @@ function SearchFilters({ onFilterSubmit }) {
   const [location, setLocation] = useState('');
   const [date, setDate] = useState('');
   const [locations, setLocations] = useState([]);
-
-    const [allData, setAllData] = useState([]);
+  const [allData, setAllData] = useState([]);
  // const {data, error} = await toResult(api.get("/events/filter_events"))
     // setAllData(data)
     // console.log("data")

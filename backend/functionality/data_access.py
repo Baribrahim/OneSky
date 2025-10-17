@@ -212,6 +212,7 @@ class DataAccess:
                     JOIN CauseTag ct ON c.ID = ct.CauseID
                     JOIN Tag t ON ct.TagID = t.ID
                     WHERE 1=1
+                    GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name;
                     """
 
                     params = []
