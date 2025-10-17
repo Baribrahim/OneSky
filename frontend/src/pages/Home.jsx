@@ -10,6 +10,7 @@ export default function Home() {
     <>
       {/* Impact section stays full-width and handles its own layout */}
       <ImpactContainer />
+      <UpcomingEvents />
     </>
   );
 }
