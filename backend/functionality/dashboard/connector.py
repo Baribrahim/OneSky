@@ -6,7 +6,7 @@ class DashboardConnector:
     def __init__(self):
         self.da = DataAccess()
 
-    def get_user_id(self, email: str) -> int:
+    def _get_user_id_or_raise(self, email: str) -> int:
         if not email or "@" not in email:
             raise ValueError("Invalid user identity")
         user_id = self.da.get_user_id_by_email(email)

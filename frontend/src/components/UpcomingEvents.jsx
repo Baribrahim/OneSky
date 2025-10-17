@@ -1,38 +1,43 @@
 import React from 'react'
+import { useEffect, useState } from 'react'
+import {api, toResult} from '../lib/apiClient.js';
 import '../styles/theme.css'
+
 const UpcomingEvents = () => {
-  
-    const events = 
-        [{
-            id: 1,
-            title: "Community Clean-Up",
-            date: "2024-05-15",
-            time: "10:00 AM - 1:00 PM",
-            location: "Central Park"},
-        { id: 2,
-            title: "Charity Run",
-            date: "2024-06-20",
-            time: "8:00 AM - 12:00 PM",
-            location: "City Stadium"},
-        { id: 3,
-            title: "Food Drive",
-            date: "2024-07-10",
-            time: "9:00 AM - 5:00 PM",
-            location: "Community Center"}
-        ]
+
+    const [events, setEvents] = useState([]);
+
+    const fetchEvents = async () => {
+      try {
+        const { data, error } = await toResult(api.get("/dashboard/upcoming"));
+        
+        if (error) {
+          console.error("API error:", error);
+          return;
+        }
+
+        setEvents(data);
+      } 
+      catch (err) {
+        console.error(err);
+      }
+    }
+
+    useEffect(() => {
+      fetchEvents();
+    }, []);
     
-  
     return (
     <>
     <h2>Upcoming Events</h2>
     <div className="timeline-container">
-      {events.map((event) => (
-        <div key={event.id} className="timeline-item">
+      {events.upcoming_events?.map((event) => (
+        <div key={event.ID} className="timeline-item">
           <div className="timeline-dot"></div>
           <div className="timeline-content">
-            <h3>{event.title}</h3>
-            <p>{event.date}</p>
-            <p>{event.time} • {event.location}</p>
+            <h3>{event.Title}</h3>
+            <p>{event.Date}</p>
+            <p>{event.StartTime} • {event.LocationCity}</p>
           </div>
         </div>
       ))}
