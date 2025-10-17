@@ -13,6 +13,9 @@
   --color-text: #1f2430;
   --color-text-muted: #5f6b7a;
 
+  /* Font */
+  --font-family-base: "Sky Text", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
   /* Feedback */
   --color-danger: #e03131;
   --color-success: #2fb380;
@@ -57,13 +60,18 @@
 }
 
 * { box-sizing: border-box; }
-html, body, #root { height: 100%; }
+html, body, #root { 
+  height: 100%; 
+}
+
+html, body {
+  font-family: var(--font-family-base);
+}
 
 body {
   margin: 0;
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -71,16 +79,24 @@ body {
 a { color: var(--brand-primary); text-decoration: none; }
 a:hover { color: var(--brand-primary-600); }
 
-/* Layout */
+/* Restore the global container to be a standard page container */
 .container {
   width: 30%;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-4);
+  max-width: 1200px;
+  margin: auto;
+  padding: var(--space-10) var(--space-10);
 }
 
 @media (max-width: 640px) {
   .container { padding: var(--space-6) var(--space-3); }
+}
+
+/* New utility: a narrower wrapper ONLY for sections that should be slim */
+.page-narrow {
+  width: 100%;
+  max-width: 760px;             /* tweak 680–820px if you like */
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
 }
 
 /* Card */
