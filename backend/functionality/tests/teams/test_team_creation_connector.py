@@ -15,8 +15,8 @@ class FakeDA:
     def get_team_by_join_code(self, code):
         return next((t for t in self.teams if t["JoinCode"] == code), None)
 
-    # --- insert + list ---
-    def insert_team(self, name, description, department, capacity, owner_user_id, join_code):
+    # --- create + list ---
+    def create_team(self, name, description, department, capacity, owner_user_id, join_code):
         row = {
             "ID": len(self.teams) + 1,
             "Name": name.strip(),

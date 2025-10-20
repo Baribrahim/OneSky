@@ -1,4 +1,5 @@
 # teams/routes.py
+from functools import wraps
 from flask import Blueprint, request, jsonify, g
 from auth.routes import token_required
 from teams.connector import TeamConnector
@@ -6,9 +7,22 @@ from teams.connector import TeamConnector
 bp = Blueprint("teams", __name__, url_prefix="")
 connector = TeamConnector()
 
+
+def require_auth(f):
+    """
+    Indirection layer so token_required can be monkeypatched in tests.
+    We defer applying token_required until request time.
+    """
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        decorated = token_required(f)
+        return decorated(*args, **kwargs)
+    return wrapped
+
+
 # POST /teams -> create a team
 @bp.post("/teams")
-@token_required
+@require_auth
 def create_team():
     """
     Creates a team for the authenticated user.
@@ -46,7 +60,7 @@ def create_team():
 
 # GET /teams -> list ALL teams (newest first)
 @bp.get("/teams")
-@token_required
+@require_auth
 def list_teams():
     """
     Lists all teams (newest first).

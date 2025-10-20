@@ -10,8 +10,15 @@ def generate_join_code(length: int = 8) -> str:
     return "".join(random.choice(ALPHABET) for _ in range(length))
 
 class TeamConnector:
-    def __init__(self):
-        self.da = DataAccess()
+    """
+    Teams business logic layer.
+    - Validates inputs
+    - Resolves owner by email
+    - Generates unique JoinCode (retries on collision)
+    """
+    
+    def __init__(self, da: DataAccess | None = None):
+        self.da = da or DataAccess()
 
     # ---------- helpers ----------
     @staticmethod
