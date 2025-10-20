@@ -16,7 +16,7 @@ function SearchFilters({ onFilterSubmit }) {
 
 // Fetch locations from Flask backend
   useEffect(() => {
-    axios.get("http://127.0.0.1:5000/events/filter_events")
+    axios.get("http://127.0.0.1:5000/api/events/filter_events")
       .then(response => setLocations(response.data))
       .catch(error => console.error("Error fetching locations:", error));
   }, []);

@@ -252,7 +252,7 @@ class DataAccess:
 
 
 
-    """Search and Filter Methods"""
+    """Search and Filter Events"""
 
     def __init__(self):
         load_dotenv()

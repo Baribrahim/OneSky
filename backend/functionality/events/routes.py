@@ -7,11 +7,10 @@ from .connector import Connector
 from auth.routes import token_required
 from flask_cors import CORS
 import json
-
-
+from data_access import DataAccess
 
 bp = Blueprint("api_events", __name__, url_prefix="/api/events")
-from data_access import DataAccess
+CORS(bp, supports_credentials=True)
 
 @bp.route("", methods=["GET"])
 @token_required
@@ -56,8 +55,7 @@ def unregister_from_event():
     con = Connector()
     con.unregister_user_from_event(user_email, event_id)
     return jsonify({"message": "Successfully unregistered for event"}), 200
-bp = Blueprint("events", __name__, url_prefix="/events")
-CORS(bp, supports_credentials=True)
+
 
 # Reanna's addition for search and filter functionality #
 

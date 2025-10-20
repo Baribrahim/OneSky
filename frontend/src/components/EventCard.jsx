@@ -24,13 +24,11 @@ function EventCard() {
     }
   };
 
-
   const fetchStatuses = async () => {
     const { data, error } = await toResult(api.get(`/api/events/signup-status`));
     setSignupEvents(data);
     console.log("Fetched signup statuses:", signupEvents);
   };
-
 
   useEffect(() => {
     fetchEvents();
@@ -73,7 +71,6 @@ function EventCard() {
     }
     
   }
-
 
   return (
     <>
