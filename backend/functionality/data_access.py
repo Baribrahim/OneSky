@@ -257,7 +257,7 @@ class DataAccess:
     # -----------------------------
     # Teams: Data Access methods
     # -----------------------------
-    def insert_team(self, name, description, department, capacity, owner_user_id, join_code):
+    def create_team(self, name, description, department, capacity, owner_user_id, join_code):
         """
         Insert a new team row and return the created team as a dict.
         """
