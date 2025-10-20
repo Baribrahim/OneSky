@@ -34,7 +34,9 @@ class DataAccess:
 
     print("Connected to database")
 
-    """Authentication Methods"""
+    # -----------------------------
+    # Authentication Methods
+    # -----------------------------
     def create_user(self, email, password, FirstName, LastName):
         with self.conn.cursor() as cursor:
             print("DATA ACCESS: adding user to database")
@@ -123,8 +125,9 @@ class DataAccess:
             print(f"Error in unregister_user_from_event: {e}")
             raise    
 
-    """Dashboard Methods"""
-
+    # -----------------------------
+    # Dashboard Methods
+    # -----------------------------
     def get_user_id_by_email(self, email):
         """
         Retrieve the unique user ID from the database using the user's email.
@@ -249,4 +252,48 @@ class DataAccess:
                 WHERE ub.UserID = %s
                 ORDER BY b.Name ASC
             """, (user_id,)) 
+            return cursor.fetchall()
+
+    # -----------------------------
+    # Teams: Data Access methods
+    # -----------------------------
+    def insert_team(self, name, description, department, capacity, owner_user_id, join_code):
+        """
+        Insert a new team row and return the created team as a dict.
+        """
+        with self.conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO Team (Name, Description, Department, Capacity, OwnerUserID, JoinCode)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (name, description, department, capacity, owner_user_id, join_code),
+            )
+            self.conn.commit()
+            new_id = cursor.lastrowid
+
+        return self.get_team_by_id(new_id)
+
+    def get_team_by_id(self, team_id: int):
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT * FROM Team WHERE ID = %s", (team_id,))
+            return cursor.fetchone()
+
+    def get_team_by_join_code(self, join_code: str):
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT * FROM Team WHERE JoinCode = %s LIMIT 1", (join_code,))
+            return cursor.fetchone()
+
+    def list_all_teams(self):
+        """
+        Return ALL teams, newest first (ID DESC).
+        """
+        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(
+                """
+                SELECT ID, Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive
+                FROM Team
+                ORDER BY ID DESC
+                """
+            )
             return cursor.fetchall()
