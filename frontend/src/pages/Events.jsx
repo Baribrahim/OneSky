@@ -42,7 +42,7 @@ export default function Events() {
       <div className="card large-card" role="region" aria-label="Discover Events">
         <div className="filter-panel">
           <h1 className="brand-gradient">Discover Events</h1>
-          <p className="filter-tagline">Find volunteering opportunities by location, date or keyword.</p>
+          <p className="filter-tagline">Turn your free time into something extraordinary—start by searching through upcoming events below.</p>
 
           <form className="filter-grid" noValidate onSubmit={(e) => e.preventDefault()}>
             {/* Search */}
