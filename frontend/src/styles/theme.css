@@ -362,6 +362,14 @@ a:hover { color: var(--brand-primary-600); }
   background-color: #f5f5f5;
 }
 
+
+/* ===== Makes header bigger ===== */
+.events-wrapper .brand-gradient {
+  font-size: 3rem; /* Bigger size only for event page */
+  font-weight: 800;
+}
+
+
 /* ===== Main Card Container ===== */
 .card.large-card {
   width: 100%;
