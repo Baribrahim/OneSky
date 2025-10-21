@@ -370,6 +370,12 @@ a:hover { color: var(--brand-primary-600); }
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+.card.large-card:hover {
+  transform: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  cursor: default;
+
+}
 
 .input {
   width: 100%;
