@@ -163,12 +163,28 @@ a:hover { color: var(--brand-primary-600); }
 
 
 /* Brand gradient text (for big headings if desired) */
-.brand-gradient {
+/* .brand-gradient {
   background: linear-gradient(90deg, var(--brand-start), var(--brand-mid), var(--brand-end));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+} */
+
+/* allows more colour gradiant to come through and by specifying specific colours they more closely align with our logo */
+.brand-gradient {
+  background: linear-gradient(
+    90deg,
+    #ff6a00,  /* orange */
+    #ff2d55,  /* pink */
+    #a100ff,  /* purple */
+    #007aff   /* blue */
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
 }
+
 
 /* Inputs */
 .input {
@@ -360,10 +376,5 @@ a:hover { color: var(--brand-primary-600); }
   font-size: 1rem;
 }
 
-.brand-gradient {
-  background: linear-gradient(to right, #0072c6, #00c6ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-size: 2rem;
-  font-weight: bold;
-}
+
+

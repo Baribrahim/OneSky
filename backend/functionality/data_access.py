@@ -220,9 +220,9 @@ class DataAccess:
             return cursor.fetchall()
 
 
-
-# Reanna events 
-    """Search and Filter Events"""
+    # ------------------------
+    # Events Search and Filter
+    # ------------------------
 
     def get_location(self):
         location_list = []
