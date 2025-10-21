@@ -216,7 +216,7 @@ class DataAccess:
         """
         Insert a new team row and return the created team as a dict.
         """
-        with self.conn.cursor() as cursor:
+        with self.get_connection() as conn, conn.cursor() as cursor:
             cursor.execute(
                 """
                 INSERT INTO Team (Name, Description, Department, Capacity, OwnerUserID, JoinCode)
@@ -230,12 +230,12 @@ class DataAccess:
         return self.get_team_by_id(new_id)
 
     def get_team_by_id(self, team_id: int):
-        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute("SELECT * FROM Team WHERE ID = %s", (team_id,))
             return cursor.fetchone()
 
     def get_team_by_join_code(self, join_code: str):
-        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute("SELECT * FROM Team WHERE JoinCode = %s LIMIT 1", (join_code,))
             return cursor.fetchone()
 
@@ -243,7 +243,7 @@ class DataAccess:
         """
         Return ALL teams, newest first (ID DESC).
         """
-        with self.conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute(
                 """
                 SELECT ID, Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive
