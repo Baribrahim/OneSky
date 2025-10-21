@@ -13,11 +13,18 @@ class DataAccess:
     DB_USER = os.getenv("MYSQL_USER")
     DB_DATABASE = os.getenv("MYSQL_DB")
 
+    def __init__(self):
+        load_dotenv()
+        self.DB_HOST = os.getenv("MYSQL_HOST")
+        self.DB_USER = os.getenv("MYSQL_USER")
+        self.DB_DATABASE = os.getenv("MYSQL_DB")
+
     # conn = pymysql.connect(
     #     host=DB_HOST,
     #     user=DB_USER,
     #     database=DB_DATABASE
     # )
+
 
     def get_connection(self):
         # Short-lived connections; no global shared conn.
@@ -25,8 +32,9 @@ class DataAccess:
             host=self.DB_HOST,
             user=self.DB_USER,
             database=self.DB_DATABASE,
-            autocommit=True)
-
+            autocommit=True,
+            cursorclass=pymysql.cursors.DictCurso
+            )
     print("Connected to database")
 
     # ------------------------
@@ -209,24 +217,9 @@ class DataAccess:
 
 
 
-
+# Reanna events 
     """Search and Filter Events"""
 
-    def __init__(self):
-        load_dotenv()
-        self.DB_HOST = os.getenv("MYSQL_HOST")
-        self.DB_USER = os.getenv("MYSQL_USER")
-        self.DB_DATABASE = os.getenv("MYSQL_DB")
-
-
-    def get_connection(self):
-        return pymysql.connect(
-            host=self.DB_HOST,
-            user=self.DB_USER,
-            database=self.DB_DATABASE,
-            cursorclass=pymysql.cursors.DictCursor
-        )
-    
     def get_location(self):
         location_list = []
         try:
@@ -287,48 +280,8 @@ class DataAccess:
             print(f"Database error in get_all_events: {e}")
     
         return event_list
-    
-    # testing
-    # def get_all_events2(self, location=None):
-    #     event_list = []
-    #     try:
-    #         with self.get_connection() as conn:
-    #             with conn.cursor (pymysql.cursors.DictCursor) as cursor:
-                
-    #                     query = """
-    #                     SELECT Event.ID, Event.Title, Event.About, Event.Date, Event.StartTime, Event.EndTime, Event.LocationCity, Event.Address, Event.Capacity, Cause.Name as CauseName, GROUP_CONCAT(Tag.TagName SEPARATOR ',') AS TagName
-    #                     FROM Event 
-    #                     JOIN Cause ON Event.CauseID = Cause.ID
-    #                     JOIN CauseTag ON Cause.ID = CauseTag.CauseID
-    #                     JOIN Tag ON CauseTag.TagID = Tag.ID
-    #                     GROUP BY Event.ID
-    #                     ORDER BY Event.Date ASC"""
-    #                     cursor.execute(query)
-    #                     result_set = cursor.fetchall()
-        
-    #                     for item in result_set:
-    #                         event = {
-    #                         'ID': item['ID'],
-    #                         'Title': item["Title"],
-    #                         'About': item["About"],
-    #                         'Date': str(item["Date"]),
-    #                         'StartTime': str(item["StartTime"]),
-    #                         'EndTime': str(item["EndTime"]),
-    #                         'LocationCity': item["LocationCity"],
-    #                         'Address': item["Address"],
-    #                         'Capacity': item["Capacity"],
-    #                         'CauseName': item['CauseName'],
-    #                         'TagName': item["TagName"]}
-    #                         event_list.append(event)
-                        
-                        
-    #                     print("Printing all events", result_set)
-    #     except pymysql.MySQLError as e:
-    #         print(f"Database error in get_all_events: {e}")
-        
-    #     return event_list
 
-    
+
     def search_events(self, keyword=None, location=None, date=None):
         events = []
         try:
