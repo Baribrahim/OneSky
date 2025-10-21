@@ -30,7 +30,7 @@ const UpcomingEvents = () => {
     
     return (
     <>
-    <h2>Upcoming Events</h2>
+    <h2>Upcoming Events (next 5 soonest)</h2>
     <div className="timeline-container">
       {events.upcoming_events?.map((event) => (
         <div key={event.ID} className="timeline-item">

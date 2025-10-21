@@ -18,6 +18,10 @@ class DashboardConnector:
         user_id = self.get_user_id(email)
         limit = max(1, min(int(limit or 5), 25))
         return self.da.get_upcoming_events(user_id, limit)
+    
+    def get_upcoming_events_count(self, email: str) -> int:
+        user_id = self.get_user_id(email)
+        return self.da.get_upcoming_events_count(user_id)
 
     def get_total_hours(self, email: str) -> float:
         user_id = self.get_user_id(email)
@@ -36,6 +40,7 @@ class DashboardConnector:
         user_id = self.get_user_id(email)
         return {
             "upcoming_events": self.da.get_upcoming_events(user_id, limit),
+            "upcoming_count": self.da.get_upcoming_events_count(user_id),
             "total_hours": self.da.get_total_hours(user_id),
             "completed_events": self.da.get_completed_events_count(user_id),
             "badges": self.da.get_badges(user_id),

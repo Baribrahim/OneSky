@@ -33,13 +33,14 @@ def dashboard_impact():
         events_completed = int(data.get("completed_events", 0))
         upcoming = data.get("upcoming_events", [])
         badges = data.get("badges", [])
+        upcoming_count = int(data.get("upcoming_count", len(upcoming)))
 
         payload = {
             "first_name": first_name,
             "total_hours": total_hours,
             "events_completed": events_completed,
             "counts": {
-                "upcoming_events": len(upcoming),
+                "upcoming_events": upcoming_count,
                 "badges": len(badges),
             },
             "as_of": datetime.now(timezone.utc).isoformat()
