@@ -69,9 +69,8 @@ def filter_events():
 
 @bp.route('/events', methods=['GET'])
 def get_filtered_events():
-    location = request.args.get('location')
+    location = request.args.get('location') or None
     events = data_access.get_all_events(location)
-    # locations = data_access.get_location()
     print("===Events===")
     print(events)
     return jsonify(events)

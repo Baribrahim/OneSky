@@ -78,65 +78,8 @@ class DataAccess:
         if bcrypt.checkpw(password.encode("utf-8"), stored_hashed):
             return user  # full user dict
         return None
-
-    # ------------------------
-    # Generic Event/Data Methods
-    # ------------------------
-    def get_event_details(self):
-        try:
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute("SELECT * FROM Event")
-                rows = cursor.fetchall()
-                cols = [col[0] for col in cursor.description]
-                return rows, cols
-        except Exception as e:
-            print(f"Error in get_event_details: {e}")
-            raise
-
-    def get_id_by_email(self, email):
-        try:
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute("SELECT ID FROM User WHERE Email = %s", (email,))
-                row = cursor.fetchone()
-                return row[0] if row else None
-        except Exception as e:
-            print(f"Error in get_id_by_email: {e}")
-            raise
-
-    def store_user_event_id(self, user_email, event_id):
-        try:
-            user_id = self.get_id_by_email(user_email)
-            sql = "INSERT INTO EventRegistration (UserID, EventID) VALUES (%s, %s)"
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute(sql, (user_id, event_id))
-                # autocommit=True
-        except Exception as e:
-            print(f"Error in store_user_event_id: {e}")
-            raise
-
-    def get_user_events(self, user_email):
-        try:
-            user_id = self.get_id_by_email(user_email)
-            sql = "SELECT EventID FROM EventRegistration WHERE UserID = %s"
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute(sql, (user_id,))  # NOTE the comma -> (user_id,)
-                return cursor.fetchall()
-        except Exception as e:
-            print(f"Error in check_user_event_signup: {e}")
-            raise
-
-    def delete_user_from_event(self, user_email, event_id):
-        try:
-            user_id = self.get_id_by_email(user_email)
-            sql = "DELETE FROM EventRegistration WHERE UserID = %s AND EventID = %s"
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute(sql, (user_id, event_id))
-                # autocommit=True
-        except Exception as e:
-            print(f"Error in unregister_user_from_event: {e}")
-            raise
-
-    # ------------------------
+    
+        # ------------------------
     # Dashboard Methods
     # ------------------------
     def get_user_id_by_email(self, email):
@@ -219,6 +162,195 @@ class DataAccess:
             cursor.execute(sql, (user_id,))
             return cursor.fetchall()
 
+    # ------------------------
+    # Generic Event/Data Methods
+    # ------------------------
+    def get_event_details(self):
+        try:
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute("SELECT * FROM Event")
+                rows = cursor.fetchall()
+                cols = [col[0] for col in cursor.description]
+                return rows, cols
+        except Exception as e:
+            print(f"Error in get_event_details: {e}")
+            raise
+
+    def get_id_by_email(self, email):
+        try:
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute("SELECT ID FROM User WHERE Email = %s", (email,))
+                row = cursor.fetchone()
+                return row[0] if row else None
+        except Exception as e:
+            print(f"Error in get_id_by_email: {e}")
+            raise
+
+    def store_user_event_id(self, user_email, event_id):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = "INSERT INTO EventRegistration (UserID, EventID) VALUES (%s, %s)"
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (user_id, event_id))
+                # autocommit=True
+        except Exception as e:
+            print(f"Error in store_user_event_id: {e}")
+            raise
+
+    def get_user_events(self, user_email):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = "SELECT EventID FROM EventRegistration WHERE UserID = %s"
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (user_id,))  # NOTE the comma -> (user_id,)
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Error in check_user_event_signup: {e}")
+            raise
+
+    def delete_user_from_event(self, user_email, event_id):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = "DELETE FROM EventRegistration WHERE UserID = %s AND EventID = %s"
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (user_id, event_id))
+                # autocommit=True
+        except Exception as e:
+            print(f"Error in unregister_user_from_event: {e}")
+            raise
+
+
+
+
+    # ------------------------
+    # Events Search and Filter
+    # ------------------------
+
+    def get_location(self):
+        location_list = []
+        try:
+            with self.get_connection(use_dict_cursor=True) as conn:
+                with conn.cursor() as cursor:
+                    query = "SELECT LocationCity FROM event"
+                    cursor.execute(query)
+                    result_set = cursor.fetchall()
+                    location_list = sorted(set(row['LocationCity'] for row in result_set if row ['LocationCity']))
+                    cursor.close()
+        except pymysql.MySQLError as e:
+            print(f"Database error in get_location: {e} ")
+        return location_list
+    
+
+    # def get_all_events(self, location=None):
+    #     event_list = []
+    #     try:
+    #         with self.get_connection(use_dict_cursor=True) as conn:
+    #             with conn.cursor (pymysql.cursors.DictCursor) as cursor:
+    #                 if location:
+    #                     query = """
+    #                     SELECT event.ID, event.Title, event.About, event.Date, event.StartTime, event.EndTime, event.LocationCity, event.Address, event.Capacity, Cause.Name as CauseName, GROUP_CONCAT(Tag.TagName SEPARATOR ',') AS TagName
+    #                     FROM event e
+    #                     JOIN Cause ON event.CauseID = Cause.ID
+    #                     JOIN CauseTag ON Cause.ID = CauseTag.CauseID
+    #                     JOIN Tag ON CauseTag.TagID = Tag.ID
+    #                     WHERE ( %s IS NULL OR event.LocationCity = %s)
+    #                     GROUP BY Event.ID
+    #                     ORDER BY Event.Date ASC"""
+
+    #                     cursor.execute(query, (location, location))
+
+    #                     # cursor.execute(query, (location, location))
+    #                 # else:
+    #                 #     query = """
+    #                 #     SELECT event.ID, event.Title, event.About, event.Date, event.StartTime, event.EndTime, event.LocationCity, event.Address, event.Capacity, Cause.Name as CauseName, GROUP_CONCAT(Tag.TagName SEPARATOR ',') AS TagName
+    #                 #     FROM event 
+    #                 #     JOIN Cause ON event.CauseID = Cause.ID
+    #                 #     JOIN CauseTag ON Cause.ID = CauseTag.CauseID
+    #                 #     JOIN Tag ON CauseTag.TagID = Tag.ID
+    #                 #     GROUP BY Event.ID
+    #                 #     ORDER BY Event.Date ASC"""
+    #                     # cursor.execute(query)
+    #                 result_set = cursor.fetchall()
+        
+    #                 for item in result_set:
+    #                     event = {
+    #                         'ID': item['ID'],
+    #                         'Title': item["Title"],
+    #                         'About': item["About"],
+    #                         'Date': str(item["Date"]),
+    #                         'StartTime': str(item["StartTime"]),
+    #                         'EndTime': str(item["EndTime"]),
+    #                         'LocationCity': item["LocationCity"],
+    #                         'Address': item["Address"],
+    #                         'Capacity': item["Capacity"],
+    #                         'CauseName': item['CauseName'],
+    #                         'TagName': item["TagName"]
+    #                     }
+    #                     event_list.append(event)
+    #     except pymysql.MySQLError as e:
+    #         print(f"Database error in get_all_events: {e}")
+    
+    #     return event_list
+
+     # ------------------------
+    # Generic Event/Data Methods
+    # ------------------------
+    def get_event_details(self):
+        try:
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute("SELECT * FROM Event")
+                rows = cursor.fetchall()
+                cols = [col[0] for col in cursor.description]
+                return rows, cols
+        except Exception as e:
+            print(f"Error in get_event_details: {e}")
+            raise
+
+    def get_id_by_email(self, email):
+        try:
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute("SELECT ID FROM User WHERE Email = %s", (email,))
+                row = cursor.fetchone()
+                return row[0] if row else None
+        except Exception as e:
+            print(f"Error in get_id_by_email: {e}")
+            raise
+
+    def store_user_event_id(self, user_email, event_id):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = "INSERT INTO EventRegistration (UserID, EventID) VALUES (%s, %s)"
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (user_id, event_id))
+                # autocommit=True
+        except Exception as e:
+            print(f"Error in store_user_event_id: {e}")
+            raise
+
+    def get_user_events(self, user_email):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = "SELECT EventID FROM EventRegistration WHERE UserID = %s"
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (user_id,))  # NOTE the comma -> (user_id,)
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Error in check_user_event_signup: {e}")
+            raise
+
+    def delete_user_from_event(self, user_email, event_id):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = "DELETE FROM EventRegistration WHERE UserID = %s AND EventID = %s"
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (user_id, event_id))
+                # autocommit=True
+        except Exception as e:
+            print(f"Error in unregister_user_from_event: {e}")
+            raise
+
+
+
 
     # ------------------------
     # Events Search and Filter
@@ -243,28 +375,21 @@ class DataAccess:
         event_list = []
         try:
             with self.get_connection(use_dict_cursor=True) as conn:
-                with conn.cursor (pymysql.cursors.DictCursor) as cursor:
-                    if location:
-                        query = """
-                        SELECT event.ID, event.Title, event.About, event.Date, event.StartTime, event.EndTime, event.LocationCity, event.Address, event.Capacity, Cause.Name as CauseName, Tag.TagName as TagName
-                        FROM event 
-                        JOIN Cause ON event.CauseID = Cause.ID
-                        JOIN CauseTag ON Cause.ID = CauseTag.CauseID
-                        JOIN Tag ON CauseTag.TagID = Tag.ID
-                        WHERE LocationCity = %s"""
-                        cursor.execute(query, (location,))
-                    else:
-                        query = """
-                        SELECT event.ID, event.Title, event.About, event.Date, event.StartTime, event.EndTime, event.LocationCity, event.Address, event.Capacity, Cause.Name as CauseName, GROUP_CONCAT(Tag.TagName SEPARATOR ',') AS TagName
-                        FROM event 
-                        JOIN Cause ON event.CauseID = Cause.ID
-                        JOIN CauseTag ON Cause.ID = CauseTag.CauseID
-                        JOIN Tag ON CauseTag.TagID = Tag.ID
-                        GROUP BY Event.ID
-                        ORDER BY Event.Date ASC"""
-                        cursor.execute(query)
+                with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                    query = """
+                    SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name AS CauseName, GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
+                    FROM Event e
+                    JOIN Cause c ON e.CauseID = c.ID
+                    JOIN CauseTag ct ON c.ID = ct.CauseID
+                    JOIN Tag t ON ct.TagID = t.ID
+                    WHERE (%s IS NULL OR e.LocationCity = %s)
+                    GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name
+                    ORDER BY e.Date ASC;
+                    """
+                    loc_param = location.strip() if location else None
+                    cursor.execute(query, (loc_param, loc_param))
                     result_set = cursor.fetchall()
-        
+
                     for item in result_set:
                         event = {
                             'ID': item['ID'],
@@ -282,7 +407,7 @@ class DataAccess:
                         event_list.append(event)
         except pymysql.MySQLError as e:
             print(f"Database error in get_all_events: {e}")
-    
+
         return event_list
 
 
@@ -300,7 +425,7 @@ class DataAccess:
                     JOIN CauseTag ct ON c.ID = ct.CauseID
                     JOIN Tag t ON ct.TagID = t.ID
                     WHERE 1=1
-                    GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name;
+                    # GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name;
                     """
 
                     params = []
@@ -334,3 +459,4 @@ class DataAccess:
             print(f"Database error in search_events: {e}")
                    
         return events
+    
