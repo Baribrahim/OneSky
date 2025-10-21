@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import os
 import pymysql
 import random
+from pymysql.cursors import DictCursor
 
 class DataAccess:
     load_dotenv()
@@ -26,15 +27,18 @@ class DataAccess:
     # )
 
 
-    def get_connection(self):
+    def get_connection(self, use_dict_cursor=False):
         # Short-lived connections; no global shared conn.
-        return pymysql.connect(
-            host=self.DB_HOST,
-            user=self.DB_USER,
-            database=self.DB_DATABASE,
-            autocommit=True,
-            cursorclass=pymysql.cursors.DictCurso
-            )
+        kwargs = {
+            "host": self.DB_HOST,
+            "user": self.DB_USER,
+            "database": self.DB_DATABASE,
+            "autocommit": True
+        }
+        if use_dict_cursor:
+            kwargs["cursorclass"] = DictCursor
+
+        return pymysql.connect(**kwargs)
     print("Connected to database")
 
     # ------------------------
@@ -58,7 +62,7 @@ class DataAccess:
 
     def get_user_by_email(self, email):
         sql = "SELECT * FROM user WHERE Email = %s LIMIT 1"
-        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (email,))
             return cursor.fetchone()
 
@@ -140,7 +144,7 @@ class DataAccess:
         Retrieve the unique user ID from the database using the user's email.
         """
         sql = "SELECT ID FROM User WHERE Email = %s LIMIT 1"
-        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (email,))
             row = cursor.fetchone()
             return row["ID"] if row else None
@@ -164,7 +168,7 @@ class DataAccess:
             ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
             LIMIT %s
         """
-        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id, int(limit)))
             return cursor.fetchall()
 
@@ -179,7 +183,7 @@ class DataAccess:
             WHERE er.UserID = %s
               AND TIMESTAMP(e.Date, e.StartTime) < NOW()
         """
-        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id,))
             row = cursor.fetchone()
             return float(row["TotalHours"]) if row and row["TotalHours"] is not None else 0.0
@@ -195,7 +199,7 @@ class DataAccess:
             WHERE er.UserID = %s
               AND TIMESTAMP(e.Date, e.StartTime) < NOW()
         """
-        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id,))
             row = cursor.fetchone()
             return int(row["CompletedEvents"]) if row and row["CompletedEvents"] is not None else 0
@@ -211,7 +215,7 @@ class DataAccess:
             WHERE ub.UserID = %s
             ORDER BY b.Name ASC
         """
-        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id,))
             return cursor.fetchall()
 
@@ -223,7 +227,7 @@ class DataAccess:
     def get_location(self):
         location_list = []
         try:
-            with self.get_connection() as conn:
+            with self.get_connection(use_dict_cursor=True) as conn:
                 with conn.cursor() as cursor:
                     query = "SELECT LocationCity FROM event"
                     cursor.execute(query)
@@ -238,7 +242,7 @@ class DataAccess:
     def get_all_events(self, location=None):
         event_list = []
         try:
-            with self.get_connection() as conn:
+            with self.get_connection(use_dict_cursor=True) as conn:
                 with conn.cursor (pymysql.cursors.DictCursor) as cursor:
                     if location:
                         query = """
@@ -285,7 +289,7 @@ class DataAccess:
     def search_events(self, keyword=None, location=None, date=None):
         events = []
         try:
-            with self.get_connection() as conn:
+            with self.get_connection(use_dict_cursor=True) as conn:
                 cursor = conn.cursor()
                 try:
                     query = """
