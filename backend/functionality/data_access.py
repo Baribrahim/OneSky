@@ -371,7 +371,7 @@ class DataAccess:
         return location_list
     
 
-    def get_filtered_events(self, keyword=None, location=None, date=None):
+    def get_filtered_events(self, keyword=None, location=None, start_date=None, end_date=None):
         events = []
         try:
             with self.get_connection(use_dict_cursor=True) as conn:
@@ -397,9 +397,15 @@ class DataAccess:
                         query += " AND LOWER(TRIM(e.LocationCity)) = %s"
                         params.append(location.lower().strip())
 
-                    if date:
-                        query += " AND e.Date = %s"
-                        params.append(date)
+                    if start_date and end_date:
+                        query += " AND e.Date BETWEEN %s AND %s"
+                        params.extend([start_date, end_date])
+                    elif start_date:
+                        query += " AND e.Date >= %s"
+                        params.append(start_date)
+                    elif end_date:
+                        query += " AND e.Date <= %s"
+                        params.append(end_date)
 
                     query += """
                     GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name

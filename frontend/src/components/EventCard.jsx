@@ -43,7 +43,7 @@ function EventCard({ event }) {
   };
 
   return (
-    <div className="card">
+    <div className="card event-card">
       <div className="card-body">
         <h3 className="card-subtitle mb-2 text-muted">{event.Title}</h3>
         <p className="card-text">{event.About}</p>

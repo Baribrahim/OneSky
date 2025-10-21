@@ -79,9 +79,11 @@ def filter_events():
 def get_filtered_events_route():
     keyword = request.args.get('keyword') or None
     location = request.args.get('location') or None
-    date = request.args.get('date') or None
+    # date = request.args.get('date') or None
+    start_date = request.args.get('startDate') or None
+    end_date = request.args.get('endDate') or None
 
-    events = data_access.get_filtered_events(keyword, location, date)
+    events = data_access.get_filtered_events(keyword, location, start_date, end_date)
     return jsonify(events)
 
 
@@ -90,5 +92,6 @@ def search_events():
     keyword = request.args.get('keyword', '')
     location = request.args.get('location', '')
     date = request.args.get('date', '')
+
     events = data_access.search_events(keyword, location, date)
     return jsonify(events)
