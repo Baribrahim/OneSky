@@ -371,27 +371,47 @@ class DataAccess:
         return location_list
     
 
-    def get_all_events(self, location=None):
-        event_list = []
+    def get_filtered_events(self, keyword=None, location=None, date=None):
+        events = []
         try:
             with self.get_connection(use_dict_cursor=True) as conn:
                 with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                     query = """
-                    SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name AS CauseName, GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
+                    SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity,
+                        c.Name AS CauseName,
+                        GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
                     FROM Event e
                     JOIN Cause c ON e.CauseID = c.ID
                     JOIN CauseTag ct ON c.ID = ct.CauseID
                     JOIN Tag t ON ct.TagID = t.ID
-                    WHERE (%s IS NULL OR e.LocationCity = %s)
+                    WHERE 1=1
+                    """
+                    params = []
+
+                    if keyword:
+                        query += " AND (e.Title LIKE %s OR e.About LIKE %s)"
+                        keyword_param = f"%{keyword}%"
+                        params.extend([keyword_param, keyword_param])
+
+                    if location:
+                        query += " AND LOWER(TRIM(e.LocationCity)) = %s"
+                        params.append(location.lower().strip())
+
+                    if date:
+                        query += " AND e.Date = %s"
+                        params.append(date)
+
+                    query += """
                     GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name
                     ORDER BY e.Date ASC;
                     """
-                    loc_param = location.strip() if location else None
-                    cursor.execute(query, (loc_param, loc_param))
+
+                    cursor.execute(query, params)
                     result_set = cursor.fetchall()
 
+                    
                     for item in result_set:
-                        event = {
+                        events.append({
                             'ID': item['ID'],
                             'Title': item["Title"],
                             'About': item["About"],
@@ -403,60 +423,99 @@ class DataAccess:
                             'Capacity': item["Capacity"],
                             'CauseName': item['CauseName'],
                             'TagName': item["TagName"]
-                        }
-                        event_list.append(event)
+                        })
         except pymysql.MySQLError as e:
-            print(f"Database error in get_all_events: {e}")
+            print(f"Database error in get_filtered_events: {e}")
 
-        return event_list
-
-
-    def search_events(self, keyword=None, location=None, date=None):
-        events = []
-        try:
-            with self.get_connection(use_dict_cursor=True) as conn:
-                cursor = conn.cursor()
-                try:
-                    query = """
-                        
-                    SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name AS CauseName, GROUP_CONCAT(t.TagName SEPARATOR ', ') AS TagNames
-                    FROM Event e
-                    JOIN Cause c ON e.CauseID = c.ID
-                    JOIN CauseTag ct ON c.ID = ct.CauseID
-                    JOIN Tag t ON ct.TagID = t.ID
-                    WHERE 1=1
-                    # GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name;
-                    """
-
-                    params = []
-
-                    if keyword:
-                        query += " AND (e.Title LIKE %s OR e.About LIKE %s)"
-                        keyword_param = f"%{keyword}%"
-                        params.extend([keyword_param, keyword_param])
-
-                    if location:
-                        query += " AND LOWER(TRIM(e.LocationCity)) = %s"
-                        params.append(location)
-
-                    if date:
-                        query += " AND e.Date = %s"
-                        params.append(date)
-
-                    query += " GROUP BY e.ID ORDER BY e.Date ASC"
-
-                    print("Executing query with params:", query)
-
-                    print("Executing query:", query)
-                    print("Params:", params)
-
-                    cursor.execute(query, params)
-                    events = cursor.fetchall()
-
-                finally:
-                    cursor.close()
-        except pymysql.MySQLError as e:
-            print(f"Database error in search_events: {e}")
-                   
         return events
+
+
+    # def get_all_events(self, location=None):
+    #     event_list = []
+    #     try:
+    #         with self.get_connection(use_dict_cursor=True) as conn:
+    #             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+    #                 query = """
+    #                 SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name AS CauseName, GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
+    #                 FROM Event e
+    #                 JOIN Cause c ON e.CauseID = c.ID
+    #                 JOIN CauseTag ct ON c.ID = ct.CauseID
+    #                 JOIN Tag t ON ct.TagID = t.ID
+    #                 WHERE (%s IS NULL OR e.LocationCity = %s)
+    #                 GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name
+    #                 ORDER BY e.Date ASC;
+    #                 """
+    #                 loc_param = location.strip() if location else None
+    #                 cursor.execute(query, (loc_param, loc_param))
+    #                 result_set = cursor.fetchall()
+
+    #                 for item in result_set:
+    #                     event = {
+    #                         'ID': item['ID'],
+    #                         'Title': item["Title"],
+    #                         'About': item["About"],
+    #                         'Date': str(item["Date"]),
+    #                         'StartTime': str(item["StartTime"]),
+    #                         'EndTime': str(item["EndTime"]),
+    #                         'LocationCity': item["LocationCity"],
+    #                         'Address': item["Address"],
+    #                         'Capacity': item["Capacity"],
+    #                         'CauseName': item['CauseName'],
+    #                         'TagName': item["TagName"]
+    #                     }
+    #                     event_list.append(event)
+    #     except pymysql.MySQLError as e:
+    #         print(f"Database error in get_all_events: {e}")
+
+    #     return event_list
+
+
+    # def search_events(self, keyword=None, location=None, date=None):
+    #     events = []
+    #     try:
+    #         with self.get_connection(use_dict_cursor=True) as conn:
+    #             cursor = conn.cursor()
+    #             try:
+    #                 query = """
+                        
+    #                 SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name AS CauseName, GROUP_CONCAT(t.TagName SEPARATOR ', ') AS TagNames
+    #                 FROM Event e
+    #                 JOIN Cause c ON e.CauseID = c.ID
+    #                 JOIN CauseTag ct ON c.ID = ct.CauseID
+    #                 JOIN Tag t ON ct.TagID = t.ID
+    #                 WHERE 1=1
+    #                 # GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name;
+    #                 """
+
+    #                 params = []
+
+    #                 if keyword:
+    #                     query += " AND (e.Title LIKE %s OR e.About LIKE %s)"
+    #                     keyword_param = f"%{keyword}%"
+    #                     params.extend([keyword_param, keyword_param])
+
+    #                 if location:
+    #                     query += " AND LOWER(TRIM(e.LocationCity)) = %s"
+    #                     params.append(location)
+
+    #                 if date:
+    #                     query += " AND e.Date = %s"
+    #                     params.append(date)
+
+    #                 query += " GROUP BY e.ID ORDER BY e.Date ASC"
+
+    #                 print("Executing query with params:", query)
+
+    #                 print("Executing query:", query)
+    #                 print("Params:", params)
+
+    #                 cursor.execute(query, params)
+    #                 events = cursor.fetchall()
+
+    #             finally:
+    #                 cursor.close()
+    #     except pymysql.MySQLError as e:
+    #         print(f"Database error in search_events: {e}")
+                   
+    #     return events
     

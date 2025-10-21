@@ -45,7 +45,11 @@ return (
         {/* <SkyBrand size={40} /> */}
         <h1 className="brand-gradient" style={{ marginTop: 16, textAlign: 'center' }}>Discover Events</h1>
 
-        <form noValidate style={{ marginTop: 24 }}>
+        <form
+          noValidate 
+          style={{ marginTop: 24 }} 
+          onSubmit={(e) => { e.preventDefault(); //stops the page reloading if you hit enter
+        }}>
           <label htmlFor="keyword">Search</label>
           <input
             id="keyword"

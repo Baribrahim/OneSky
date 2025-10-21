@@ -67,12 +67,21 @@ def filter_events():
     return jsonify([{"city": loc} for loc in locations])
 
 
+# @bp.route('/events', methods=['GET'])
+# def get_filtered_events():
+#     location = request.args.get('location') or None
+#     events = data_access.get_all_events(location)
+#     print("===Events===")
+#     print(events)
+#     return jsonify(events)
+
 @bp.route('/events', methods=['GET'])
-def get_filtered_events():
+def get_filtered_events_route():
+    keyword = request.args.get('keyword') or None
     location = request.args.get('location') or None
-    events = data_access.get_all_events(location)
-    print("===Events===")
-    print(events)
+    date = request.args.get('date') or None
+
+    events = data_access.get_filtered_events(keyword, location, date)
     return jsonify(events)
 
 

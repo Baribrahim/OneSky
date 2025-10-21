@@ -41,7 +41,7 @@ function SearchFilters({ onFilterSubmit }) {
       <select value={location} onChange={(e) => setLocation(e.target.value)}>
         <option value="">All Locations</option>
         {locations.map((loc, index) => (
-            <option key={index} value={loc}>{loc}</option>
+            <option key={index} value={loc.city}>{loc.city}</option>
         ))}
       </select>
 {/* Date picker */}
