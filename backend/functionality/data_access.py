@@ -114,6 +114,23 @@ class DataAccess:
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id, int(limit)))
             return cursor.fetchall()
+    
+    def get_upcoming_events_count(self, user_id: int) -> int:
+        """
+        Count all future events a user has registered for (no limit).
+        """
+        sql = """
+            SELECT COUNT(*) AS UpcomingCount
+            FROM Event e
+            JOIN EventRegistration er ON er.EventID = e.ID
+            WHERE er.UserID = %s
+            AND TIMESTAMP(e.Date, e.StartTime) > NOW()
+        """
+        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(sql, (user_id,))
+            row = cursor.fetchone()
+            return int(row["UpcomingCount"]) if row and row["UpcomingCount"] is not None else 0
+
 
     def get_total_hours(self, user_id: int):
         """
