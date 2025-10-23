@@ -19,6 +19,12 @@ class DashboardConnector:
         limit = max(1, min(int(limit or 5), 25))
         return self.da.get_upcoming_events(user_id, limit)
     
+    def get_upcoming_events_paged(self, email: str, limit: int = 5, offset: int = 0) -> List[dict]:
+        user_id = self.get_user_id(email)
+        limit = max(1, min(int(limit or 5), 50))  # you can raise cap if you want
+        offset = max(0, int(offset or 0))
+        return self.da.get_upcoming_events_paged(user_id, limit, offset)
+
     def get_upcoming_events_count(self, email: str) -> int:
         user_id = self.get_user_id(email)
         return self.da.get_upcoming_events_count(user_id)

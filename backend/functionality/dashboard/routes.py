@@ -59,18 +59,27 @@ def dashboard_impact():
 @token_required
 def dashboard_upcoming():
     """
-    GET /dashboard/upcoming?limit=5
-    Returns upcoming events for the user with key details:
-    - Count, ID, Title, Date, StartTime, EndTime, LocationCity
+    GET /dashboard/upcoming?limit=5&offset=0
+    Returns:
+      - upcoming_events: [ ...items... ]
+      - count: len(items)
+      - total: total upcoming events (no limit)
+      - has_more: whether more items exist beyond this page
     """
     email = g.current_user.get("sub")
     limit = request.args.get("limit", default=5, type=int)
+    offset = request.args.get("offset", default=0, type=int)
 
     try:
-        items = dc.get_upcoming_events(email, limit=limit)
+        items = dc.get_upcoming_events_paged(email, limit=limit, offset=offset)
+        total = dc.get_upcoming_events_count(email)
+        has_more = (offset + len(items)) < total
+
         return jsonify({
             "upcoming_events": items,
-            "count": len(items)
+            "count": len(items),
+            "total": int(total),
+            "has_more": bool(has_more)
         }), 200
 
     except ValueError as ve:
