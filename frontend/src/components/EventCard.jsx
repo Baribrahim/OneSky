@@ -48,7 +48,7 @@ function EventCard({ event }) {
         <h3 className="card-subtitle mb-2 text-muted">{event.Title}</h3>
         <p className="card-text">{event.About}</p>
         <div className="event-info">
-          <p className="card-text">{'\u{1F4CD}'}  {event.LocationCity}</p>
+          <p className="card-text">{'\u{1F4CD}'}  {event.Address}, {event.LocationCity}, {event.LocationPostcode}</p>
           <p className="card-text">{'\u{1F4C5}'} {formatDate(event.Date)}</p>
           <p className="card-text">
             {timeUnicode(event.StartTime)} {formatTime(event.StartTime)} - {formatTime(event.EndTime)}

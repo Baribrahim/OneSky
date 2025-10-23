@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import EventCard from '../components/EventCard';
+import "../styles/events.css";
 
 export default function Events() {
   const [filters, setFilters] = useState({
