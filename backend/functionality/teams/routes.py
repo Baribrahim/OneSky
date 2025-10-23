@@ -23,6 +23,7 @@ def signup_to_team():
         return jsonify({"error": "Missing join_code"}), 400
 
     user_email = g.current_user.get("sub", "User") 
+    print(f"g.current_user: {g.current_user}")
     con = Connector()
     if(con.verify_team_code(team_id, join_code)):
         con.add_user_to_team(user_email, team_id)
@@ -31,12 +32,12 @@ def signup_to_team():
         return jsonify({"error": "Invalid code"}), 400
     
 
-@bp.route("/join-status", methods=["GET"])
-@token_required
-def check_join_status():
-    user_email = g.current_user.get("sub", "User")
-    con = Connector()
-    joined_teams = con.user_joined_teams(user_email)
-    return jsonify(joined_teams), 200
+# @bp.route("/join-status", methods=["GET"])
+# @token_required
+# def check_join_status():
+#     user_email = g.current_user.get("sub", "User")
+#     con = Connector()
+#     joined_teams = con.user_joined_teams(user_email)
+#     return jsonify(joined_teams), 200
 
 

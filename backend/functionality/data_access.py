@@ -237,26 +237,26 @@ class DataAccess:
             print(f"Error in select_team_code: {e}")
             raise
     
-    """Delete userId and teamID from TeamMembership"""
-    def delete_user_from_team(self, user_email, team_id):
-        user_id = self.get_id_by_email(user_email)
-        try:
-            sql = "DELETE FROM TeamMembership WHERE UserID = %s AND TeamID= %s"
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute(sql, (user_id, team_id))
-        except Exception as e:
-            print(f"Error in delete_user_from_team: {e}")
-            raise
+    # """Delete userId and teamID from TeamMembership"""
+    # def delete_user_from_team(self, user_email, team_id):
+    #     user_id = self.get_id_by_email(user_email)
+    #     try:
+    #         sql = "DELETE FROM TeamMembership WHERE UserID = %s AND TeamID= %s"
+    #         with self.get_connection() as conn, conn.cursor() as cursor:
+    #             cursor.execute(sql, (user_id, team_id))
+    #     except Exception as e:
+    #         print(f"Error in delete_user_from_team: {e}")
+    #         raise
     
-    """Read all teams a user has joined"""
-    def get_all_joined_teams(self, user_email):
-        try:
-            user_id = self.get_id_by_email(user_email)
-            sql = "SELECT TeamID from TeamMembership WHERE UserID = %s"
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute(sql, (user_id, ))
-                row = cursor.fetchall()
-                return row 
-        except Exception as e:
-            print(f"Error in get_all_joined_teams: {e}")
-            raise
+    # """Read all teams a user has joined"""
+    # def get_all_joined_teams(self, user_email):
+    #     try:
+    #         user_id = self.get_id_by_email(user_email)
+    #         sql = "SELECT TeamID from TeamMembership WHERE UserID = %s"
+    #         with self.get_connection() as conn, conn.cursor() as cursor:
+    #             cursor.execute(sql, (user_id, ))
+    #             row = cursor.fetchall()
+    #             return row 
+    #     except Exception as e:
+    #         print(f"Error in get_all_joined_teams: {e}")
+    #         raise

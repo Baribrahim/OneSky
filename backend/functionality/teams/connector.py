@@ -17,9 +17,9 @@ class Connector():
         actual_code = dao.get_team_code(team_id)
         return actual_code == join_code
     
-    """ Passes teams user has joined"""
-    def user_joined_teams(self, user_email):
-        dao = DataAccess()
-        data_tuple_of_tuple = dao.get_all_joined_teams(user_email)
-        all_teams = [x[0] for x in data_tuple_of_tuple]
-        return all_teams
+    # """ Passes teams user has joined"""
+    # def user_joined_teams(self, user_email):
+    #     dao = DataAccess()
+    #     data_tuple_of_tuple = dao.get_all_joined_teams(user_email)
+    #     all_teams = [x[0] for x in data_tuple_of_tuple]
+    #     return all_teams

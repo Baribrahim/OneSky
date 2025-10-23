@@ -16,13 +16,14 @@ function TeamCard() {
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [joinedTeams, setJoinedTeams] = useState([]);
+ 
+  const fetchStatuses = async () => {
+    const { data, error } = await toResult(api.get(`/api/teams/join-status`));
+    setJoinedTeams(data);
+  };
 
-  function resetStates() {
-    setJoinCode("");
-    setError("");
-    setSuccess("");
-  }
-
+  //Dummy data remove
   const teams = [
     {id: 1, name: 'Red Dragons'},
     {id: 2, name: 'Blue Hawks'},
@@ -30,6 +31,19 @@ function TeamCard() {
     {id: 4, name: 'Silver Foxes'},
   ]
 
+  // //This needs to be changed to use the actual db data
+  // useEffect(() => {
+  //   if (teams.length > 0) {
+  //     fetchStatuses()
+  //   }
+  // }, [])
+
+
+  function resetStates() {
+    setJoinCode("");
+    setError("");
+    setSuccess("");
+  }
 
   const handleJoin = async (team_id, join_code) => {
     if(!join_code){
@@ -45,26 +59,24 @@ function TeamCard() {
       else{
         console.log("DATA", data)
         setSuccess("Successfully joined!");
+        //setJoinedTeams(prev => ([...prev, team_id])); 
       }
-    //   else {
-    //     setSignupEvents(prev => ([...prev, event_id])); 
-    //   }
     } 
     catch (err) {
       console.error("Unexpected error during join:", err);
     }
   };
 
-  const handleLeave = async (team_id) => {
-    const { data, error } = await toResult(api.post("api/events/unregister", {event_id}));
-    if (error) {
-      console.error("Unregister failed:", error.message);
-    } 
-    else {
-      setSignupEvents(prev => prev.filter(id => id !== event_id)); 
-    }
+  // const handleLeave = async (team_id) => {
+  //   const { data, error } = await toResult(api.post("api/events/unregister", {event_id}));
+  //   if (error) {
+  //     console.error("Unregister failed:", error.message);
+  //   } 
+  //   else {
+  //     setSignupEvents(prev => prev.filter(id => id !== event_id)); 
+  //   }
     
-  }
+  // }
 
 
   return (
