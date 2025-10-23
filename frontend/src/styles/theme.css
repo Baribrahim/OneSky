@@ -300,6 +300,21 @@ a:hover { color: var(--brand-primary-600); }
 .timeline-container {
   position: relative;
   padding-left: 30px;
+  width: 50%;
+  max-width: 600px;
+  box-sizing: border-box;
+  max-height: 360px;       
+  overflow-y: auto;
+  padding-right: 8px; 
+}
+
+.timeline-show-more {
+  display: block;
+  width: 100%;                /* matches .timeline-container width */
+  max-width: 600px;           /* same as container’s max-width */
+  margin: 12px 0 0;           /* removes auto-centering on the whole page */
+  box-sizing: border-box;
+  text-align: center;
 }
 
 
