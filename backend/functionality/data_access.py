@@ -581,7 +581,6 @@ class DataAccess:
                 """,
                 (name, description, department, capacity, owner_user_id, join_code),
             )
-            self.conn.commit()
             new_id = cursor.lastrowid
 
         return self.get_team_by_id(new_id)
