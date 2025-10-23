@@ -237,6 +237,13 @@ a:hover { color: var(--brand-primary-600); }
   font-size: 0.95rem;
 }
 
+/* Success text */
+.success {
+  color: var(--color-success);
+  margin-top: var(--space-2);
+  font-size: 0.95rem;
+}
+
 /* Small utilities */
 .stack > * + * { margin-top: var(--space-4); } /* vertical spacing helper */
 .inline > * + * { margin-left: var(--space-4); } /* horizontal spacing helper */

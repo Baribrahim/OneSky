@@ -1,0 +1,43 @@
+
+.popup-content { 
+  margin-top: 15vh !important; 
+  top: auto !important; 
+  width: 300px; 
+  }
+
+/* Dim background overlay */
+.popup-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+[data-popup='tooltip'].popup-overlay 
+{ background: transparent; }
+
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+/* Input styling */
+.form-input {
+  width: 80%;
+  margin: 10px 0;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: var(--radius-sm, 4px);
+  text-align: center;
+}
+
+/* Stack and center buttons */
+.actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  width: 100%;
+}

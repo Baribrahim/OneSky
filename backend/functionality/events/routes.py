@@ -37,8 +37,8 @@ def signup_event():
 def check_signup_status():
     user_email = g.current_user.get("sub", "User")
     con = Connector()
-    is_signed_up = con.user_signed_up_for_events(user_email)
-    return jsonify(is_signed_up), 200
+    signed_up_events = con.user_signed_up_for_events(user_email)
+    return jsonify(signed_up_events), 200
 
 @bp.route("/unregister", methods=["POST"])
 @token_required
