@@ -24,7 +24,38 @@ export default function CreateTeam() {
   // --- Handle controlled input updates ---
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    
+    // For capacity field, only allow numeric input
+    if (name === 'capacity') {
+      // Remove any non-numeric characters except for empty string
+      const numericValue = value === '' ? '' : value.replace(/[^0-9]/g, '');
+      setForm((prev) => ({ ...prev, [name]: numericValue }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  // --- Handle key press for capacity field ---
+  const handleKeyDown = (e) => {
+    // Only allow numeric keys, backspace, delete, tab, escape, enter, and arrow keys
+    const allowedKeys = [
+      'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'
+    ];
+    
+    if (e.target.name === 'capacity') {
+      // Allow control keys (Ctrl+A, Ctrl+C, Ctrl+V, etc.)
+      if (e.ctrlKey || e.metaKey) return;
+      
+      // Allow allowed keys
+      if (allowedKeys.includes(e.key)) return;
+      
+      // Allow numeric keys (0-9)
+      if (e.key >= '0' && e.key <= '9') return;
+      
+      // Prevent all other keys
+      e.preventDefault();
+    }
   };
 
   // --- Validate before submit ---
@@ -142,6 +173,7 @@ export default function CreateTeam() {
             className="input"
             value={form.capacity}
             onChange={handleChange}
+            onKeyDown={handleKeyDown}
             min="1"
             style={{ marginTop: 8 }}
           />
