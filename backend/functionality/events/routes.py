@@ -1,14 +1,16 @@
 import datetime
 from functools import wraps
 import json
-
 import jwt
 from flask import Blueprint, render_template, request, flash, jsonify, current_app, redirect, url_for, g
 from .connector import Connector
 from auth.routes import token_required
-
+from flask_cors import CORS
+import json
+from data_access import DataAccess
 
 bp = Blueprint("api_events", __name__, url_prefix="/api/events")
+CORS(bp, supports_credentials=True)
 
 @bp.route("", methods=["GET"])
 @token_required
@@ -53,3 +55,43 @@ def unregister_from_event():
     con = Connector()
     con.unregister_user_from_event(user_email, event_id)
     return jsonify({"message": "Successfully unregistered for event"}), 200
+
+
+# Reanna's addition for search and filter functionality #
+
+data_access = DataAccess()
+
+@bp.route('/filter_events', methods=['GET', 'POST'])
+def filter_events():
+    locations = data_access.get_location()
+    return jsonify([{"city": loc} for loc in locations])
+
+
+# @bp.route('/events', methods=['GET'])
+# def get_filtered_events():
+#     location = request.args.get('location') or None
+#     events = data_access.get_all_events(location)
+#     print("===Events===")
+#     print(events)
+#     return jsonify(events)
+
+@bp.route('/events', methods=['GET'])
+def get_filtered_events_route():
+    keyword = request.args.get('keyword') or None
+    location = request.args.get('location') or None
+    # date = request.args.get('date') or None
+    start_date = request.args.get('startDate') or None
+    end_date = request.args.get('endDate') or None
+
+    events = data_access.get_filtered_events(keyword, location, start_date, end_date)
+    return jsonify(events)
+
+
+@bp.route('/search', methods=['GET'])
+def search_events():
+    keyword = request.args.get('keyword', '')
+    location = request.args.get('location', '')
+    date = request.args.get('date', '')
+
+    events = data_access.search_events(keyword, location, date)
+    return jsonify(events)
