@@ -188,6 +188,30 @@ class DataAccess:
             row = cursor.fetchone()
             return int(row["CompletedEvents"]) if row and row["CompletedEvents"] is not None else 0
 
+    def get_completed_events(self, user_id: int, limit: int = 50):
+        """
+        Get completed (past) events a user has registered for.
+        """
+        sql = """
+            SELECT 
+                e.ID,
+                e.Title,
+                DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
+                DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
+                DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                e.LocationCity,
+                TIME_TO_SEC(e.Duration) / 3600 AS DurationHours
+            FROM Event e
+            JOIN EventRegistration er ON er.EventID = e.ID
+            WHERE er.UserID = %s
+              AND TIMESTAMP(e.Date, e.StartTime) < NOW()
+            ORDER BY TIMESTAMP(e.Date, e.StartTime) DESC
+            LIMIT %s
+        """
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id, int(limit)))
+            return cursor.fetchall()
+
     def get_badges(self, user_id: int):
         """
             Retrieve all badges earned by the user.
