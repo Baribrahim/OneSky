@@ -239,163 +239,133 @@ class TestBadgeConnector:
 
 
 class TestDataAccessBadgeMethods:
-    """Test cases for DataAccess badge methods."""
-    
+    """Test cases for DataAccess badge methods using a context-manager mock for pymysql.connect."""
+
     @pytest.fixture
     def data_access(self):
-        """Set up test fixtures before each test method."""
         return DataAccess()
-    
-    @patch('data_access.DataAccess.get_connection')
-    def test_get_user_badges(self, mock_get_connection, data_access):
-        """Test get_user_badges method."""
-        # Arrange
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_get_connection.return_value.__enter__.return_value = mock_conn
+
+    def _setup_cm_mocks(self, mock_connect):
+        """Helper to set up connection and cursor context manager behaviour."""
+        mock_conn = MagicMock(name="conn")
+        mock_cursor = MagicMock(name="cursor")
+
+        # pymysql.connect() returns a connection that is used as a context manager
+        mock_connect.return_value.__enter__.return_value = mock_conn
+        # conn.cursor() returns a cursor that is used as a context manager
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
+
+        return mock_conn, mock_cursor
+
+    @patch('data_access.pymysql.connect')
+    def test_get_user_badges(self, mock_connect, data_access):
+        mock_conn, mock_cursor = self._setup_cm_mocks(mock_connect)
+
         expected_badges = [
             {"ID": 1, "Name": "Event Starter", "Description": "Registered for 1 upcoming events.", "IconURL": "/src/assets/badges/firstStep.png"}
         ]
         mock_cursor.fetchall.return_value = expected_badges
-        
-        # Act
+
         result = data_access.get_user_badges(1)
-        
-        # Assert
+
         assert result == expected_badges
+        mock_connect.assert_called_once()
+        mock_conn.cursor.assert_called_once()
         mock_cursor.execute.assert_called_once()
-    
-    @patch('data_access.DataAccess.get_connection')
-    def test_get_all_badges(self, mock_get_connection, data_access):
-        """Test get_all_badges method."""
-        # Arrange
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_get_connection.return_value.__enter__.return_value = mock_conn
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
+
+    @patch('data_access.pymysql.connect')
+    def test_get_all_badges(self, mock_connect, data_access):
+        mock_conn, mock_cursor = self._setup_cm_mocks(mock_connect)
+
         expected_badges = [
             {"ID": 1, "Name": "Event Starter", "Description": "Registered for 1 upcoming events.", "IconURL": "/src/assets/badges/firstStep.png"},
             {"ID": 2, "Name": "Event Enthusiast", "Description": "Registered for 5 upcoming events.", "IconURL": "/src/assets/badges/eduEnthusiast.png"}
         ]
         mock_cursor.fetchall.return_value = expected_badges
-        
-        # Act
+
         result = data_access.get_all_badges()
-        
-        # Assert
+
         assert result == expected_badges
+        mock_connect.assert_called_once()
+        mock_conn.cursor.assert_called_once()
         mock_cursor.execute.assert_called_once()
-    
-    @patch('data_access.DataAccess.get_connection')
-    def test_get_badge_by_name(self, mock_get_connection, data_access):
-        """Test get_badge_by_name method."""
-        # Arrange
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_get_connection.return_value.__enter__.return_value = mock_conn
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
-        expected_badge = {"ID": 1, "Name": "Event Starter", "Description": "Registered for 1 upcoming events.", "IconURL": "/src/assets/badges/firstStep.png"}
+
+    @patch('data_access.pymysql.connect')
+    def test_get_badge_by_name(self, mock_connect, data_access):
+        mock_conn, mock_cursor = self._setup_cm_mocks(mock_connect)
+
+        expected_badge = {
+            "ID": 1, "Name": "Event Starter", "Description": "Registered for 1 upcoming events.", "IconURL": "/src/assets/badges/firstStep.png"
+        }
         mock_cursor.fetchone.return_value = expected_badge
-        
-        # Act
+
         result = data_access.get_badge_by_name("Event Starter")
-        
-        # Assert
+
         assert result == expected_badge
+        mock_connect.assert_called_once()
+        mock_conn.cursor.assert_called_once()
         mock_cursor.execute.assert_called_once()
-    
-    @patch('data_access.DataAccess.get_connection')
-    def test_user_has_badge_true(self, mock_get_connection, data_access):
-        """Test user_has_badge method when user has the badge."""
-        # Arrange
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_get_connection.return_value.__enter__.return_value = mock_conn
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
-        mock_cursor.fetchone.return_value = (1,)  # User has the badge
-        
-        # Act
+
+    @patch('data_access.pymysql.connect')
+    def test_user_has_badge_true(self, mock_connect, data_access):
+        mock_conn, mock_cursor = self._setup_cm_mocks(mock_connect)
+        mock_cursor.fetchone.return_value = (1,)  # count > 0
+
         result = data_access.user_has_badge(1, 2)
-        
-        # Assert
+
         assert result is True
+        mock_connect.assert_called_once()
+        mock_conn.cursor.assert_called_once()
         mock_cursor.execute.assert_called_once()
-    
-    @patch('data_access.DataAccess.get_connection')
-    def test_user_has_badge_false(self, mock_get_connection, data_access):
-        """Test user_has_badge method when user doesn't have the badge."""
-        # Arrange
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_get_connection.return_value.__enter__.return_value = mock_conn
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
-        mock_cursor.fetchone.return_value = None  # User doesn't have the badge
-        
-        # Act
+
+    @patch('data_access.pymysql.connect')
+    def test_user_has_badge_false(self, mock_connect, data_access):
+        mock_conn, mock_cursor = self._setup_cm_mocks(mock_connect)
+        mock_cursor.fetchone.return_value = None  # no row
+
         result = data_access.user_has_badge(1, 2)
-        
-        # Assert
+
         assert result is False
+        mock_connect.assert_called_once()
+        mock_conn.cursor.assert_called_once()
         mock_cursor.execute.assert_called_once()
-    
-    @patch('data_access.DataAccess.get_connection')
-    def test_award_badge_to_user(self, mock_get_connection, data_access):
-        """Test award_badge_to_user method."""
-        # Arrange
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_get_connection.return_value.__enter__.return_value = mock_conn
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
-        # Act
+
+    @patch('data_access.pymysql.connect')
+    def test_award_badge_to_user(self, mock_connect, data_access):
+        mock_conn, mock_cursor = self._setup_cm_mocks(mock_connect)
+
         data_access.award_badge_to_user(1, 2)
-        
-        # Assert
-        mock_cursor.execute.assert_called_once()
-    
-    @patch('data_access.DataAccess.get_connection')
-    def test_user_completed_weekend_event_true(self, mock_get_connection, data_access):
-        """Test user_completed_weekend_event method when user has completed weekend event."""
-        # Arrange
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_get_connection.return_value.__enter__.return_value = mock_conn
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
-        mock_cursor.fetchone.return_value = (1,)  # User has completed weekend event
-        
-        # Act
+
+        mock_connect.assert_called_once()
+        mock_conn.cursor.assert_called_once()
+        assert mock_cursor.execute.called, "Expected an INSERT/UPDATE execute call"
+
+    @patch('data_access.pymysql.connect')
+    def test_user_completed_weekend_event_true(self, mock_connect, data_access):
+        mock_conn, mock_cursor = self._setup_cm_mocks(mock_connect)
+        mock_cursor.fetchone.return_value = (1,)  # at least one weekend event
+
         result = data_access.user_completed_weekend_event(1)
-        
-        # Assert
+
         assert result is True
+        mock_connect.assert_called_once()
+        mock_conn.cursor.assert_called_once()
         mock_cursor.execute.assert_called_once()
-    
-    @patch('data_access.DataAccess.get_connection')
-    def test_user_completed_weekend_event_false(self, mock_get_connection, data_access):
-        """Test user_completed_weekend_event method when user hasn't completed weekend event."""
-        # Arrange
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_get_connection.return_value.__enter__.return_value = mock_conn
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        
-        mock_cursor.fetchone.return_value = None  # User hasn't completed weekend event
-        
-        # Act
+
+    @patch('data_access.pymysql.connect')
+    def test_user_completed_weekend_event_false(self, mock_connect, data_access):
+        mock_conn, mock_cursor = self._setup_cm_mocks(mock_connect)
+        mock_cursor.fetchone.return_value = None  # none found
+
         result = data_access.user_completed_weekend_event(1)
-        
-        # Assert
+
         assert result is False
+        mock_connect.assert_called_once()
+        mock_conn.cursor.assert_called_once()
         mock_cursor.execute.assert_called_once()
 
 
-# Pytest configuration and test discovery
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+
+# # Pytest configuration and test discovery
+# if __name__ == '__main__':
+#     pytest.main([__file__, '-v'])
