@@ -2,8 +2,11 @@
 
 .badges-container {
   width: 100%;
-  max-width: 600px;
-  margin-bottom: 2rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+  overflow: hidden;
 }
 
 .badges-grid {
@@ -11,6 +14,28 @@
   grid-template-columns: 1fr;
   gap: 1rem;
   margin-top: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* Custom scrollbar styling */
+.badges-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.badges-grid::-webkit-scrollbar-track {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.badges-grid::-webkit-scrollbar-thumb {
+  background: var(--brand-primary);
+  border-radius: 3px;
+}
+
+.badges-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-primary-600);
 }
 
 .badge-card {
@@ -176,6 +201,27 @@
   
   .badge-modal-title {
     font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .badge-card {
+    padding: var(--space-2);
+    min-height: 60px;
+  }
+  
+  .badge-icon {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .badge-icon img {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .badge-name {
+    font-size: 0.85rem;
   }
 }
 

@@ -14,11 +14,17 @@ export default function Home() {
       
       {/* Main content area with two columns */}
       <div className="home-content">
-        <div className="home-left">
-          <UpcomingEvents />
-        </div>
-        <div className="home-right">
-          <BadgesDisplay />
+        <div className="home-content__inner">
+          <div className="home-left">
+            <div className="home-card">
+              <UpcomingEvents />
+            </div>
+          </div>
+          <div className="home-right">
+            <div className="home-card">
+              <BadgesDisplay />
+            </div>
+          </div>
         </div>
       </div>
     </>
