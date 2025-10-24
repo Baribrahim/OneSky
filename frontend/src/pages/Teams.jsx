@@ -5,8 +5,7 @@ import MyTeams from "../components/MyTeams";
 import "../styles/teams.css";
 
 /**
- * Teams Page (US2)
- * ------------------------------------------------------------
+ * Teams Page
  * Displays all existing teams for browsing.
  * - Fetches data from GET /teams (requires auth)
  * - Shows cards in a responsive grid
@@ -67,7 +66,13 @@ export default function Teams() {
         {!loading && !error && teams.length > 0 && (
           <div className="teams-grid">
             {teams.map((t) => (
-              <TeamCard key={t.id || t.ID} team={t} />
+              <TeamCard 
+                key={t.id || t.ID} 
+                team={t} 
+                isOwner={false} // TODO: Replace with actual ownership check from backend
+                isMember={false} // TODO: Replace with actual membership check from backend
+                showJoinCode={false} // TODO: Replace with actual membership check from backend
+              />
             ))}
           </div>
         )}

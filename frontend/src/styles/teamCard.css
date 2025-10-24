@@ -38,3 +38,41 @@
   align-self: flex-start;
   margin-top: 12px;
 }
+
+.team-card-actions {
+  margin-top: 12px;
+}
+
+.button-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.button-group .button {
+  margin-top: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.button-group .button.secondary {
+  background: var(--surface, #fff);
+  color: var(--color-text, #374151);
+  border: 1px solid var(--border, #e5e7eb);
+}
+
+.button-group .button.secondary:hover {
+  background: var(--color-bg-subtle, #f9fafb);
+  border-color: var(--border-hover, #d1d5db);
+}
+
+.button-group .button.primary {
+  background: var(--brand-primary, #3b82f6);
+  color: white;
+  border: 1px solid var(--brand-primary, #3b82f6);
+}
+
+.button-group .button.primary:hover {
+  background: var(--brand-primary-hover, #2563eb);
+  border-color: var(--brand-primary-hover, #2563eb);
+}

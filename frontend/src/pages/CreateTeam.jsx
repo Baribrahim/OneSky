@@ -3,8 +3,7 @@ import { api, toResult } from "../lib/apiClient";
 import { useNavigate } from "react-router-dom";
 
 /**
- * CreateTeam Page (US1)
- * ------------------------------------------------------------
+ * CreateTeam Page
  * - Styled to match Register form
  * - Creates a new team via POST /teams
  * - Displays success view with join code
@@ -61,6 +60,9 @@ export default function CreateTeam() {
   // --- Validate before submit ---
   const validate = () => {
     if (!form.name.trim()) return "Team name is required.";
+    if (!form.description.trim()) return "Description is required.";
+    if (!form.department.trim()) return "Department is required.";
+    if (!form.capacity.trim()) return "Capacity is required.";
     if (form.capacity && isNaN(form.capacity)) return "Capacity must be a number.";
     if (form.capacity && Number(form.capacity) <= 0) return "Capacity must be greater than 0.";
     return "";
@@ -152,6 +154,7 @@ export default function CreateTeam() {
             value={form.description}
             onChange={handleChange}
             rows={3}
+            required
             style={{ marginTop: 8, marginBottom: 16 }}
           />
 
@@ -162,6 +165,7 @@ export default function CreateTeam() {
             className="input"
             value={form.department}
             onChange={handleChange}
+            required
             style={{ marginTop: 8, marginBottom: 16 }}
           />
 
@@ -175,6 +179,7 @@ export default function CreateTeam() {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             min="1"
+            required
             style={{ marginTop: 8 }}
           />
 

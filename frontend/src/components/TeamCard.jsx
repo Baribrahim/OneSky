@@ -3,12 +3,11 @@ import "../styles/teamCard.css";
 
 /**
  * TeamCard
- * -------------------------------------------
  * Reusable UI card for team info.
  * Displays team information including name, description, department,
- * capacity, and join code with a "Request to Join" button.
+ * capacity, and join code with conditional buttons based on whether the user is the owner of the team.
  */
-export default function TeamCard({ team }) {
+export default function TeamCard({ team, isOwner = false, isMember = false, showJoinCode = false }) {
   const { name, description, department, capacity, join_code, JoinCode } = team;
 
   return (
@@ -24,13 +23,25 @@ export default function TeamCard({ team }) {
         {capacity && (
           <p className="meta">Capacity: {capacity}</p>
         )}
-        {(join_code || JoinCode) && (
+        {/* Only show join code if user is a member of the team */}
+        {(join_code || JoinCode) && showJoinCode && (
           <p className="join-code">Join Code: {join_code || JoinCode}</p>
         )}
       </div>
 
-      {/* Placeholder for later "Request to Join" button */}
-      <button className="button">Request to Join</button>
+      {/* Conditional buttons based on user role */}
+      <div className="team-card-actions">
+        {isOwner ? (
+          <button className="button">View/Manage</button>
+        ) : (
+          <div className="button-group">
+            <button className="button secondary">View</button>
+            {!isMember && (
+              <button className="button primary">Request to Join</button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

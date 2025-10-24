@@ -1,10 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router";
+import TeamCard from "./TeamCard";
 import "../styles/myTeams.css";
 
 /**
  * MyTeams
- * -------------------------------------------
  * Section showing user's team statistics and their joined teams.
  * Displays stats about teams joined, hours volunteered, and events completed.
  * Shows team cards for user's teams with view/manage buttons.
@@ -60,11 +60,35 @@ export default function MyTeams() {
             </button>
           </div>
           <div className="my-teams-grid">
-            {/* Placeholder team cards will go here */}
-            <div className="placeholder-card">
-              <p className="meta">Your joined teams will appear here</p>
-              <p className="meta">Each team card will have View and Manage buttons</p>
-            </div>
+            {/* Test team card - showing as owner */}
+            <TeamCard 
+              team={{
+                id: 1,
+                name: "Community Garden Team",
+                description: "We maintain the local community garden and organize planting events.",
+                department: "Environmental",
+                capacity: 15,
+                join_code: "GARDEN2024"
+              }}
+              isOwner={true}
+              isMember={true}
+              showJoinCode={true}
+            />
+            
+            {/* Test team card - showing as member (not owner) */}
+            <TeamCard 
+              team={{
+                id: 2,
+                name: "Food Bank Volunteers",
+                description: "Help distribute food to families in need every weekend.",
+                department: "Social Services",
+                capacity: 25,
+                join_code: "FOOD2024"
+              }}
+              isOwner={false}
+              isMember={true}
+              showJoinCode={true}
+            />
           </div>
         </div>
       </div>
