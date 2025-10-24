@@ -6,7 +6,6 @@ from flask import Blueprint, render_template, request, flash, jsonify, current_a
 from .connector import Connector
 from auth.routes import token_required
 from flask_cors import CORS
-import json
 from data_access import DataAccess
 
 bp = Blueprint("api_events", __name__, url_prefix="/api/events")

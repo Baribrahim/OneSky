@@ -111,9 +111,7 @@ function TeamCard() {
           <button
             className="button"
             onClick={() => {
-              setJoinCode("");
-              setError("");
-              setSuccess("");
+              resetStates()
               close();
             }}
           >
