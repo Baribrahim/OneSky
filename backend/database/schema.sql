@@ -79,6 +79,20 @@ create table UserBadge (
   FOREIGN KEY (BadgeID) REFERENCES Badge(ID)
 );
 
+create table Team
+(
+  ID int primary key auto_increment,
+  Name varchar(120) not null,
+  Description varchar(1000),
+  Department varchar(120),
+  Capacity int,
+  OwnerUserID int not null,
+  foreign key (OwnerUserID) references User(ID),
+  JoinCode char(8) not null,
+  unique (JoinCode),
+  IsActive tinyint(1) not null default 1
+);
+
 
 
 -- Dummy data for events --

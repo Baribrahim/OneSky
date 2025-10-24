@@ -26,6 +26,7 @@ export default function Header() {
       <nav className="nav-links" aria-label="Primary navigation">
         <Link to="/">Home</Link>
         <Link to="/events">Events</Link>
+        <Link to="/teams">Teams</Link>
       </nav>
 
       {/* Right: Logout */}
