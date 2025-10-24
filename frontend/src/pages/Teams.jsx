@@ -3,7 +3,8 @@ import { api, toResult } from "../lib/apiClient";
 import TeamCard from "../components/TeamCard";
 import MyTeams from "../components/MyTeams";
 import "../styles/teams.css";
-
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 /**
  * Teams Page
  * Displays all existing teams for browsing.
@@ -11,73 +12,85 @@ import "../styles/teams.css";
  * - Shows cards in a responsive grid
  * - Handles loading, empty, and error states
  */
+
 export default function Teams() {
   const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [myTeams, setMyTeams] = useState([]);
 
-  // --- Fetch teams once on mount ---
+  const [teamsLoading, setTeamsLoading] = useState(true);
+  const [myTeamsLoading, setMyTeamsLoading] = useState(true);
+
+  const [teamsError, setTeamsError] = useState("");
+  const [myTeamsError, setMyTeamsError] = useState("");
+
+  const fetchTeams = async (url, setter, setLoading, setError) => {
+    setLoading(true);
+    setError("");
+    try {
+      const { data, error } = await toResult(api.get(url));
+      if (error) {
+        throw new Error(error.message || "Could not load teams.");
+      }
+      setter(data?.teams || data?.data?.items || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const notify = (joinedTeamName) => toast(`Joined Team ${joinedTeamName}`);  
+
+  
+
   useEffect(() => {
     let active = true;
-    (async () => {
-      setLoading(true);
-      const { data, error } = await toResult(api.get("/api/teams"));
-      if (!active) return;
 
-      if (error) {
-        setError(error.message || "Could not load teams.");
-      } else if (data?.teams || data?.data?.items) {
-        // support both {teams:[]} or {data:{items:[]}} formats
-        setTeams(data.teams || data.data.items || []);
-      }
-      setLoading(false);
-    })();
+    if (active) {
+      fetchTeams("/api/teams", setTeams, setTeamsLoading, setTeamsError);
+      fetchTeams("/api/teams/joined", setMyTeams, setMyTeamsLoading, setMyTeamsError);
+    }
+
     return () => { active = false; };
   }, []);
+
 
   // --- UI rendering ---
   return (
     <>
-      {/* My Teams Section */}
-      <MyTeams />
+      <MyTeams teams={myTeams} loading={myTeamsLoading} error={myTeamsError} />
 
-      {/* Browse Teams Section */}
       <section className="teams-section" aria-labelledby="teams-heading">
-      <div className="teams-inner card">
-        <h2 className="brand-gradient" id="teams-heading" style={{ margin: 0 }}>Browse Teams</h2>
-        <p className="filter-tagline" style={{ marginTop: 4 }}>
-          Explore all active teams below.
-        </p>
+        <div className="teams-inner card">
+          <h2 className="brand-gradient" id="teams-heading">Browse Teams</h2>
+          <p className="filter-tagline">Explore all active teams below.</p>
 
-        {/* Loading state */}
-        {loading && <p className="filter-tagline" aria-busy="true">Loading teams...</p>}
-
-        {/* Error state */}
-        {error && !loading && (
-          <p className="error" role="alert">{error}</p>
-        )}
-
-        {/* Empty state */}
-        {!loading && !error && teams.length === 0 && (
-          <p className="filter-tagline">No teams found.</p>
-        )}
-
-        {/* Teams grid */}
-        {!loading && !error && teams.length > 0 && (
-          <div className="teams-grid">
-            {teams.map((t) => (
-              <TeamCard 
-                key={t.id || t.ID} 
-                team={t} 
-                isOwner={false} // TODO: Replace with actual ownership check from backend
-                isMember={false} // TODO: Replace with actual membership check from backend
-                showJoinCode={false} // TODO: Replace with actual membership check from backend
+          {/* Teams section */}
+          {teamsLoading && <p className="filter-tagline" aria-busy="true">Loading teams...</p>}
+          {teamsError && !teamsLoading && <p className="error" role="alert">{teamsError}</p>}
+          {!teamsLoading && !teamsError && teams.length === 0 && <p className="filter-tagline">No teams found.</p>}
+          {!teamsLoading && !teamsError && teams.length > 0 && (
+            <div className="teams-grid">
+              {teams.map(t => (
+                <TeamCard
+                key={t.id || t.ID}
+                team={t}
+                isMember={myTeams.some(mt => mt.id === t.id)}
+                onJoin={(joinedTeam) => {setMyTeams(prev => [...prev, joinedTeam]); notify(joinedTeam.name)}}
               />
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+            
+          )}
+        </div>
       </section>
+      <ToastContainer
+              toastClassName="my-toast"
+              position="top-center"
+              autoClose={2000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+        />
     </>
   );
 }

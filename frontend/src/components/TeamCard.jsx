@@ -38,11 +38,10 @@ import "../styles/teamCard.css";
  * Displays team information including name, description, department,
  * capacity, and join code with conditional buttons based on whether the user is the owner of the team.
  */
-export default function TeamCard({ team, isOwner = false, isMember = false, showJoinCode = false }) {
+export default function TeamCard({ team, isOwner = false, isMember = false, showJoinCode = false, onJoin }) {
   const { name, description, department, capacity, join_code, JoinCode } = team;
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [joinedTeams, setJoinedTeams] = useState([]);
  
   // const fetchStatuses = async () => {
@@ -53,7 +52,6 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
   function resetStates() {
     setJoinCode("");
     setError("");
-    setSuccess("");
   }
 
   const handleJoin = async (team_id, join_code) => {
@@ -68,9 +66,7 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
         setError(error.message);
       }
       else{
-        console.log("DATA", data)
-        setSuccess("Successfully joined!");
-        //setJoinedTeams(prev => ([...prev, team_id])); 
+        if (onJoin) onJoin(team);
       }
     } 
     catch (err) {
@@ -115,7 +111,6 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
         <div className="content">
             <p>Enter Code </p>
             {error && <div className="error" role="alert">{error}</div>}
-            {success && <div className="success" role="alert">{success}</div>}
             <input
               className='form-input'
               type="text"

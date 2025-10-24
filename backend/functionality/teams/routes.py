@@ -7,7 +7,6 @@ from teams.connector import TeamConnector
 bp = Blueprint("api_teams", __name__, url_prefix="/api/teams")
 connector = TeamConnector()
 
-
 def require_auth(f):
     """
     Indirection layer so token_required can be monkeypatched in tests.
@@ -18,6 +17,35 @@ def require_auth(f):
         decorated = token_required(f)
         return decorated(*args, **kwargs)
     return wrapped
+
+def list_teams(all=True):
+    """
+    Lists all teams (newest first).
+    Returns: { teams: [...], count: n }
+    """
+    try:
+        if all:
+            items = connector.browse_all_teams()
+        else:
+            user_email = g.current_user.get("sub", "User")
+            items = connector.browse_joined_teams(user_email)
+        teams_out = [
+            {
+                "id": t["ID"],
+                "name": t["Name"],
+                "description": t.get("Description"),
+                "department": t.get("Department"),
+                "capacity": t.get("Capacity"),
+                "owner_user_id": t["OwnerUserID"],
+                "join_code": t["JoinCode"],
+                "is_active": t.get("IsActive", 1),
+            }
+            for t in items
+        ]
+        return jsonify({"teams": teams_out, "count": len(teams_out)}), 200
+
+    except Exception:
+        return jsonify({"error": "Could not load teams"}), 500
 
 
 # POST /teams -> create a team
@@ -62,30 +90,8 @@ def create_team():
 # GET /teams -> list ALL teams (newest first)
 @bp.get("")
 @require_auth
-def list_teams():
-    """
-    Lists all teams (newest first).
-    Returns: { teams: [...], count: n }
-    """
-    try:
-        items = connector.browse_all_teams()
-        teams_out = [
-            {
-                "id": t["ID"],
-                "name": t["Name"],
-                "description": t.get("Description"),
-                "department": t.get("Department"),
-                "capacity": t.get("Capacity"),
-                "owner_user_id": t["OwnerUserID"],
-                "join_code": t["JoinCode"],
-                "is_active": t.get("IsActive", 1),
-            }
-            for t in items
-        ]
-        return jsonify({"teams": teams_out, "count": len(teams_out)}), 200
-
-    except Exception:
-        return jsonify({"error": "Could not load teams"}), 500
+def list_all_teams():
+    return list_teams(all=True)
 
 
 
@@ -111,9 +117,13 @@ def signup_to_team():
         connector.add_user_to_team(user_email, team_id)
         return jsonify({"message": "Successfully registered for team"}), 200
     else:
-        print(connector.verify_team_code(team_id, join_code))
         return jsonify({"error": "Invalid code"}), 400
-    
+
+
+@bp.route("/joined", methods=["GET"])
+@require_auth
+def list_joined_teams():
+   return list_teams(all=False)
 
 # @bp.route("/join-status", methods=["GET"])
 # @token_required
@@ -122,3 +132,4 @@ def signup_to_team():
 #     con = Connector()
 #     joined_teams = con.user_joined_teams(user_email)
 #     return jsonify(joined_teams), 200
+

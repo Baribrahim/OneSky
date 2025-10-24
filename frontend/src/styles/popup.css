@@ -7,7 +7,7 @@
 
 /* Dim background overlay */
 .popup-overlay {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.70);
 }
 
 [data-popup='tooltip'].popup-overlay 

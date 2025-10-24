@@ -430,15 +430,28 @@ class DataAccess:
     #         print(f"Error in delete_user_from_team: {e}")
     #         raise
     
-    # """Read all teams a user has joined"""
-    # def get_all_joined_teams(self, user_email):
-    #     try:
-    #         user_id = self.get_id_by_email(user_email)
-    #         sql = "SELECT TeamID from TeamMembership WHERE UserID = %s"
-    #         with self.get_connection() as conn, conn.cursor() as cursor:
-    #             cursor.execute(sql, (user_id, ))
-    #             row = cursor.fetchall()
-    #             return row 
-    #     except Exception as e:
-    #         print(f"Error in get_all_joined_teams: {e}")
-    #         raise
+    """Read all information on teams a user has joined"""
+    def get_all_joined_teams(self, user_email):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = """
+                    SELECT 
+                        t.ID,
+                        t.Name,
+                        t.Description,
+                        t.Department,
+                        t.Capacity,
+                        t.OwnerUserID,
+                        t.JoinCode,
+                        t.IsActive
+                    FROM Team AS t
+                    JOIN TeamMembership AS tm 
+                        ON t.ID = tm.TeamID
+                    WHERE tm.UserID = %s
+                    """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (user_id, ))
+                return cursor.fetchall() 
+        except Exception as e:
+            print(f"Error in get_all_joined_teams: {e}")
+            raise
