@@ -32,6 +32,19 @@ def signup_event():
     user_email = g.current_user.get("sub", "User") 
     con = Connector()
     con.register_user_for_event(user_email, event_id)
+    
+    # Check for badges after successful event registration
+    try:
+        from badges.connector import BadgeConnector
+        badge_connector = BadgeConnector()
+        user_id = con.get_user_id_by_email(user_email)
+        if user_id:
+            newly_awarded = badge_connector.check_and_award_event_badges(user_id)
+            if newly_awarded:
+                print(f"User {user_email} earned {len(newly_awarded)} new badges!")
+    except Exception as e:
+        print(f"Error checking badges after event signup: {e}")
+    
     return jsonify({"message": "Successfully registered for event!"}), 200
 
 @bp.route("/signup-status", methods=["GET"])

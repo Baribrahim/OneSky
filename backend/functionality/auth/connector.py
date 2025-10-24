@@ -28,3 +28,7 @@ class Connector():
     def verify_user_by_password(self, email, password):
         da = DataAccess()
         return da.verify_user_by_password(email, password)
+    
+    def get_user_id_by_email(self, email):
+        da = DataAccess()
+        return da.get_user_id_by_email(email)

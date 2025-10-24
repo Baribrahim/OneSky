@@ -28,6 +28,13 @@ function EventCard({ event }) {
     const { data, error } = await toResult(api.post("/api/events/signup", { event_id: event.ID }));
     if (!error) {
       setIsSignedUp(true);
+      
+      // Check for badges after successful signup
+      try {
+        await api.post("/api/badges/check");
+      } catch (err) {
+        console.warn("Failed to check badges after signup:", err);
+      }
     } else {
       console.error("Signup failed:", error.message);
     }
