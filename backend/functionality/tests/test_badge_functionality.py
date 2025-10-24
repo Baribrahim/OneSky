@@ -366,6 +366,6 @@ class TestDataAccessBadgeMethods:
 
 
 
-# # Pytest configuration and test discovery
-# if __name__ == '__main__':
-#     pytest.main([__file__, '-v'])
+# Pytest configuration and test discovery
+if __name__ == '__main__':
+    pytest.main([__file__, '-v'])
