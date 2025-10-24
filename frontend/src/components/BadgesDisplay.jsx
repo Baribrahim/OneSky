@@ -1,0 +1,151 @@
+import React, { useEffect, useState } from 'react';
+import { api, toResult } from '../lib/apiClient.js';
+import '../styles/theme.css';
+import '../styles/badges.css';
+
+const BadgesDisplay = () => {
+  const [badges, setBadges] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState(null);
+
+  const fetchUserBadges = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await toResult(
+        api.get('/api/badges')
+      );
+      if (error) {
+        console.error("API error:", error);
+        setLoading(false);
+        return;
+      }
+
+      const userBadges = data?.badges ?? [];
+      setBadges(userBadges);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserBadges();
+  }, []);
+
+  const getBadgeIcon = (badgeName) => {
+    // Map badge names to their corresponding image files
+    const badgeIconMap = {
+      // Actual badge names from the system
+      'Event Starter': 'firstStep.png',
+      'Event Enthusiast': 'eduEnthusiast.png',
+      'First Step': 'firstStep.png',
+      'Volunteer Veteran': 'volunteerVetran.png',
+      'Marathon Helper': 'marathonVolunteer.png',
+      'Weekend Warrior': 'weekendWarrior.png',
+      'Marathon Volunteer': 'marathonVolunteer.png',
+      
+      // Additional badge names that might be used
+      'Animal Ally': 'animalAlly.png',
+      'Arts Advocate': 'artsAdvocate.png',
+      'Badge Hunter': 'badgeHunter.png',
+      'Buddy Volunteer': 'buddyVolunteer.png',
+      'Community Champion': 'communityChampion.png',
+      'Community Cleaner': 'communityCleaner.png',
+      'Early Bird': 'earlyBird.png',
+      'Eco Hero': 'ecoHero.png',
+      'Education Enthusiast': 'eduEnthusiast.png',
+      'Festive Helper': 'festiveHelper.png',
+      'Food Fighter': 'foodFighter.png',
+      'Fundraising Friend': 'fundraisingFriend.png',
+      'Green Guardian': 'greenGuardian.png',
+      'Helping Hand': 'helpingHand.png',
+      'Lifetime Giver': 'lifetimeGiver.png',
+      'Sports Supporter': 'sportsSupporter.png',
+      'Squad Goals': 'squadGoals.png',
+      'Tree Hugger': 'treeHugger.png'
+    };
+
+    const iconFile = badgeIconMap[badgeName] || 'helpingHand.png';
+    return `/src/assets/badges/${iconFile}`;
+  };
+
+  const handleBadgeClick = (badge) => {
+    setSelectedBadge(selectedBadge?.ID === badge.ID ? null : badge);
+  };
+
+  return (
+    <>
+      <h2>My Badges</h2>
+      
+      <div className="badges-container">
+        {loading ? (
+          <p className="helper">Loading badges...</p>
+        ) : badges.length === 0 ? (
+          <p className="helper">No badges earned yet. Start volunteering to earn your first badge!</p>
+        ) : (
+          <div className="badges-grid">
+            {badges.map((badge) => (
+              <div 
+                key={badge.ID} 
+                className={`badge-card ${selectedBadge?.ID === badge.ID ? 'selected' : ''}`}
+                onClick={() => handleBadgeClick(badge)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleBadgeClick(badge);
+                  }
+                }}
+              >
+                <div className="badge-icon">
+                  <img 
+                    src={getBadgeIcon(badge.Name)} 
+                    alt={badge.Name}
+                    onError={(e) => {
+                      e.target.src = '/src/assets/badges/helpingHand.png';
+                    }}
+                  />
+                </div>
+                <div className="badge-info">
+                  <h3 className="badge-name">{badge.Name}</h3>
+                  {selectedBadge?.ID === badge.ID && (
+                    <p className="badge-description">{badge.Description}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selectedBadge && (
+        <div className="badge-modal-overlay" onClick={() => setSelectedBadge(null)}>
+          <div className="badge-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="badge-modal-header">
+              <img 
+                src={getBadgeIcon(selectedBadge.Name)} 
+                alt={selectedBadge.Name}
+                className="badge-modal-icon"
+                onError={(e) => {
+                  e.target.src = '/src/assets/badges/helpingHand.png';
+                }}
+              />
+              <h3 className="badge-modal-title">{selectedBadge.Name}</h3>
+            </div>
+            <p className="badge-modal-description">{selectedBadge.Description}</p>
+            <button 
+              className="button button--secondary"
+              onClick={() => setSelectedBadge(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default BadgesDisplay;

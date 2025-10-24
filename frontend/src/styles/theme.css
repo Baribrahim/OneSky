@@ -566,3 +566,40 @@ a:hover { color: var(--brand-primary-600); }
   max-width: 250px;
   min-width: 200px;
 }
+
+/* Home page layout */
+.home-content {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--space-8);
+  padding: var(--space-6) var(--space-4);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.home-left {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 1000px;
+}
+
+.home-right {
+  flex: 0 0 auto;
+  width: 50%;
+  max-width: 600px;
+}
+
+@media (max-width: 1024px) {
+  .home-content {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-6);
+  }
+  
+  .home-left,
+  .home-right {
+    width: 100%;
+    max-width: 600px;
+  }
+}
