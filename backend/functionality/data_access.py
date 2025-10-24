@@ -199,7 +199,9 @@ class DataAccess:
                 DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
                 DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
                 DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                e.Address,
                 e.LocationCity,
+                e.LocationPostcode,
                 TIME_TO_SEC(e.Duration) / 3600 AS DurationHours
             FROM Event e
             JOIN EventRegistration er ON er.EventID = e.ID

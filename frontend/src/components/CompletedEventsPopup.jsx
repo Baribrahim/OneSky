@@ -83,6 +83,14 @@ export default function CompletedEventsPopup({ isOpen, onClose }) {
     return `${h.toFixed(1)}h`;
   };
 
+  const formatLocation = (event) => {
+    const parts = [];
+    if (event.Address) parts.push(event.Address);
+    if (event.LocationCity) parts.push(event.LocationCity);
+    if (event.LocationPostcode) parts.push(event.LocationPostcode);
+    return parts.join(", ") || "Location not specified";
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -138,12 +146,10 @@ export default function CompletedEventsPopup({ isOpen, onClose }) {
                       <span>{formatTime(event.StartTime)} - {formatTime(event.EndTime)}</span>
                     </div>
                     
-                    {event.LocationCity && (
-                      <div className="event-location">
-                        <span className="event-label">Location:</span>
-                        <span>{event.LocationCity}</span>
-                      </div>
-                    )}
+                    <div className="event-location">
+                      <span className="event-label">Location:</span>
+                      <span>{formatLocation(event)}</span>
+                    </div>
                   </div>
                 </div>
               ))}

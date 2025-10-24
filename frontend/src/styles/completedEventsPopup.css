@@ -138,7 +138,7 @@
 .event-time,
 .event-location {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
   font-size: 14px;
 }
@@ -147,12 +147,14 @@
   font-weight: 600;
   color: var(--color-text-muted);
   min-width: 60px;
+  flex-shrink: 0;
 }
 
 .event-date span:last-child,
 .event-time span:last-child,
 .event-location span:last-child {
   color: var(--color-text);
+  flex: 1;
 }
 
 /* Responsive */
@@ -186,5 +188,13 @@
   .event-label {
     min-width: 50px;
     font-size: 13px;
+  }
+  
+  .event-date,
+  .event-time,
+  .event-location {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
   }
 }
