@@ -1,8 +1,3 @@
-"""
-Badge Connector - Middle layer between routes and data access for badge functionality.
-Handles business logic for badge operations including earning, checking, and retrieving badges.
-"""
-
 from data_access import DataAccess
 from typing import List, Dict, Optional, Tuple
 

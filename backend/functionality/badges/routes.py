@@ -1,8 +1,3 @@
-"""
-Badge Routes - API endpoints for badge functionality.
-Handles HTTP requests for badge operations including retrieval and awarding.
-"""
-
 import json
 from flask import Blueprint, request, jsonify, g
 from .connector import BadgeConnector

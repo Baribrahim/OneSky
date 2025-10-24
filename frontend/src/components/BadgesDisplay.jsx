@@ -44,26 +44,6 @@ const BadgesDisplay = () => {
       'Marathon Helper': 'marathonVolunteer.png',
       'Weekend Warrior': 'weekendWarrior.png',
       'Marathon Volunteer': 'marathonVolunteer.png',
-      
-      // Additional badge names that might be used
-      'Animal Ally': 'animalAlly.png',
-      'Arts Advocate': 'artsAdvocate.png',
-      'Badge Hunter': 'badgeHunter.png',
-      'Buddy Volunteer': 'buddyVolunteer.png',
-      'Community Champion': 'communityChampion.png',
-      'Community Cleaner': 'communityCleaner.png',
-      'Early Bird': 'earlyBird.png',
-      'Eco Hero': 'ecoHero.png',
-      'Education Enthusiast': 'eduEnthusiast.png',
-      'Festive Helper': 'festiveHelper.png',
-      'Food Fighter': 'foodFighter.png',
-      'Fundraising Friend': 'fundraisingFriend.png',
-      'Green Guardian': 'greenGuardian.png',
-      'Helping Hand': 'helpingHand.png',
-      'Lifetime Giver': 'lifetimeGiver.png',
-      'Sports Supporter': 'sportsSupporter.png',
-      'Squad Goals': 'squadGoals.png',
-      'Tree Hugger': 'treeHugger.png'
     };
 
     const iconFile = badgeIconMap[badgeName] || 'helpingHand.png';
