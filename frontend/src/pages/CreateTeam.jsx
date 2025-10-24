@@ -78,7 +78,7 @@ export default function CreateTeam() {
     setError("");
 
     const { data, error } = await toResult(
-      api.post("/teams", {
+      api.post("/api/teams", {
         name: form.name.trim(),
         description: form.description.trim() || null,
         department: form.department.trim() || null,

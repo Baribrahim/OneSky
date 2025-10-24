@@ -49,7 +49,7 @@ def test_post_teams_create_successfully(monkeypatch):
     client = app.test_client()
 
     resp = client.post(
-        "/teams",
+        "/api/teams",
         json={
             "name": "New Team",
             "description": "Desc",
@@ -72,7 +72,7 @@ def test_post_teams_validation_error(monkeypatch):
     app = make_app(team_routes.bp)
     client = app.test_client()
 
-    resp = client.post("/teams", json={"name": ""})  # triggers ValueError in FakeConnector
+    resp = client.post("/api/teams", json={"name": ""})  # triggers ValueError in FakeConnector
     assert resp.status_code == 400
     body = resp.get_json()
     # routes.py sends {"error": "<string>"}
@@ -89,7 +89,7 @@ def test_get_teams_list(monkeypatch):
     app = make_app(team_routes.bp)
     client = app.test_client()
 
-    resp = client.get("/teams")
+    resp = client.get("/api/teams")
     assert resp.status_code == 200
     body = resp.get_json()
     # routes.py returns {"teams": [...], "count": n}

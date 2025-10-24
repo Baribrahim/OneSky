@@ -21,7 +21,7 @@ def require_auth(f):
 
 
 # POST /teams -> create a team
-@bp.post("/teams")
+@bp.post("")
 @require_auth
 def create_team():
     """
@@ -60,7 +60,7 @@ def create_team():
 
 
 # GET /teams -> list ALL teams (newest first)
-@bp.get("/teams")
+@bp.get("")
 @require_auth
 def list_teams():
     """
@@ -111,6 +111,7 @@ def signup_to_team():
         connector.add_user_to_team(user_email, team_id)
         return jsonify({"message": "Successfully registered for team"}), 200
     else:
+        print(connector.verify_team_code(team_id, join_code))
         return jsonify({"error": "Invalid code"}), 400
     
 

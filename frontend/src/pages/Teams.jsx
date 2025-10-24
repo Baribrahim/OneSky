@@ -21,7 +21,7 @@ export default function Teams() {
     let active = true;
     (async () => {
       setLoading(true);
-      const { data, error } = await toResult(api.get("/teams"));
+      const { data, error } = await toResult(api.get("/api/teams"));
       if (!active) return;
 
       if (error) {

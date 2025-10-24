@@ -1,16 +1,9 @@
-import Card from 'react-bootstrap/Card';
-import Button from 'react-bootstrap/Button';
 import React, { useEffect, useState } from "react";
 import {api, toResult} from '../lib/apiClient.js';
-import { useAuth } from '../context/AuthProvider'
-import { formatDate, formatTime, timeUnicode } from '../utils/format.jsx';
 import Popup from 'reactjs-popup';
-//import 'reactjs-popup/dist/index.css';
 import '../styles/popup.css';
 import "../styles/teamCard.css";
 
-
-/** THIS COMPONENT IS ONLY FOR TESTING */
 
   // //This needs to be changed to use the actual db data
   // useEffect(() => {
@@ -52,10 +45,10 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
   const [success, setSuccess] = useState("");
   const [joinedTeams, setJoinedTeams] = useState([]);
  
-  const fetchStatuses = async () => {
-    const { data, error } = await toResult(api.get(`/api/teams/join-status`));
-    setJoinedTeams(data);
-  };
+  // const fetchStatuses = async () => {
+  //   const { data, error } = await toResult(api.get(`/api/teams/join-status`));
+  //   setJoinedTeams(data);
+  // };
 
   function resetStates() {
     setJoinCode("");
@@ -69,7 +62,7 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
       return;
     }
     try {
-      const { data, error } = await toResult(api.post("api/teams/join", { team_id, join_code}));
+      const { data, error } = await toResult(api.post("/api/teams/join", { team_id, join_code}));
       if (error) {
         console.error("Join failed:", error.message);
         setError(error.message);
