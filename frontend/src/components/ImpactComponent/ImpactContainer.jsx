@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { api, toResult } from "../../lib/apiClient";
 import StatCard from "./StatCard";
+import CompletedEventsPopup from "../CompletedEventsPopup";
 import "../../styles/impact.css";
 
 /**
@@ -14,6 +15,7 @@ export default function ImpactContainer() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showCompletedEventsPopup, setShowCompletedEventsPopup] = useState(false);
 
   // Fetch dashboard data on mount
   useEffect(() => {
@@ -34,10 +36,23 @@ export default function ImpactContainer() {
     return `${Number.isFinite(h) ? h.toFixed(h % 1 === 0 ? 0 : 1) : 0} h`;
   }, [data]);
 
+  // Handle completed events card click
+  const handleCompletedEventsClick = () => {
+    setShowCompletedEventsPopup(true);
+  };
+
   // Predefined stats (keeps JSX declarative)
   const stats = useMemo(() => ([
     { key: "hours", label: "Total Hours", value: hoursLabel, icon: "⏱️", helper: "Completed volunteering time" },
-    { key: "completed", label: "Completed Events", value: String(data?.events_completed ?? 0), icon: "✅", helper: "Events you've completed" },
+    { 
+      key: "completed", 
+      label: "Completed Events", 
+      value: String(data?.events_completed ?? 0), 
+      icon: "✅", 
+      helper: "Events you've completed",
+      clickable: true,
+      onClick: handleCompletedEventsClick
+    },
     { key: "upcoming", label: "Upcoming Events",  value: String(data?.counts?.upcoming_events ?? 0), icon: "📅", helper: "Next events you're attending" },
     { key: "badges", label: "Badges", value: String(data?.counts?.badges ?? 0), icon: "🏅", helper: "Achievements earned" },
   ]), [data, hoursLabel]);
@@ -76,6 +91,8 @@ export default function ImpactContainer() {
                 label={s.label}
                 value={s.value}
                 helper={s.helper}
+                clickable={s.clickable}
+                onClick={s.onClick}
               />
             ))}
           </div>
@@ -88,6 +105,12 @@ export default function ImpactContainer() {
           </p>
         )}
       </div>
+
+      {/* Completed Events Popup */}
+      <CompletedEventsPopup 
+        isOpen={showCompletedEventsPopup}
+        onClose={() => setShowCompletedEventsPopup(false)}
+      />
     </section>
   );
 }

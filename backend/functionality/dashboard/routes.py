@@ -109,6 +109,26 @@ def dashboard_achievements():
     except Exception:
         return jsonify({"error": "Something went wrong"}), 500
 
+@bp.get("/dashboard/completed-events")
+@token_required
+def dashboard_completed_events():
+    """
+    GET /dashboard/completed-events
+    Returns user's completed events list.
+    """
+    email = g.current_user.get("sub")
+    limit = request.args.get("limit", default=50, type=int)
+
+    try:
+        completed_events = dc.get_completed_events(email, limit=limit)
+        return jsonify({"completed_events": completed_events}), 200
+
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+
+    except Exception:
+        return jsonify({"error": "Something went wrong"}), 500
+
 @bp.get("/dashboard_page")
 @token_required
 def dashboard_page():

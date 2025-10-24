@@ -9,6 +9,27 @@
   box-sizing: border-box;
 }
 
+/* Clickable variant */
+.stat-card--clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stat-card--clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--brand-primary);
+}
+
+.stat-card--clickable:focus {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+.stat-card--clickable:active {
+  transform: translateY(0);
+}
+
 /* Icon bubble */
 .stat-card__icon {
   width: 44px;
