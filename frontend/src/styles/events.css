@@ -30,22 +30,29 @@
 }
 
 /* ===== Event List Grid ===== */
+
+
 .event-list {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, 1fr); /* 4 columns on large screens */
   gap: 20px;
-  margin-top: 24px;
 }
 
-@media (max-width: 1200px) {
-  .event-list { grid-template-columns: repeat(3, 1fr); }
+/* Medium screens (tablet) */
+@media (max-width: 1024px) {
+  .event-list {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+  }
 }
-@media (max-width: 900px) {
-  .event-list { grid-template-columns: repeat(2, 1fr); }
-}
+
+/* Small screens (mobile) */
 @media (max-width: 600px) {
-  .event-list { grid-template-columns: 1fr; }
+  .event-list {
+    grid-template-columns: 1fr; /* single column */
+  }
 }
+
+
 
 /* ===== Event Card ===== */
 .card {
@@ -70,6 +77,15 @@
   transform: scale(1.02);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
+
+
+.event-location {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  /* text-overflow: ellipsis; */
+}
+
 
 /* ===== Filter Panel ===== */
 .filter-panel {
