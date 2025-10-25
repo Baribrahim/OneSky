@@ -32,26 +32,12 @@
 /* ===== Event List Grid ===== */
 
 
+
 .event-list {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 columns on large screens */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
 }
-
-/* Medium screens (tablet) */
-@media (max-width: 1024px) {
-  .event-list {
-    grid-template-columns: repeat(2, 1fr); /* 2 columns */
-  }
-}
-
-/* Small screens (mobile) */
-@media (max-width: 600px) {
-  .event-list {
-    grid-template-columns: 1fr; /* single column */
-  }
-}
-
 
 
 /* ===== Event Card ===== */
@@ -67,11 +53,27 @@
   flex-direction: column;
   justify-content: space-between;
   flex-grow: 1;
+  padding: 18px;                /* Keep padding for text */
 }
 
+
 .event-card {
-  transition: transform 0.2s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden; /* Ensures image respects rounded corners */
+  padding: 0;       /* Remove any default padding */
 }
+
+.event-card img {
+  width: 100%;                  /* Full width */
+  height: 150px;                /* Consistent height */
+  object-fit: cover;            /* Crop without distortion */
+  display: block;
+  margin: 0;                    /* Remove any default margin */
+}
+   
 
 .event-card:hover {
   transform: scale(1.02);

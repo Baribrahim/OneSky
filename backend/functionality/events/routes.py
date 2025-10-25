@@ -73,13 +73,16 @@ def get_filtered_events_route():
     location = request.args.get('location') or None
     start_date = request.args.get('startDate') or None
     end_date = request.args.get('endDate') or None
-    address = request.args.get('address') or None
-    locationPostcode = request.args.get('locationPostcode') or None
-
-
-
-
     events = data_access.get_filtered_events(keyword, location, start_date, end_date)
+
+
+  # Add full image URL for each event
+    
+    for event in events:
+        path = event.get('Image_path') or event.get('image_path')
+        event['Image_url'] = f"{request.host_url}static/{path}" if path else None
+
+
     return jsonify(events)
 
 

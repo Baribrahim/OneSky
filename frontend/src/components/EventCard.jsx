@@ -42,10 +42,16 @@ function EventCard({ event }) {
     }
   };
 
+
+  console.log(event.Image_url);
+
   return (
     <div className="card event-card">
+      {/* When we depoloy this it update the URL to match backend domain/ api base url */}
+      <img className='event-image' src={`http://127.0.0.1:5000/static/${event.Image_path}`}
+          alt={event.Title}
+        />
       <div className="card-body">
-        {/* <img className='event-image'></img> */}
         <h3 className="card-subtitle mb-2 text-muted">{event.Title}</h3>
         <p className="card-text">{event.About}</p>
         <div className="event-info">
