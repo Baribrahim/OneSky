@@ -9,6 +9,15 @@ class Connector():
     def add_user(self, email, password, FirstName, LastName):
         da = DataAccess()
 
+        # Validation: check required fields
+        if not email:
+            print("CONNECTOR: Email is required")
+            return False, "Email is required"
+        
+        if not password:
+            print("CONNECTOR: Password is required")
+            return False, "Password is required"
+
         # Validation: check if user already exists
         if da.user_exists(email):
             print("CONNECTOR: User already exists")
