@@ -55,8 +55,8 @@ class TeamConnector:
         code = self.unique_join_code()
         return self.da.create_team(name.strip(), description, department, capacity, owner_id, code)
 
-    def browse_all_teams(self) -> List[Dict[str, Any]]:
-        return self.da.list_all_teams()
+    def browse_all_teams(self, user_email) -> List[Dict[str, Any]]:
+        return self.da.list_all_teams(user_email)
 
     """Passes users email and team id to dao"""
     def add_user_to_team(self, user_email, team_id):

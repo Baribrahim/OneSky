@@ -5,7 +5,6 @@ import "../styles/myTeams.css";
 
 export default function MyTeams({ teams = [], loading = false, error = "" }) {
   const navigate = useNavigate();
-
   const handleCreateTeam = () => {
     navigate("/teams/new");
   };
@@ -62,7 +61,7 @@ export default function MyTeams({ teams = [], loading = false, error = "" }) {
               <TeamCard 
                 key={team.id || team.ID}
                 team={team}
-                isOwner={team.owner_user_id === "currentUserId"} // Replace with real auth logic
+                isOwner={team.is_owner}
                 isMember={true}
                 showJoinCode={true}
               />

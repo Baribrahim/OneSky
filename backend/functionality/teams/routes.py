@@ -24,10 +24,10 @@ def list_teams(all=True):
     Returns: { teams: [...], count: n }
     """
     try:
+        user_email = g.current_user.get("sub", "User")
         if all:
-            items = connector.browse_all_teams()
+            items = connector.browse_all_teams(user_email)
         else:
-            user_email = g.current_user.get("sub", "User")
             items = connector.browse_joined_teams(user_email)
         teams_out = [
             {
@@ -39,12 +39,15 @@ def list_teams(all=True):
                 "owner_user_id": t["OwnerUserID"],
                 "join_code": t["JoinCode"],
                 "is_active": t.get("IsActive", 1),
+                "is_owner": t.get("IsOwner", 1),
+                
             }
             for t in items
         ]
         return jsonify({"teams": teams_out, "count": len(teams_out)}), 200
 
-    except Exception:
+    except Exception as e:
+        print(e)
         return jsonify({"error": "Could not load teams"}), 500
 
 

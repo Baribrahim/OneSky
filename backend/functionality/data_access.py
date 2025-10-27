@@ -377,18 +377,22 @@ class DataAccess:
             cursor.execute("SELECT * FROM Team WHERE JoinCode = %s LIMIT 1", (join_code,))
             return cursor.fetchone()
 
-    def list_all_teams(self):
+    def list_all_teams(self, user_email):
         """
         Return ALL teams, newest first (ID DESC).
         """
-        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            cursor.execute(
-                """
-                SELECT ID, Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive
+        user_id = self.get_id_by_email(user_email)
+        sql =  """
+                SELECT ID, Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive,
+                CASE 
+                WHEN OwnerUserID = %s THEN TRUE 
+                ELSE FALSE 
+                END AS IsOwner
                 FROM Team
                 ORDER BY ID DESC
                 """
-            )
+        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(sql, (user_id, ))
             return cursor.fetchall()
 
 
@@ -435,23 +439,30 @@ class DataAccess:
         try:
             user_id = self.get_id_by_email(user_email)
             sql = """
-                    SELECT 
-                        t.ID,
-                        t.Name,
-                        t.Description,
-                        t.Department,
-                        t.Capacity,
-                        t.OwnerUserID,
-                        t.JoinCode,
-                        t.IsActive
-                    FROM Team AS t
-                    JOIN TeamMembership AS tm 
-                        ON t.ID = tm.TeamID
-                    WHERE tm.UserID = %s
-                    """
+                SELECT 
+                    t.ID,
+                    t.Name,
+                    t.Description,
+                    t.Department,
+                    t.Capacity,
+                    t.OwnerUserID,
+                    t.JoinCode,
+                    t.IsActive,
+                    CASE 
+                        WHEN t.OwnerUserID = %s THEN TRUE 
+                        ELSE FALSE 
+                    END AS IsOwner
+                FROM Team AS t
+                JOIN TeamMembership AS tm 
+                    ON t.ID = tm.TeamID
+                WHERE tm.UserID = %s
+            """
             with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
-                cursor.execute(sql, (user_id, ))
-                return cursor.fetchall() 
+                cursor.execute(sql, (user_id, user_id))
+                result = cursor.fetchall()
+                print("TEAMS IN DA")
+                print(result)
+                return result
         except Exception as e:
             print(f"Error in get_all_joined_teams: {e}")
             raise

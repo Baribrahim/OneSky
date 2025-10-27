@@ -38,9 +38,9 @@ export default function Teams() {
       setLoading(false);
     }
   };
-  const notify = (joinedTeamName) => toast(`Joined Team ${joinedTeamName}`);  
-
   
+  const notify = (joinedTeamName) => toast.success(`Joined Team ${joinedTeamName}`);  
+
 
   useEffect(() => {
     let active = true;
@@ -64,7 +64,7 @@ export default function Teams() {
           <h2 className="brand-gradient" id="teams-heading">Browse Teams</h2>
           <p className="filter-tagline">Explore all active teams below.</p>
 
-          {/* Teams section */}
+          {/* Browse Teams section */}
           {teamsLoading && <p className="filter-tagline" aria-busy="true">Loading teams...</p>}
           {teamsError && !teamsLoading && <p className="error" role="alert">{teamsError}</p>}
           {!teamsLoading && !teamsError && teams.length === 0 && <p className="filter-tagline">No teams found.</p>}
@@ -75,6 +75,7 @@ export default function Teams() {
                 key={t.id || t.ID}
                 team={t}
                 isMember={myTeams.some(mt => mt.id === t.id)}
+                isOwner={t.is_owner}
                 onJoin={(joinedTeam) => {setMyTeams(prev => [...prev, joinedTeam]); notify(joinedTeam.name)}}
               />
               ))}
@@ -86,8 +87,8 @@ export default function Teams() {
       <ToastContainer
               toastClassName="my-toast"
               position="top-center"
-              autoClose={2000}
-              hideProgressBar={false}
+              autoClose={3000}
+              hideProgressBar={true}
               newestOnTop
               closeOnClick
         />

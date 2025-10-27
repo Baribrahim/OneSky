@@ -4,34 +4,6 @@ import Popup from 'reactjs-popup';
 import '../styles/popup.css';
 import "../styles/teamCard.css";
 
-
-  // //This needs to be changed to use the actual db data
-  // useEffect(() => {
-  //   if (teams.length > 0) {
-  //     fetchStatuses()
-  //   }
-  // }, [])
-
-
-
-
-
-
-  // const handleLeave = async (team_id) => {
-  //   const { data, error } = await toResult(api.post("api/events/unregister", {event_id}));
-  //   if (error) {
-  //     console.error("Unregister failed:", error.message);
-  //   } 
-  //   else {
-  //     setSignupEvents(prev => prev.filter(id => id !== event_id)); 
-  //   }
-    
-  // }
-
-
-
-
-
 /**
  * TeamCard
  * Reusable UI card for team info.
@@ -44,11 +16,6 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
   const [error, setError] = useState("");
   const [joinedTeams, setJoinedTeams] = useState([]);
  
-  // const fetchStatuses = async () => {
-  //   const { data, error } = await toResult(api.get(`/api/teams/join-status`));
-  //   setJoinedTeams(data);
-  // };
-
   function resetStates() {
     setJoinCode("");
     setError("");
