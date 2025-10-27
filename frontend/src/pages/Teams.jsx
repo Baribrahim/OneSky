@@ -76,6 +76,7 @@ export default function Teams() {
                 team={t}
                 isMember={myTeams.some(mt => mt.id === t.id)}
                 isOwner={t.is_owner}
+                browseEvents = {true}
                 onJoin={(joinedTeam) => {setMyTeams(prev => [...prev, joinedTeam]); notify(joinedTeam.name)}}
               />
               ))}

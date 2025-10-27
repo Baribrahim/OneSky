@@ -10,7 +10,7 @@ import "../styles/teamCard.css";
  * Displays team information including name, description, department,
  * capacity, and join code with conditional buttons based on whether the user is the owner of the team.
  */
-export default function TeamCard({ team, isOwner = false, isMember = false, showJoinCode = false, onJoin }) {
+export default function TeamCard({ team, isOwner = false, isMember = false, showJoinCode = false, onJoin, browseEvents = false }) {
   const { name, description, department, capacity, join_code, JoinCode } = team;
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
@@ -45,6 +45,11 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
   return (
     <div className="team-card">
       <div>
+        {browseEvents && (
+          <p className="meta-topright">
+            {isMember ? "Joined" : "\u00A0"}
+          </p>
+        )}
         <h3>{name || team.Name}</h3>
         {description && (
           <p className="meta">{description}</p>
