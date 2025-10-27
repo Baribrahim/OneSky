@@ -1,4 +1,5 @@
 import datetime
+from datetime import UTC
 from functools import wraps
 
 import jwt
@@ -42,7 +43,7 @@ def generate_token(user_data: dict):
     payload = {
         "sub": user_data["email"],
         "first_name": user_data["first_name"],
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        "exp": datetime.datetime.now(UTC) + datetime.timedelta(hours=1)
     }
     secret = current_app.config.get("SECRET_KEY")
     if not isinstance(secret, str) or not secret:
