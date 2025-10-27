@@ -37,6 +37,11 @@ class DashboardConnector:
         user_id = self.get_user_id(email)
         return self.da.get_completed_events_count(user_id)
 
+    def get_completed_events(self, email: str, limit: int = 50) -> List[dict]:
+        user_id = self.get_user_id(email)
+        limit = max(1, min(int(limit or 50), 100))  # reasonable cap
+        return self.da.get_completed_events(user_id, limit)
+
     def get_badges(self, email: str) -> List[dict]:
         user_id = self.get_user_id(email)
         return self.da.get_badges(user_id)
