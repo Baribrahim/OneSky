@@ -8,6 +8,7 @@ const BadgesDisplay = () => {
   const [loading, setLoading] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState(null);
 
+  // Fetch badges belonging to the current user
   const fetchUserBadges = async () => {
     setLoading(true);
     try {
@@ -29,12 +30,13 @@ const BadgesDisplay = () => {
     }
   };
 
+  // Load badges on mount
   useEffect(() => {
     fetchUserBadges();
   }, []);
 
+  // Selects the correct badge icon based on badge name
   const getBadgeIcon = (badgeName) => {
-    // Map badge names to their corresponding image files
     const badgeIconMap = {
       // Actual badge names from the system
       'Event Starter': 'firstStep.png',
@@ -50,6 +52,7 @@ const BadgesDisplay = () => {
     return `/src/assets/badges/${iconFile}`;
   };
 
+  // Handles opening and closing modal for badge details
   const handleBadgeClick = (badge) => {
     setSelectedBadge(selectedBadge?.ID === badge.ID ? null : badge);
   };
@@ -79,6 +82,7 @@ const BadgesDisplay = () => {
                   }
                 }}
               >
+                {/* Badge icon preview */}
                 <div className="badge-icon">
                   <img 
                     src={getBadgeIcon(badge.Name)} 
@@ -88,6 +92,7 @@ const BadgesDisplay = () => {
                     }}
                   />
                 </div>
+                {/* Badge name and description toggle */}
                 <div className="badge-info">
                   <h3 className="badge-name">{badge.Name}</h3>
                   {selectedBadge?.ID === badge.ID && (
@@ -99,7 +104,8 @@ const BadgesDisplay = () => {
           </div>
         )}
       </div>
-
+      
+      {/* Modal to show full badge detail */}
       {selectedBadge && (
         <div className="badge-modal-overlay" onClick={() => setSelectedBadge(null)}>
           <div className="badge-modal" onClick={(e) => e.stopPropagation()}>
