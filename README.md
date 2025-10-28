@@ -16,14 +16,14 @@ cd frontend
 ```
 When first running the application or when there are changes to package.json/package-lock.json
 
-    ```
-    npm install 
-    ```
+```
+npm install 
+```
 
-    If you encounter dependency issues, use:
-    ```
-    npm install --legacy-peer-deps
-    ```
+If you encounter dependency issues, use:
+```
+npm install --legacy-peer-deps
+```
 
 To start the development server:
 ```
@@ -35,9 +35,10 @@ npm run dev
 cd backend/functionality
 ```
 When first running the application or when there are changes to requirements.txt
-    ```
-    pip3 install -r requirements.txt
-    ```
+
+```
+pip3 install -r requirements.txt
+```
 
 Activate the virtual environment
 ```
