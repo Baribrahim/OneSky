@@ -60,7 +60,8 @@ class TeamConnector:
 
     """Passes users email and team id to dao"""
     def add_user_to_team(self, user_email, team_id):
-        self.da.insert_user_in_team(user_email, team_id)
+        user_id = self.owner_id_from_email(user_email)
+        self.da.insert_user_in_team(user_id, team_id)
 
     """Pass user input code to dao for verification"""
     def verify_team_code(self, team_id, join_code):

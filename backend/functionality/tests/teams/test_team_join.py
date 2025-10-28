@@ -1,7 +1,7 @@
 # Teams Testing
 
 #Connector Methods
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import pytest
 from teams import routes
 from teams.connector import TeamConnector
@@ -53,6 +53,10 @@ def test_add_user_to_team_calls_insert():
         # Arrange
         mock_dao = MockDAO.return_value
         connector = TeamConnector()
+
+        # Mock owner_id_from_email to return a fake user_id
+        connector.owner_id_from_email = MagicMock(return_value=1)
+
         user_email = "test@example.com"
         team_id = 1
 
@@ -60,7 +64,7 @@ def test_add_user_to_team_calls_insert():
         connector.add_user_to_team(user_email, team_id)
 
         # Assert
-        mock_dao.insert_user_in_team.assert_called_once_with(user_email, team_id)
+        mock_dao.insert_user_in_team.assert_called_once_with(1, team_id)
 
 #Route Methods
 def test_successful_team_join(client):

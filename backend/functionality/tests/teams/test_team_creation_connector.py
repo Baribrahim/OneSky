@@ -30,7 +30,7 @@ class FakeDA:
         self.teams.append(row)
         return row
 
-    def list_all_teams(self):
+    def list_all_teams(self, user_email =None):
         # emulate DB: newest first
         return sorted(self.teams, key=lambda t: t["ID"], reverse=True)
 
@@ -70,7 +70,7 @@ def test_browse_all_teams_order_and_empty_state():
     tc = TeamConnector(da=da)
 
     # empty
-    items = tc.browse_all_teams()
+    items = tc.browse_all_teams("owner@example.com")
     assert items == []
 
     # seed a few
@@ -78,5 +78,5 @@ def test_browse_all_teams_order_and_empty_state():
     tc.create_team("owner@example.com", "Team 2", None, None, None)
     tc.create_team("owner@example.com", "Team 3", None, None, None)
 
-    items2 = tc.browse_all_teams()
+    items2 = tc.browse_all_teams("owner@example.com")
     assert [t["Name"] for t in items2] == ["Team 3", "Team 2", "Team 1"]

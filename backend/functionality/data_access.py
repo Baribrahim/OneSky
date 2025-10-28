@@ -390,7 +390,7 @@ class DataAccess:
                 (name, description, department, capacity, owner_user_id, join_code),
             )
             new_id = cursor.lastrowid
-
+        self.insert_user_in_team(owner_user_id, new_id)
         return self.get_team_by_id(new_id)
 
     def get_team_by_id(self, team_id: int):
@@ -427,9 +427,8 @@ class DataAccess:
     # ------------------------
 
     """Insert userID and teamID into TeamMembership table"""
-    def insert_user_in_team(self, user_email, team_id):
+    def insert_user_in_team(self, user_id, team_id):
         try:
-            user_id = self.get_id_by_email(user_email)
             sql = "INSERT INTO TeamMembership (UserID, TeamID) VALUES (%s, %s)"
             with self.get_connection() as conn, conn.cursor() as cursor:
                 cursor.execute(sql, (user_id, team_id))

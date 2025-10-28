@@ -35,7 +35,7 @@ class FakeConnector:
         }
         return self.created
 
-    def browse_all_teams(self):
+    def browse_all_teams(self, user_email=None):
         # emulate list_all_teams newest-first
         return [] if not self.created else [self.created]
 

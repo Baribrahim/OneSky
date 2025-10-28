@@ -20,7 +20,7 @@ def require_auth(f):
 
 def list_teams(all=True):
     """
-    Lists all teams (newest first).
+    Lists all teams (newest first) or all joined teams depending on all flag.
     Returns: { teams: [...], count: n }
     """
     try:
