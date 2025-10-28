@@ -6,15 +6,17 @@ OneSky is an internal platform that enables Sky employees to connect with volunt
 ## Setup/ Running the application
 
 ### Database Setup
-When first running the application or when there are changes to schema.sql
+When first running the application or when there are changes to schema.sql:
 
+```
 In MYSQL open and run schema.sql located in backend/database/
+```
 
 ### Frontend Setup
 ```
 cd frontend
 ```
-When first running the application or when there are changes to package.json/package-lock.json
+When first running the application or when there are changes to package.json/package-lock.json:
 
 ```
 npm install 
@@ -34,17 +36,17 @@ npm run dev
 ```
 cd backend/functionality
 ```
-When first running the application or when there are changes to requirements.txt
+When first running the application or when there are changes to requirements.txt:
 
 ```
 pip3 install -r requirements.txt
 ```
 
-Activate the virtual environment
+Activate the virtual environment:
 ```
 source venv/bin/activate   
 ```
-To start the backend server,
+To start the backend server:
 ```
 python3 app.py
 ```
