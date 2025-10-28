@@ -90,20 +90,6 @@ create table Team
   foreign key (OwnerUserID) references User(ID),
   JoinCode char(8) not null,
   unique (JoinCode),
-  IsActive tinyint(1) not null default 1
-);
-
-create table Team
-(
-  ID int primary key auto_increment,
-  Name varchar(120) not null,
-  Description varchar(1000),
-  Department varchar(120),
-  Capacity int,
-  OwnerUserID int not null,
-  foreign key (OwnerUserID) references User(ID),
-  JoinCode char(8) not null,
-  unique (JoinCode),
   IsActive tinyint not null default 1
 );
 
@@ -234,7 +220,7 @@ INSERT INTO Event (CauseID, Title, About, Activities, Requirements, Schedule, Ex
 -- Dummy Data for Users
 INSERT INTO User (Email, Password, FirstName, LastName)
 VALUES
-  ('a@test.com', '12345678', 'Alice', 'Smith'),
+  ('a@test.com', '12345678', 'Alice', 'Smith');
 
 -- Dummy Data for Teams
 INSERT INTO Team (Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive)
