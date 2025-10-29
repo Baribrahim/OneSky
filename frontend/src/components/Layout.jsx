@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet } from "react-router";
 import Header from "./Header";
 import Footer from "./Footer";
+import Chatbot from "./Chatbot";
 
 /**
  * Layout
@@ -20,6 +21,9 @@ export default function Layout() {
       </main>
 
       <Footer />
+
+      {/* Chatbot - appears on all pages */}
+      <Chatbot />
 
       {/* Minimal layout styling (uses your theme tokens) */}
       <style>{`
