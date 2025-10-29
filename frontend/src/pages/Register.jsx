@@ -15,6 +15,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   const emailPattern = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+  const passwordPattern = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
   const handleEmailBlur = (event) => {
     const value = event.target.value.trim();
@@ -36,8 +37,8 @@ export default function Register() {
       setError("Email address not in a valid format");
       return;
     }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    if (!passwordPattern.test(password)) {
+      setError("Password must be at least 8 characters and include an uppercase letter, a number, and a special character.");
       return;
     }
 
@@ -65,7 +66,13 @@ export default function Register() {
           <label htmlFor="email">Email</label>
           <input id="email" className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={handleEmailBlur} required style={{ marginTop: 8, marginBottom: 16 }} />
           <label htmlFor="password">Password</label>
-          <input id="password" className="input" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required style={{ marginTop: 8 }} />
+          <input id="password" className="input" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} onBlur={(e) => {
+            const value = e.target.value;
+            if (value && !passwordPattern.test(value)) {
+              alert("Password must be at least 8 characters and include an uppercase letter, a number, and a special character.");
+              e.target.focus();
+            }
+          }} minLength={8} required style={{ marginTop: 8 }} />
           {error && <div className="error" role="alert">{error}</div>}
           <button className="button" disabled={submitting} style={{ marginTop: 16 }}>
             {submitting ? "Creating..." : "Create account"}
