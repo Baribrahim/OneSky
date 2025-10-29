@@ -14,12 +14,26 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const emailPattern = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+
+  const handleEmailBlur = (event) => {
+    const value = event.target.value.trim();
+    if (value && !emailPattern.test(value)) {
+      alert("Email address not in a valid format");
+      event.target.focus();
+    }
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     if (!first_name || !last_name || !email || !password) {
       setError("All fields are required.");
+      return;
+    }
+    if (!emailPattern.test(email.trim())) {
+      setError("Email address not in a valid format");
       return;
     }
     if (password.length < 8) {
@@ -49,7 +63,7 @@ export default function Register() {
           <label htmlFor="last_name">Last name</label>
           <input id="last_name" className="input" value={last_name} onChange={(e) => setLastName(e.target.value)} required style={{ marginTop: 8, marginBottom: 16 }} />
           <label htmlFor="email">Email</label>
-          <input id="email" className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ marginTop: 8, marginBottom: 16 }} />
+          <input id="email" className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={handleEmailBlur} required style={{ marginTop: 8, marginBottom: 16 }} />
           <label htmlFor="password">Password</label>
           <input id="password" className="input" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required style={{ marginTop: 8 }} />
           {error && <div className="error" role="alert">{error}</div>}
