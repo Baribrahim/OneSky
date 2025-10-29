@@ -1,11 +1,8 @@
-from unittest.mock import patch
 import pytest
 import random
 import string
 from http import HTTPStatus
 import sys, os
-from teams import routes
-from teams.connector import TeamConnector
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 '''
@@ -47,7 +44,6 @@ def _login_get_token(client, email, password):
     data = resp.get_json()
     assert "token" in data
     return data["token"], resp
-
 
 # ---------- REGISTER tests ----------
 
@@ -196,6 +192,8 @@ def test_dashboard_impact_with_token_returns_200_and_shape(client):
 
 
 
+
     
+
 
 
