@@ -1,6 +1,6 @@
 # Joining a team functionality Testing
 
-#Connector Methods
+
 from unittest.mock import MagicMock, patch
 import pytest
 from teams import routes
@@ -18,6 +18,7 @@ def client():
     with app.test_client() as client:
         yield client
 
+#Connector Methods
 def test_verify_team_code_returns_true_when_codes_match():
     with patch('teams.connector.DataAccess') as MockDAO:
         # Arrange

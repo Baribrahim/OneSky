@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Popup from "reactjs-popup";
 import { api, toResult } from "../lib/apiClient.js";
+import "../styles/eventsTeamPopup.css"
 
 const EventTeamsPopup = ({ eventID }) => {
   const [selectedTeams, setSelectedTeams] = useState([]);
@@ -39,29 +40,43 @@ const EventTeamsPopup = ({ eventID }) => {
       trigger={<button className="button">Register Team</button>}
       modal
       onOpen={fetchTeams}
+      className="team-popup"
     >
       {(close) => (
         <div className="card">
           <div className="content">
-            <label>
-              Select Teams
-              <div>
-                {teamsError && <div className="error" role="alert">{teamsError}</div>}
-                {loading ? (
-                  <p>Loading teams...</p>
-                ) : teams && teams.length > 0 ? (
-                  <select name="teams" multiple size="4" onChange={handleTeamChange}>
-                    {teams.map((team) => (
-                      <option key={team.ID} value={team.ID}>
+            
+            <h3 className="popup-header">Select Teams</h3>
+            <div>
+            {teamsError && <div className="error" role="alert">{teamsError}</div>}
+            {loading ? (
+                <p>Loading teams...</p>
+            ) : teams && teams.length > 0 ? (
+                <ul className="team-list">
+                {teams.map((team) => {
+                    const isSelected = selectedTeams.includes(team.ID);
+                    return (
+                    <li
+                        key={team.ID}
+                        className={`team-item ${isSelected ? "selected" : ""}`}
+                        onClick={() => {
+                        if (isSelected) {
+                            setSelectedTeams(selectedTeams.filter((id) => id !== team.ID));
+                        } else {
+                            setSelectedTeams([...selectedTeams, team.ID]);
+                        }
+                        }}
+                    >
                         {team.Name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p>No teams available</p>
-                )}
-              </div>
-            </label>
+                    </li>
+                    );
+                })}
+                </ul>
+            ) : (
+                <p>No teams available</p>
+            )}
+            </div>
+
 
             <div className="actions">
               <button
@@ -73,7 +88,7 @@ const EventTeamsPopup = ({ eventID }) => {
               >
                 Submit
               </button>
-              <button className="button" onClick={close}>Close</button>
+              <button className="button" onClick={() => {close(); setSelectedTeams([])}}>Close</button>
             </div>
           </div>
         </div>
