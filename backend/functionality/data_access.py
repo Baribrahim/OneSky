@@ -7,6 +7,7 @@ import os
 import pymysql
 import random
 from pymysql.cursors import DictCursor
+from flask import request
 
 class DataAccess:
     load_dotenv()
@@ -314,7 +315,7 @@ class DataAccess:
             with self.get_connection(use_dict_cursor=True) as conn:
                 with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                     query = """
-                    SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity,
+                    SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path,
                         c.Name AS CauseName,
                         GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
                     FROM Event e
@@ -345,7 +346,7 @@ class DataAccess:
                         params.append(end_date)
 
                     query += """
-                    GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name
+                    GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path, c.Name
                     ORDER BY e.Date ASC;
                     """
 
@@ -363,7 +364,9 @@ class DataAccess:
                             'EndTime': str(item["EndTime"]),
                             'LocationCity': item["LocationCity"],
                             'Address': item["Address"],
+                            'LocationPostcode': item['LocationPostcode'],
                             'Capacity': item["Capacity"],
+                            'Image_path': item['Image_path'],
                             'CauseName': item['CauseName'],
                             'TagName': item["TagName"]
                         })
