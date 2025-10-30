@@ -91,3 +91,28 @@ def search_events():
 
     events = data_access.search_events(keyword, location, date)
     return jsonify(events)
+
+@bp.route("/signup-team", methods=["POST"])
+@token_required  
+def signup_team_event():
+    data = request.get_json(silent=True) or {}
+    event_id = data.get("event_id")
+    team_id = data.get("team_id")
+
+    if not event_id:
+        return jsonify({"error": "Missing event_id"}), 400
+    
+    if not team_id:
+        return jsonify({"error": "Missing team_id"}), 400
+
+    con.register_team_for_event(team_id, event_id)
+    return jsonify({"message": "Successfully registered for event!"}), 200
+
+@bp.route("/<int:event_id>/available-teams", methods=["GET"])
+@token_required
+def get_users_unregistered_teams(event_id):
+    if not event_id:
+        return jsonify({"error": "Missing event_id"}), 400
+    user_email = g.current_user.get("sub")
+    data = con.extract_team_unregistered_details(user_email, event_id)
+    return jsonify({"teams": data}), 200

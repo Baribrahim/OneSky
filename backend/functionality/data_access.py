@@ -485,12 +485,36 @@ class DataAccess:
             with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute(sql, (user_id, user_id))
                 result = cursor.fetchall()
-                print("TEAMS IN DA")
-                print(result)
                 return result
         except Exception as e:
             print(f"Error in get_all_joined_teams: {e}")
             raise
+
+
+
+    #Team Event registration methods
+    """Read all team information for teams a user owns and team is not registered for event"""
+    def read_user_unregistered_teams(self, event_id, user_email):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = """
+                SELECT t.ID, t.Name
+                FROM Team t
+                JOIN TeamMembership tm ON tm.TeamID = t.ID
+                WHERE t.OwnerUserID= %s AND 
+                tm.UserID = %s
+                AND t.ID NOT IN (
+                    SELECT TeamID FROM TeamEventRegistration WHERE EventID = %s
+                )
+                AND t.IsActive = 1
+            """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (user_id, user_id, event_id))
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Error in read_user_unregistered_teams: {e}")
+            raise
+
 
     """Insert TeamID and EventID into TeamEventRegistration table"""
     def insert_team_to_event_registration(self, team_id, event_id):

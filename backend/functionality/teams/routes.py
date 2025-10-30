@@ -18,7 +18,7 @@ def require_auth(f):
         return decorated(*args, **kwargs)
     return wrapped
 
-def list_teams(all=False, owner=False):
+def list_teams(all=False):
     """
     Lists all teams (newest first) or all joined/owned teams depending on flags.
     Returns: { teams: [...], count: n }
@@ -45,9 +45,9 @@ def list_teams(all=False, owner=False):
             for t in items 
         ]
 
-        #Return only the teams the user is the owner of
-        if owner:
-            teams_out = [t for t in teams_out if t["is_owner"] == 1]
+        # #Return only the teams the user is the owner of
+        # if owner:
+        #     teams_out = [t for t in teams_out if t["is_owner"] == 1]
 
         return jsonify({"teams": teams_out, "count": len(teams_out)}), 200
 
@@ -133,8 +133,8 @@ def signup_to_team():
 def list_joined_teams():
    return list_teams(all=False)
 
-@bp.route("/owns", methods=["GET"])
-@require_auth
-def list_owned_teams():
-   return list_teams(owner=True)
+# @bp.route("/owns", methods=["GET"])
+# @require_auth
+# def list_owned_teams():
+#    return list_teams(owner=True)
 
