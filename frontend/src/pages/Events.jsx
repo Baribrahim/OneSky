@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import EventCard from '../components/EventCard';
@@ -14,7 +13,23 @@ export default function Events() {
   const [events, setEvents] = useState([]);
   const [locations, setLocations] = useState([]);
   const [error, setError] = useState('');
+  const formatDate = (date) => date.toISOString().split('T')[0];
 
+  // ✅ Set default dates on initial load
+  // if we want to set end date to 30 days later by default then uncomment the related lines below. 
+  useEffect(() => {
+    const today = new Date();
+    // const thirtyDaysLater = new Date();
+    // thirtyDaysLater.setDate(today.getDate() + 30);
+
+    setFilters((prev) => ({
+      ...prev,
+      startDate: formatDate(today),
+      // endDate: formatDate(thirtyDaysLater),
+    }));
+  }, []);
+
+  // ✅ Fetch events whenever filters change
   useEffect(() => {
     axios.get('http://127.0.0.1:5000/api/events/events', {
       params: filters,
@@ -35,7 +50,16 @@ export default function Events() {
   };
 
   const clearFilters = () => {
-    setFilters({ keyword: '', location: '', startDate: '', endDate: '' });
+    const today = new Date();
+    // const thirtyDaysLater = new Date();
+    // thirtyDaysLater.setDate(today.getDate() + 30);
+
+    setFilters({
+      keyword: '',
+      location: '',
+      startDate: formatDate(today),
+      // endDate: formatDate(thirtyDaysLater),
+    });
   };
 
   return (
@@ -74,7 +98,6 @@ export default function Events() {
               <input
                 name="startDate"
                 type="date"
-                placeholder="Start Date"
                 value={filters.startDate}
                 onChange={handleChange}
               />
@@ -86,17 +109,17 @@ export default function Events() {
               <input
                 name="endDate"
                 type="date"
-                placeholder="End Date"
                 value={filters.endDate}
                 onChange={handleChange}
               />
             </div>
           </form>
-                  <div className="clear-filters">
-                      <button type="button" className="clear-button" onClick={clearFilters}>
-                        Clear Filters
-                      </button>
-                  </div>
+
+          <div className="clear-filters">
+            <button type="button" className="clear-button" onClick={clearFilters}>
+              Clear Filters
+            </button>
+          </div>
         </div>
 
         {error && <div className="error" role="alert">{error}</div>}
