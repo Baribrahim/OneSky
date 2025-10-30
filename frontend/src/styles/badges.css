@@ -9,6 +9,32 @@
   overflow: hidden;
 }
 
+/* Lightweight toast for newly earned badges */
+.badge-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-600));
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.12);
+  font-weight: 700;
+  z-index: 1100;
+  border: 1px solid rgba(255,255,255,0.18);
+  letter-spacing: 0.2px;
+  animation: badgeToastIn 180ms ease-out, badgeToastOut 280ms ease-in 2.7s forwards;
+}
+
+@keyframes badgeToastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes badgeToastOut {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
 .badges-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -17,6 +43,9 @@
   flex: 1;
   overflow-y: auto;
   padding-right: 8px;
+  /* Prevent single-row stretching when there are few items */
+  align-content: start;
+  align-items: start;
 }
 
 /* Custom scrollbar styling */
@@ -50,6 +79,8 @@
   align-items: center;
   gap: var(--space-3);
   min-height: 80px;
+  /* Ensure cards keep natural height and don't stretch to fill grid track */
+  align-self: start;
 }
 
 .badge-card:hover {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { api, toResult } from '../lib/apiClient.js';
 import '../styles/theme.css';
 import '../styles/badges.css';
@@ -7,6 +7,10 @@ const BadgesDisplay = () => {
   const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState(null);
+  const [showToast, setShowToast] = useState(false);
+  const prevCountRef = useRef(
+    Number.parseInt(window.localStorage.getItem('user_badge_count') || '0', 10)
+  );
 
   // Fetch badges belonging to the current user
   const fetchUserBadges = async () => {
@@ -23,6 +27,15 @@ const BadgesDisplay = () => {
 
       const userBadges = data?.badges ?? [];
       setBadges(userBadges);
+
+      // Simple celebration if badge count increased since last visit
+      const newCount = userBadges.length;
+      if (newCount > prevCountRef.current) {
+        setShowToast(true);
+        window.setTimeout(() => setShowToast(false), 3000);
+      }
+      prevCountRef.current = newCount;
+      window.localStorage.setItem('user_badge_count', String(newCount));
     } catch (err) {
       console.error(err);
     } finally {
@@ -62,6 +75,11 @@ const BadgesDisplay = () => {
       <h2>My Badges</h2>
       
       <div className="badges-container">
+        {showToast && (
+          <div className="badge-toast" role="status" aria-live="polite">
+            🎉 New badge earned!
+          </div>
+        )}
         {loading ? (
           <p className="helper">Loading badges...</p>
         ) : badges.length === 0 ? (
