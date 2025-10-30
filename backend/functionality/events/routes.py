@@ -99,3 +99,9 @@ def search_events():
 # Single Event Page Routes #
 ############################
 
+@bp.route('/events/<int:id>', methods=['GET'])
+def get_event(id):
+    event = data_access.get_event_by_id(id)
+    if not event:
+        return jsonify({"error": "Event not found"}), 404
+    return jsonify(event)
