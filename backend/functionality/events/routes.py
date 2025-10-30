@@ -3,18 +3,18 @@ from functools import wraps
 import json
 import jwt
 from flask import Blueprint, render_template, request, flash, jsonify, current_app, redirect, url_for, g
-from .connector import Connector
+from .connector import EventConnector
 from auth.routes import token_required
 from flask_cors import CORS
 from data_access import DataAccess
 
 bp = Blueprint("api_events", __name__, url_prefix="/api/events")
 CORS(bp, supports_credentials=True)
+con = EventConnector()
 
 @bp.route("", methods=["GET"])
 @token_required
 def get_events():
-    con = Connector()
     data = con.extract_event_details()
     resp = json.dumps(data, default=str)
     return resp, 200
@@ -29,7 +29,6 @@ def signup_event():
         return jsonify({"error": "Missing event_id"}), 400
 
     user_email = g.current_user.get("sub", "User") 
-    con = Connector()
     con.register_user_for_event(user_email, event_id)
     return jsonify({"message": "Successfully registered for event!"}), 200
 
@@ -37,7 +36,6 @@ def signup_event():
 @token_required
 def check_signup_status():
     user_email = g.current_user.get("sub", "User")
-    con = Connector()
     signed_up_events = con.user_signed_up_for_events(user_email)
     return jsonify(signed_up_events), 200
 
@@ -51,7 +49,6 @@ def unregister_from_event():
         return jsonify({"error": "Missing event_id"}), 400
     
     user_email = g.current_user.get("sub", "User")
-    con = Connector()
     con.unregister_user_from_event(user_email, event_id)
     return jsonify({"message": "Successfully unregistered for event"}), 200
 

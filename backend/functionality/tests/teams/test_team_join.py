@@ -1,4 +1,4 @@
-# Teams Testing
+# Joining a team functionality Testing
 
 #Connector Methods
 from unittest.mock import MagicMock, patch
@@ -118,4 +118,5 @@ def test_missing_join_code(client):
     print(response.get_json())
     assert response.status_code == 400
     assert b"Missing join_code" in response.data
-    
+
+

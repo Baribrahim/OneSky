@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {api, toResult} from '../lib/apiClient.js';
 import { formatDate, formatTime, timeUnicode } from '../utils/format.jsx';
-
+import Popup from 'reactjs-popup';
 
 // I have changed eventCard so that it represents an individual event and no longer fetches all events. The event card now only handles signup/unregister. This means that the events page(parent) handles the filtering and fetching, and eventcard(child) handles the display and interaction. 
 
-function EventCard({ event }) {
+function EventCard({ event, teams}) {
   const [isSignedUp, setIsSignedUp] = useState(false); //tracks signup for individual event 
 
   // Fetch signup status for this specific event
@@ -60,6 +60,43 @@ function EventCard({ event }) {
             Register
           </button>
         )}
+        
+        <Popup trigger={<button className="button">Register Team</button>} modal
+                    onClose={() => {
+                  }}>
+            {close => (
+              <div className="card">
+                <div className="content">
+                <label>
+                  Select Teams
+                  <div>
+                  {teams && teams.length > 0 ? (
+                    <select name="teams" multiple size="4">
+                      {teams.map(team => (
+                        <option key={team.id} value={team.id}>
+                          {team.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p>No teams found</p>
+                  )}
+                  </div>
+                </label>
+                <div className="actions">
+                    <button className="button">
+                    Submit
+                    </button>
+                  <button
+                    className="button" onClick={() => close()}
+                  >
+                    Close
+                  </button>
+                </div>
+                </div>
+              </div>
+            )}
+          </Popup>
       </div>
     </div>
   );

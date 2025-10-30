@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import EventCard from '../components/EventCard';
+import { api, toResult } from "../lib/apiClient";
 
 export default function Events() {
   const [filters, setFilters] = useState({
@@ -13,6 +14,8 @@ export default function Events() {
   const [events, setEvents] = useState([]);
   const [locations, setLocations] = useState([]);
   const [error, setError] = useState('');
+  const [ownedTeams, setOwnedTeams] = useState([]);
+  const [teamsError, setTeamsError] = useState('');
 
   useEffect(() => {
     axios.get('http://127.0.0.1:5000/api/events/events', {
@@ -28,6 +31,29 @@ export default function Events() {
       .then(res => setLocations(res.data))
       .catch(err => console.error('Error fetching locations', err));
   }, []);
+
+
+  const fetchTeams = async () => {
+      setTeamsError("");
+      try {
+        const { data, error } = await toResult(api.get("/api/teams/owns"));
+        if (error) {
+          throw new Error(error.message || "Could not load teams.");
+        }
+        setOwnedTeams(data.teams)
+      } catch (err) {
+        setTeamsError(err.message);
+      } 
+  };
+
+  useEffect(() => {
+    fetchTeams();
+  }, [])
+  
+  useEffect(() => {
+    console.log("TEAMS")
+    console.log(ownedTeams)
+  }, [ownedTeams])
 
   const handleChange = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -103,7 +129,7 @@ export default function Events() {
         <div className="event-list">
           {events.length > 0 ? (
             events.map((event, index) => (
-              <EventCard key={event.ID ? `${event.ID}-${index}` : `event-${index}`} event={event} />
+              <EventCard key={event.ID ? `${event.ID}-${index}` : `event-${index}`} event={event} teams={ownedTeams} />
             ))
           ) : (
             <p>No events found.</p>

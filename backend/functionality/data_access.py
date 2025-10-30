@@ -491,3 +491,15 @@ class DataAccess:
         except Exception as e:
             print(f"Error in get_all_joined_teams: {e}")
             raise
+
+    """Insert TeamID and EventID into TeamEventRegistration table"""
+    def insert_team_to_event_registration(self, team_id, event_id):
+        sql = "INSERT INTO TeamEventRegistration(TeamID, EventID) VALUES (%s, %s)"
+        try:
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (team_id, event_id))
+        except Exception as e:
+            print(f"Error in insert_team_to_event_registration: {e}")
+            raise
+
+
