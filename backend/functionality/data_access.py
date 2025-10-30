@@ -437,3 +437,51 @@ class DataAccess:
             print(f"Database error in get_filtered_events: {e}")
 
         return events
+    
+
+    # ------------------------ #
+    # Single Event Page
+    # ------------------------ #
+    def get_event_by_id(self, event_id):
+        event = None
+        try:
+            with self.get_connection(use_dict_cursor=True) as conn:
+                with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                    query = """
+                    SELECT e.ID, e.Title, e.About, e.Activities, e.Requirements, e.Schedule, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path,
+                        c.Name AS CauseName,
+                        GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
+                    FROM Event e
+                    JOIN Cause c ON e.CauseID = c.ID
+                    JOIN CauseTag ct ON c.ID = ct.CauseID
+                    JOIN Tag t ON ct.TagID = t.ID
+                    WHERE e.ID = %s
+                    GROUP BY e.ID, e.Title, e.About, e.Activities, e.Requirements, e.Schedule, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path, c.Name
+                    """
+
+                    cursor.execute(query, (event_id,))
+                    item = cursor.fetchone()
+                    
+                    if item:
+                        event = {
+                            'ID': item['ID'],
+                            'Title': item["Title"],
+                            'About': item["About"],
+                            'Activities': item["Activities"],
+                            'Requirements':item["Requirements"],
+                            'Schedule':item["Schedule"],
+                            'Date': str(item["Date"]),
+                            'StartTime': str(item["StartTime"]),
+                            'EndTime': str(item["EndTime"]),
+                            'LocationCity': item["LocationCity"],
+                            'Address': item["Address"],
+                            'LocationPostcode': item['LocationPostcode'],
+                            'Capacity': item["Capacity"],
+                            'Image_path': item['Image_path'],
+                            'CauseName': item['CauseName'],
+                            'TagName': item["TagName"]
+                        }
+                        
+        except pymysql.MySQLError as e:
+            print(f"Database error in get_event_by_id: {e}")
+        return event
