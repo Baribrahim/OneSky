@@ -57,16 +57,19 @@ def unregister_from_event():
     return jsonify({"message": "Successfully unregistered for event"}), 200
 
 
-# Reanna's addition for search and filter functionality #
+###################################
+# Search and Filter Functionality #
+###################################
 
 data_access = DataAccess()
 
+# Populated the dropdown location filter.
 @bp.route('/filter_events', methods=['GET', 'POST'])
 def filter_events():
     locations = data_access.get_location()
     return jsonify([{"city": loc} for loc in locations])
 
-
+# Get events based on filter selection
 @bp.route('/events', methods=['GET'])
 def get_filtered_events_route():
     keyword = request.args.get('keyword') or None
@@ -75,17 +78,14 @@ def get_filtered_events_route():
     end_date = request.args.get('endDate') or None
     events = data_access.get_filtered_events(keyword, location, start_date, end_date)
 
-
-  # Add full image URL for each event
-    
+    # Add full image URL for each event
     for event in events:
         path = event.get('Image_path') or event.get('image_path')
         event['Image_url'] = f"{request.host_url}static/{path}" if path else None
 
-
     return jsonify(events)
 
-
+# Search bar
 @bp.route('/search', methods=['GET'])
 def search_events():
     keyword = request.args.get('keyword', '')
@@ -94,3 +94,8 @@ def search_events():
 
     events = data_access.search_events(keyword, location, date)
     return jsonify(events)
+
+############################
+# Single Event Page Routes #
+############################
+
