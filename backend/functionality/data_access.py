@@ -7,6 +7,7 @@ import os
 import pymysql
 import random
 from pymysql.cursors import DictCursor
+from flask import request
 
 class DataAccess:
     load_dotenv()
@@ -79,7 +80,7 @@ class DataAccess:
             return user  # full user dict
         return None
     
-        # ------------------------
+    # ------------------------
     # Dashboard Methods
     # ------------------------
     def get_user_id_by_email(self, email):
@@ -403,79 +404,6 @@ class DataAccess:
             print(f"Error in unregister_user_from_event: {e}")
             raise
 
-
-
-
-    # ------------------------
-    # Events Search and Filter
-    # ------------------------
-
-    def get_location(self):
-        location_list = []
-        try:
-            with self.get_connection(use_dict_cursor=True) as conn:
-                with conn.cursor() as cursor:
-                    query = "SELECT LocationCity FROM event"
-                    cursor.execute(query)
-                    result_set = cursor.fetchall()
-                    location_list = sorted(set(row['LocationCity'] for row in result_set if row ['LocationCity']))
-                    cursor.close()
-        except pymysql.MySQLError as e:
-            print(f"Database error in get_location: {e} ")
-        return location_list
-    
-
-    # def get_all_events(self, location=None):
-    #     event_list = []
-    #     try:
-    #         with self.get_connection(use_dict_cursor=True) as conn:
-    #             with conn.cursor (pymysql.cursors.DictCursor) as cursor:
-    #                 if location:
-    #                     query = """
-    #                     SELECT event.ID, event.Title, event.About, event.Date, event.StartTime, event.EndTime, event.LocationCity, event.Address, event.Capacity, Cause.Name as CauseName, GROUP_CONCAT(Tag.TagName SEPARATOR ',') AS TagName
-    #                     FROM event e
-    #                     JOIN Cause ON event.CauseID = Cause.ID
-    #                     JOIN CauseTag ON Cause.ID = CauseTag.CauseID
-    #                     JOIN Tag ON CauseTag.TagID = Tag.ID
-    #                     WHERE ( %s IS NULL OR event.LocationCity = %s)
-    #                     GROUP BY Event.ID
-    #                     ORDER BY Event.Date ASC"""
-
-    #                     cursor.execute(query, (location, location))
-
-    #                     # cursor.execute(query, (location, location))
-    #                 # else:
-    #                 #     query = """
-    #                 #     SELECT event.ID, event.Title, event.About, event.Date, event.StartTime, event.EndTime, event.LocationCity, event.Address, event.Capacity, Cause.Name as CauseName, GROUP_CONCAT(Tag.TagName SEPARATOR ',') AS TagName
-    #                 #     FROM event 
-    #                 #     JOIN Cause ON event.CauseID = Cause.ID
-    #                 #     JOIN CauseTag ON Cause.ID = CauseTag.CauseID
-    #                 #     JOIN Tag ON CauseTag.TagID = Tag.ID
-    #                 #     GROUP BY Event.ID
-    #                 #     ORDER BY Event.Date ASC"""
-    #                     # cursor.execute(query)
-    #                 result_set = cursor.fetchall()
-        
-    #                 for item in result_set:
-    #                     event = {
-    #                         'ID': item['ID'],
-    #                         'Title': item["Title"],
-    #                         'About': item["About"],
-    #                         'Date': str(item["Date"]),
-    #                         'StartTime': str(item["StartTime"]),
-    #                         'EndTime': str(item["EndTime"]),
-    #                         'LocationCity': item["LocationCity"],
-    #                         'Address': item["Address"],
-    #                         'Capacity': item["Capacity"],
-    #                         'CauseName': item['CauseName'],
-    #                         'TagName': item["TagName"]
-    #                     }
-    #                     event_list.append(event)
-    #     except pymysql.MySQLError as e:
-    #         print(f"Database error in get_all_events: {e}")
-    
-    #     return event_list
-
      # ------------------------
     # Generic Event/Data Methods
     # ------------------------
@@ -561,7 +489,7 @@ class DataAccess:
             with self.get_connection(use_dict_cursor=True) as conn:
                 with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                     query = """
-                    SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity,
+                    SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path,
                         c.Name AS CauseName,
                         GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
                     FROM Event e
@@ -592,7 +520,7 @@ class DataAccess:
                         params.append(end_date)
 
                     query += """
-                    GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name
+                    GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path, c.Name
                     ORDER BY e.Date ASC;
                     """
 
@@ -610,7 +538,9 @@ class DataAccess:
                             'EndTime': str(item["EndTime"]),
                             'LocationCity': item["LocationCity"],
                             'Address': item["Address"],
+                            'LocationPostcode': item['LocationPostcode'],
                             'Capacity': item["Capacity"],
+                            'Image_path': item['Image_path'],
                             'CauseName': item['CauseName'],
                             'TagName': item["TagName"]
                         })
@@ -618,94 +548,3 @@ class DataAccess:
             print(f"Database error in get_filtered_events: {e}")
 
         return events
-
-
-    # def get_all_events(self, location=None):
-    #     event_list = []
-    #     try:
-    #         with self.get_connection(use_dict_cursor=True) as conn:
-    #             with conn.cursor(pymysql.cursors.DictCursor) as cursor:
-    #                 query = """
-    #                 SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name AS CauseName, GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
-    #                 FROM Event e
-    #                 JOIN Cause c ON e.CauseID = c.ID
-    #                 JOIN CauseTag ct ON c.ID = ct.CauseID
-    #                 JOIN Tag t ON ct.TagID = t.ID
-    #                 WHERE (%s IS NULL OR e.LocationCity = %s)
-    #                 GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name
-    #                 ORDER BY e.Date ASC;
-    #                 """
-    #                 loc_param = location.strip() if location else None
-    #                 cursor.execute(query, (loc_param, loc_param))
-    #                 result_set = cursor.fetchall()
-
-    #                 for item in result_set:
-    #                     event = {
-    #                         'ID': item['ID'],
-    #                         'Title': item["Title"],
-    #                         'About': item["About"],
-    #                         'Date': str(item["Date"]),
-    #                         'StartTime': str(item["StartTime"]),
-    #                         'EndTime': str(item["EndTime"]),
-    #                         'LocationCity': item["LocationCity"],
-    #                         'Address': item["Address"],
-    #                         'Capacity': item["Capacity"],
-    #                         'CauseName': item['CauseName'],
-    #                         'TagName': item["TagName"]
-    #                     }
-    #                     event_list.append(event)
-    #     except pymysql.MySQLError as e:
-    #         print(f"Database error in get_all_events: {e}")
-
-    #     return event_list
-
-
-    # def search_events(self, keyword=None, location=None, date=None):
-    #     events = []
-    #     try:
-    #         with self.get_connection(use_dict_cursor=True) as conn:
-    #             cursor = conn.cursor()
-    #             try:
-    #                 query = """
-                        
-    #                 SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name AS CauseName, GROUP_CONCAT(t.TagName SEPARATOR ', ') AS TagNames
-    #                 FROM Event e
-    #                 JOIN Cause c ON e.CauseID = c.ID
-    #                 JOIN CauseTag ct ON c.ID = ct.CauseID
-    #                 JOIN Tag t ON ct.TagID = t.ID
-    #                 WHERE 1=1
-    #                 # GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name;
-    #                 """
-
-    #                 params = []
-
-    #                 if keyword:
-    #                     query += " AND (e.Title LIKE %s OR e.About LIKE %s)"
-    #                     keyword_param = f"%{keyword}%"
-    #                     params.extend([keyword_param, keyword_param])
-
-    #                 if location:
-    #                     query += " AND LOWER(TRIM(e.LocationCity)) = %s"
-    #                     params.append(location)
-
-    #                 if date:
-    #                     query += " AND e.Date = %s"
-    #                     params.append(date)
-
-    #                 query += " GROUP BY e.ID ORDER BY e.Date ASC"
-
-    #                 print("Executing query with params:", query)
-
-    #                 print("Executing query:", query)
-    #                 print("Params:", params)
-
-    #                 cursor.execute(query, params)
-    #                 events = cursor.fetchall()
-
-    #             finally:
-    #                 cursor.close()
-    #     except pymysql.MySQLError as e:
-    #         print(f"Database error in search_events: {e}")
-                   
-    #     return events
-    
