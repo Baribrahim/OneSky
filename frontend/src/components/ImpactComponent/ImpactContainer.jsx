@@ -4,6 +4,36 @@ import StatCard from "./StatCard";
 import CompletedEventsPopup from "../CompletedEventsPopup";
 import "../../styles/impact.css";
 
+// Minimal inline icons (no extra deps)
+const ClockIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" />
+    <polyline points="12,7 12,12 16,14" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M20 6L9 17l-5-5" />
+  </svg>
+);
+
+const CalendarIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+const MedalIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="13" r="5" />
+    <path d="M8 3l4 6 4-6" />
+  </svg>
+);
+
 /**
  * ImpactContainer
  * Displays a compact summary of the user’s volunteering impact.
@@ -43,18 +73,19 @@ export default function ImpactContainer() {
 
   // Predefined stats (keeps JSX declarative)
   const stats = useMemo(() => ([
-    { key: "hours", label: "Total Hours", value: hoursLabel, icon: "⏱️", helper: "Completed volunteering time" },
+    { key: "hours", label: "Total Hours", value: hoursLabel, icon: <ClockIcon />, helper: "Completed volunteering time", variant: 'hours' },
     { 
       key: "completed", 
       label: "Completed Events", 
       value: String(data?.events_completed ?? 0), 
-      icon: "✅", 
+      icon: <CheckIcon />, 
       helper: "Events you've completed",
       clickable: true,
-      onClick: handleCompletedEventsClick
+      onClick: handleCompletedEventsClick,
+      variant: 'completed'
     },
-    { key: "upcoming", label: "Upcoming Events",  value: String(data?.counts?.upcoming_events ?? 0), icon: "📅", helper: "Next events you're attending" },
-    { key: "badges", label: "Badges", value: String(data?.counts?.badges ?? 0), icon: "🏅", helper: "Achievements earned" },
+    { key: "upcoming", label: "Upcoming Events",  value: String(data?.counts?.upcoming_events ?? 0), icon: <CalendarIcon />, helper: "Next events you're attending", variant: 'upcoming' },
+    { key: "badges", label: "Badges", value: String(data?.counts?.badges ?? 0), icon: <MedalIcon />, helper: "Achievements earned", variant: 'badges' },
   ]), [data, hoursLabel]);
 
   return (
@@ -91,6 +122,7 @@ export default function ImpactContainer() {
                 label={s.label}
                 value={s.value}
                 helper={s.helper}
+                variant={s.variant}
                 clickable={s.clickable}
                 onClick={s.onClick}
               />

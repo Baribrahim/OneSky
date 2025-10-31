@@ -68,24 +68,25 @@ const UpcomingEvents = () => {
         {events.length === 0 && !loading && (
           <p className="helper" style={{ paddingLeft: 4 }}>No upcoming events.</p>
         )}
+
+        {hasMore && (
+          <div className="timeline-show-more-container">
+            <button
+              className="button button--secondary timeline-show-more"
+              disabled={loading}
+              onClick={() => fetchEvents({ append: true })}
+            >
+              {loading ? 'Loading…' : 'Show more'}
+            </button>
+          </div>
+        )}
+
+        {!hasMore && events.length > 0 && total > 0 && (
+          <p className="helper timeline-summary">
+            Showing all {total} upcoming events.
+          </p>
+        )}
       </div>
-
-      {hasMore && (
-        <button
-          className="button button--secondary timeline-show-more"
-          style={{ width: 'auto', padding: '0 16px', height: 40, marginTop: 8 }}
-          disabled={loading}
-          onClick={() => fetchEvents({ append: true })}
-        >
-          {loading ? 'Loading…' : 'Show more'}
-        </button>
-      )}
-
-      {!hasMore && events.length > 0 && total > 0 && (
-        <p className="helper" style={{ marginTop: 8 }}>
-          Showing all {total} upcoming events.
-        </p>
-      )}
     </>
   )
 }
