@@ -22,7 +22,7 @@ pipeline {
         steps {
           // Run the ReactJS tests
           dir('frontend') {
-            sh "npm test"
+            sh 'CI=true npm test -- --run --environment=jsdom'
           }
         }
     }
