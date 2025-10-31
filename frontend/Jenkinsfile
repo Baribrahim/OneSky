@@ -18,14 +18,14 @@ pipeline {
             }
         }
     }
-    // stage('Test') {
-    //     steps {
-    //       // Run the ReactJS tests
-    //       dir('frontend') {
-    //         sh 'CI=true npm test -- --run --environment=jsdom'
-    //       }
-    //     }
-    // }
+    stage('Test') {
+        steps {
+          // Run the ReactJS tests
+          dir('frontend') {
+            sh 'CI=true npm test -- --run --environment=jsdom'
+          }
+        }
+    }
     stage('SonarQube Analysis') {
       environment {
         scannerHome = tool 'sonarqube'
