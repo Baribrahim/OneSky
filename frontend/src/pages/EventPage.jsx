@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import EventHeader from '../components/EventComponents/EventHeader';
 import EventInfoCards from '../components/EventComponents/EventInfoCards';
+import EventDescription from '../components/EventComponents/EventDescription';
+import EventActivities from '../components/EventComponents/EventActivities';
 
 function EventPage(){
     const { id } = useParams();
@@ -47,6 +49,14 @@ function EventPage(){
                 locationPostCode={event.LocationPostcode}
                 capacity={event.Capacity}
                 causeName={event.CauseName}
+            />
+
+            <EventDescription
+                about={event.About}
+            />
+
+            <EventActivities
+                activities={event.Activities}
             />
         </div>
     );
