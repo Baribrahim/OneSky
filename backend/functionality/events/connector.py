@@ -39,3 +39,7 @@ class Connector():
     def unregister_user_from_event(self, user_email, event_id):
         dao = DataAccess()
         dao.delete_user_from_event(user_email, event_id)
+    
+    def get_user_id_by_email(self, email):
+        dao = DataAccess()
+        return dao.get_user_id_by_email(email)
