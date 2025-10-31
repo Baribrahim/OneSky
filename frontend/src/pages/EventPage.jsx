@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import EventHeader from '../components/EventComponents/EventHeader';
+import EventInfoCards from '../components/EventComponents/EventInfoCards';
 
 function EventPage(){
     const { id } = useParams();
@@ -36,6 +37,13 @@ function EventPage(){
                 title={event.Title}
                 causeName={event.CauseName}
                 tags={event.TagName}
+            />
+            <EventInfoCards
+                date={event.Date}
+                startTime={event.StartTime}
+                endtime={event.EndTime}
+                location={event.LocationCity}
+                capacity={event.capacity}
             />
         </div>
     );
