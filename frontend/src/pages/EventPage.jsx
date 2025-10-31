@@ -41,9 +41,12 @@ function EventPage(){
             <EventInfoCards
                 date={event.Date}
                 startTime={event.StartTime}
-                endtime={event.EndTime}
+                endTime={event.EndTime}
+                address={event.Address}
                 location={event.LocationCity}
-                capacity={event.capacity}
+                locationPostCode={event.LocationPostcode}
+                capacity={event.Capacity}
+                causeName={event.CauseName}
             />
         </div>
     );
