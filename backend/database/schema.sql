@@ -80,6 +80,38 @@ create table UserBadge (
   FOREIGN KEY (BadgeID) REFERENCES Badge(ID)
 );
 
+create table Team
+(
+  ID int primary key auto_increment,
+  Name varchar(120) not null,
+  Description varchar(1000),
+  Department varchar(120),
+  Capacity int,
+  OwnerUserID int not null,
+  foreign key (OwnerUserID) references User(ID),
+  JoinCode char(8) not null,
+  unique (JoinCode),
+  IsActive tinyint not null default 1
+);
+
+create table TeamMembership
+	(
+	ID int primary key auto_increment,
+	UserID int,
+    FOREIGN KEY (UserID) references User(ID),
+    TeamID int,
+    FOREIGN KEY (TeamID) references Team(ID)
+	);
+    
+create table TeamEventRegistration
+	(
+	ID int primary key auto_increment,
+	EventID int,
+    FOREIGN KEY (EventID) references Event(ID),
+    TeamID int,
+    FOREIGN KEY (TeamID) references Team(ID)
+	);
+  
 -- Insert badges
 INSERT INTO Badge (Name, Description, IconURL) VALUES
 ('Event Starter', 'Registered for your first upcoming event', '/src/assets/badges/firstStep.png'),
@@ -189,3 +221,19 @@ INSERT INTO Event (CauseID, Title, About, Activities, Requirements, Schedule, Ex
 (10, 'Leeds Emergency Shelter Setup', 'Help set up temporary shelters.', 'Assembling tents, arranging bedding.', 'Physically fit volunteers.', 'Shift from 8am to 12pm.', 'Improved disaster readiness.', '2025-12-17', '08:00:00', '12:00:00', '04:00:00', 'Leeds', 'LS9 7AA', 'Relief Operations Hub', 25, 'event-images/shelter-setup.jpg'),
 (10, 'Relief Rally Manchester', 'Assemble emergency kits for disaster victims.', 'Packing supplies, labeling boxes.', 'Able to lift boxes.', 'Shift from 10am to 1pm.', 'Faster disaster response.', '2025-12-31', '10:00:00', '13:00:00', '03:00:00', 'Manchester', 'M3 4AB', 'Relief Centre', 30, 'event-images/aid-in-action.jpg'),
 (10, 'Aid in Action: Livingston', 'Distribute essential supplies to affected families.', 'Loading trucks, handing out kits.', 'Organized volunteers.', 'Event runs from 9am to 1pm.', 'Timely aid delivery.', '2025-12-21', '09:00:00', '13:00:00', '04:00:00', 'Livingston', 'EH54 0AA', 'Community Relief Centre', 25, 'event-images/releif-rally.jpg');
+
+
+-- Dummy Data for Users
+INSERT INTO User (Email, Password, FirstName, LastName)
+VALUES
+  ('a@test.com', '12345678', 'Alice', 'Smith');
+
+-- Dummy Data for Teams
+INSERT INTO Team (Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive)
+VALUES
+('Alpha Innovators', 'Product development team focused on emerging technologies.', 'R&D', 12, 1, 'A1B2C3D4', 1),
+('Beta Builders', 'Team responsible for backend infrastructure and API management.', 'Engineering', 10, 1, 'B3C4D5E6', 1),
+('Creative Crew', 'Design team creating UX/UI assets and branding materials.', 'Design', 8, 1, 'C5D6E7F8', 1),
+('Delta Data', 'Analytics team working on data modeling and performance metrics.', 'Data Science', 9, 1, 'D7E8F9G0', 1),
+('Echo Executives', 'Leadership group coordinating company-wide strategy.', 'Management', 5, 1, 'E9F0G1H2', 1)
+

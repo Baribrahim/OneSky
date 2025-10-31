@@ -107,7 +107,6 @@ a:hover { color: var(--brand-primary-600); }
   padding: var(--space-8, 20px);
   box-shadow: var(--shadow-2, 0 2px 8px rgba(0,0,0,0.1));
   max-width: 400px;
-  margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
 }
@@ -249,6 +248,13 @@ a:hover { color: var(--brand-primary-600); }
 
 .error {
   color: var(--color-danger);
+  margin-top: var(--space-2);
+  font-size: 0.95rem;
+}
+
+/* Success text */
+.success {
+  color: var(--color-success);
   margin-top: var(--space-2);
   font-size: 0.95rem;
 }
