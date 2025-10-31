@@ -38,9 +38,9 @@ class EventConnector():
     def unregister_user_from_event(self, user_email, event_id):
         self.dao.delete_user_from_event(user_email, event_id)
 
-    """Extracts team details where user is owner and team not signed up to event"""
-    def extract_team_unregistered_details(self, user_email, event_id):
-        return self.dao.read_user_unregistered_teams(event_id, user_email)
+    """Extracts team details where user is owner and team event registration status"""
+    def extract_team_event_details(self, user_email, event_id):
+        return self.dao.read_user_teams_with_registration_status(event_id, user_email)
 
        
     """ Passes team id and event id to dao"""

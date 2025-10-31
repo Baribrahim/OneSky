@@ -21,8 +21,9 @@ vi.mock("../lib/apiClient");
 
 describe("EventTeamsPopup", () => {
   const mockTeams = [
-    { ID: 1, Name: "Team Alpha" },
-    { ID: 2, Name: "Team Beta" },
+    { ID: 1, Name: "Team Alpha", isRegistered: 1 },
+    { ID: 2, Name: "Team Beta", isRegistered: 0 },
+    { ID: 3, Name: "Team Gamma", isRegistered: 0 },
   ];
 
   beforeEach(() => {
@@ -93,6 +94,26 @@ describe("EventTeamsPopup", () => {
     });
   });
 
+  it("displays 'Registered' for teams that are registered and prevents click", async () => {
+    render(<EventTeamsPopup eventID={5} />);
+    fireEvent.click(screen.getByTestId("trigger"));
+
+    await waitFor(() => screen.getByText("Team Alpha"));
+
+    // Check registered label
+    expect(screen.getByText("Registered")).toBeInTheDocument();
+
+    // Click registered team should not select
+    const registeredTeam = screen.getByText("Team Alpha").closest("li");
+    await userEvent.click(registeredTeam);
+    expect(registeredTeam).not.toHaveClass("selected");
+
+    // Click unregistered team should select
+    const unregisteredTeam = screen.getByText("Team Beta").closest("li");
+    await userEvent.click(unregisteredTeam);
+    expect(unregisteredTeam).toHaveClass("selected");
+  });
+
   // ---------------------------------------------------------
   // TEAM SELECTION & SUBMISSION
   // ---------------------------------------------------------
@@ -103,8 +124,8 @@ describe("EventTeamsPopup", () => {
     await waitFor(() => screen.getByText("Team Alpha"));
 
     const teamItems = screen.getAllByRole('listitem');
-    await userEvent.click(teamItems[0]);
     await userEvent.click(teamItems[1]);
+    await userEvent.click(teamItems[2]);
 
     // Simulate submit button
     const submitBtn = screen.getByRole("button", { name: /submit/i });
@@ -113,11 +134,11 @@ describe("EventTeamsPopup", () => {
     await waitFor(() => {
       expect(apiClient.api.post).toHaveBeenCalledWith("/api/events/signup-team", {
         event_id: 5,
-        team_id: 1,
+        team_id: 2,
       });
       expect(apiClient.api.post).toHaveBeenCalledWith("/api/events/signup-team", {
         event_id: 5,
-        team_id: 2,
+        team_id: 3,
       });
     });
   });

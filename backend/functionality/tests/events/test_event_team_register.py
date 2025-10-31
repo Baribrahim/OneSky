@@ -21,39 +21,39 @@ def client():
 
 """Connector methods"""
 
-def test_extract_team_unregistered_details_calls_dao_correctly():
+def test_extract_team_event_details_calls_dao_correctly():
     with patch('events.connector.DataAccess') as MockDAO:
         # Arrange
         mock_dao_instance = MockDAO.return_value
-        mock_dao_instance.read_user_unregistered_teams.return_value = [
-            {"ID": 1, "Name": "Team Alpha"},
-            {"ID": 2, "Name": "Team Beta"}
+        mock_dao_instance.read_user_teams_with_registration_status.return_value = [
+            {"ID": 1, "Name": "Team Alpha", "isRegistered": 1},
+            {"ID": 2, "Name": "Team Beta", "isRegistered": 0}
         ]
         connector = EventConnector()
         user_email = "user@example.com"
         event_id = 123
 
         # Act
-        result = connector.extract_team_unregistered_details(user_email, event_id)
+        result = connector.extract_team_event_details(user_email, event_id)
 
         # Assert
-        mock_dao_instance.read_user_unregistered_teams.assert_called_once_with(event_id, user_email)
+        mock_dao_instance.read_user_teams_with_registration_status.assert_called_once_with(event_id, user_email)
         assert result == [
-            {"ID": 1, "Name": "Team Alpha"},
-            {"ID": 2, "Name": "Team Beta"}
+            {"ID": 1, "Name": "Team Alpha", "isRegistered": 1},
+            {"ID": 2, "Name": "Team Beta", "isRegistered": 0}
         ]
 
 
-def test_extract_team_unregistered_details_raises_when_dao_fails():
+def test_extract_team_event_details_raises_when_dao_fails():
     with patch('events.connector.DataAccess') as MockDAO:
         # Arrange
         mock_dao_instance = MockDAO.return_value
-        mock_dao_instance.read_user_unregistered_teams.side_effect = Exception("DB error")
+        mock_dao_instance.read_user_teams_with_registration_status.side_effect = Exception("DB error")
         connector = EventConnector()
 
         # Act & Assert
         try:
-            connector.extract_team_unregistered_details("user@example.com", 1)
+            connector.extract_team_event_details("user@example.com", 1)
         except Exception as e:
             assert str(e) == "DB error"
         else:
@@ -154,11 +154,11 @@ def test_get_available_teams_success(client):
     token, _ = _login_get_token(client, email, "password123!")
 
     mock_teams = [
-        {"ID": 1, "Name": "Team Alpha"},
-        {"ID": 2, "Name": "Team Beta"},
+        {"ID": 1, "Name": "Team Alpha", "isRegistered": 1},
+        {"ID": 2, "Name": "Team Beta", "isRegistered": 0}
     ]
 
-    with patch.object(routes.con, "extract_team_unregistered_details", return_value=mock_teams):
+    with patch.object(routes.con, "extract_team_event_details", return_value=mock_teams):
         response = client.get(
             "/api/events/1/available-teams",
             headers={"Authorization": f"Bearer {token}"}

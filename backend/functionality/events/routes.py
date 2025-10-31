@@ -126,5 +126,5 @@ def get_users_unregistered_teams(event_id):
     if not event_id:
         return jsonify({"error": "Missing event_id"}), 400
     user_email = g.current_user.get("sub")
-    data = con.extract_team_unregistered_details(user_email, event_id)
+    data = con.extract_team_event_details(user_email, event_id)
     return jsonify({"teams": data}), 200
