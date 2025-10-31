@@ -240,3 +240,29 @@
   font-size: 1rem;
   margin-bottom: 8px;
 }
+
+/* Event Requirments CSS */
+.event-requirements {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.requirements-container {
+  display: flex;
+  gap: 20px;
+}
+
+.requirements-section {
+  flex: 1;
+}
+
+.requirements-section h3 {
+  margin-bottom: 10px;
+}
+
+.requirements-section ul {
+  list-style-type: disc;
+  padding-left: 20px;
+}

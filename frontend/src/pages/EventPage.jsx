@@ -4,6 +4,7 @@ import EventHeader from '../components/EventComponents/EventHeader';
 import EventInfoCards from '../components/EventComponents/EventInfoCards';
 import EventDescription from '../components/EventComponents/EventDescription';
 import EventActivities from '../components/EventComponents/EventActivities';
+import EventRequirements from '../components/EventComponents/EventRequirements';
 
 function EventPage(){
     const { id } = useParams();
@@ -57,6 +58,10 @@ function EventPage(){
 
             <EventActivities
                 activities={event.Activities}
+            />
+
+            <EventRequirements
+                requirements={event.Requirements}
             />
         </div>
     );
