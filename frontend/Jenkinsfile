@@ -13,13 +13,17 @@ pipeline {
     stage('Install') {
         steps {
             // Install the ReactJS dependencies
-            sh "npm install"
+            dir('frontend') {
+              sh "npm install"
+            }
         }
     }
     stage('Test') {
         steps {
           // Run the ReactJS tests
-          sh "npm test"
+          dir('frontend') {
+            sh "npm test"
+          }
         }
     }
     // stage('SonarQube Analysis') {
@@ -36,4 +40,4 @@ pipeline {
     //     }
     // }
   }
-} 
+}
