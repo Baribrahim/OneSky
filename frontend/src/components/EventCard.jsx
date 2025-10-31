@@ -42,9 +42,6 @@ function EventCard({ event }) {
     }
   };
 
-
-  console.log(event.Image_url);
-
   return (
     <div className="card event-card">
       {/* When we depoloy this it update the URL to match backend domain/ api base url */}

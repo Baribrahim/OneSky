@@ -8,6 +8,7 @@ import pymysql
 import random
 from pymysql.cursors import DictCursor
 from flask import request
+from datetime import date, timedelta
 
 class DataAccess:
     load_dotenv()
@@ -369,6 +370,10 @@ class DataAccess:
     def get_filtered_events(self, keyword=None, location=None, start_date=None, end_date=None):
         events = []
         try:
+            if not start_date and not end_date:
+                start_date = date.today()
+                # If we want to filter by default 30 days then uncomment below
+                # end_date = start_date + timedelta(days=30)
             with self.get_connection(use_dict_cursor=True) as conn:
                 with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                     query = """
@@ -401,6 +406,7 @@ class DataAccess:
                     elif end_date:
                         query += " AND e.Date <= %s"
                         params.append(end_date)
+                    
 
                     query += """
                     GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path, c.Name
