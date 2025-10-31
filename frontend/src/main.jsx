@@ -11,6 +11,8 @@ import Events from "./pages/Events.jsx";
 import EventPage from "./pages/EventPage.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
+import Teams from "./pages/Teams.jsx";
+import CreateTeam from "./pages/CreateTeam.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -23,6 +25,8 @@ createRoot(document.getElementById("root")).render(
               <Route path="/" element={<Home />} />
               <Route path="/events" element={<Events />} />
               <Route path="/events/:id" element={<EventPage />} />
+              <Route path="/teams" element={<Teams />} />
+              <Route path="/teams/new" element={<CreateTeam />} />
             </Route>
           </Route>
 

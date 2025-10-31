@@ -6,7 +6,6 @@ from flask import Blueprint, render_template, request, flash, jsonify, current_a
 from .connector import Connector
 from auth.routes import token_required
 from flask_cors import CORS
-import json
 from data_access import DataAccess
 
 bp = Blueprint("api_events", __name__, url_prefix="/api/events")
@@ -32,6 +31,19 @@ def signup_event():
     user_email = g.current_user.get("sub", "User") 
     con = Connector()
     con.register_user_for_event(user_email, event_id)
+    
+    # Check for badges after successful event registration
+    try:
+        from badges.connector import BadgeConnector
+        badge_connector = BadgeConnector()
+        user_id = con.get_user_id_by_email(user_email)
+        if user_id:
+            newly_awarded = badge_connector.check_and_award_event_badges(user_id)
+            if newly_awarded:
+                print(f"User {user_email} earned {len(newly_awarded)} new badges!")
+    except Exception as e:
+        print(f"Error checking badges after event signup: {e}")
+    
     return jsonify({"message": "Successfully registered for event!"}), 200
 
 @bp.route("/signup-status", methods=["GET"])
@@ -39,8 +51,8 @@ def signup_event():
 def check_signup_status():
     user_email = g.current_user.get("sub", "User")
     con = Connector()
-    is_signed_up = con.user_signed_up_for_events(user_email)
-    return jsonify(is_signed_up), 200
+    signed_up_events = con.user_signed_up_for_events(user_email)
+    return jsonify(signed_up_events), 200
 
 @bp.route("/unregister", methods=["POST"])
 @token_required

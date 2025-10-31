@@ -231,6 +231,125 @@ class DataAccess:
             cursor.execute(sql, (user_id,))
             return cursor.fetchall()
 
+
+
+    # ------------------------
+    # Badge Methods
+    # ------------------------
+    def get_user_badges(self, user_id: int):
+        """
+        Retrieve all badges earned by the user.
+        
+        Args:
+            user_id (int): The ID of the user
+            
+        Returns:
+            List[Dict]: List of badge dictionaries
+        """
+        sql = """
+            SELECT b.ID, b.Name, b.Description, b.IconURL
+            FROM UserBadge ub
+            JOIN Badge b ON b.ID = ub.BadgeID
+            WHERE ub.UserID = %s
+            ORDER BY b.Name ASC
+        """
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id,))
+            return cursor.fetchall()
+
+    def get_all_badges(self):
+        """
+        Retrieve all available badges in the system.
+        
+        Returns:
+            List[Dict]: List of all badge dictionaries
+        """
+        sql = """
+            SELECT ID, Name, Description, IconURL
+            FROM Badge
+            ORDER BY Name ASC
+        """
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql)
+            return cursor.fetchall()
+
+    def get_badge_by_name(self, badge_name: str):
+        """
+        Retrieve a specific badge by its name.
+        
+        Args:
+            badge_name (str): The name of the badge
+            
+        Returns:
+            Dict: Badge dictionary or None if not found
+        """
+        sql = """
+            SELECT ID, Name, Description, IconURL
+            FROM Badge
+            WHERE Name = %s
+            LIMIT 1
+        """
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (badge_name,))
+            return cursor.fetchone()
+
+    def user_has_badge(self, user_id: int, badge_id: int) -> bool:
+        """
+        Check if a user has a specific badge.
+        
+        Args:
+            user_id (int): The ID of the user
+            badge_id (int): The ID of the badge
+            
+        Returns:
+            bool: True if user has the badge, False otherwise
+        """
+        sql = """
+            SELECT 1 FROM UserBadge
+            WHERE UserID = %s AND BadgeID = %s
+            LIMIT 1
+        """
+        with self.get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id, badge_id))
+            return cursor.fetchone() is not None
+
+    def award_badge_to_user(self, user_id: int, badge_id: int):
+        """
+        Award a badge to a user.
+        
+        Args:
+            user_id (int): The ID of the user
+            badge_id (int): The ID of the badge to award
+        """
+        sql = """
+            INSERT INTO UserBadge (UserID, BadgeID)
+            VALUES (%s, %s)
+        """
+        with self.get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id, badge_id))
+
+    def user_completed_weekend_event(self, user_id: int) -> bool:
+        """
+        Check if a user has completed any events on weekends (Saturday or Sunday).
+        
+        Args:
+            user_id (int): The ID of the user
+            
+        Returns:
+            bool: True if user has completed a weekend event, False otherwise
+        """
+        sql = """
+            SELECT 1 FROM Event e
+            JOIN EventRegistration er ON er.EventID = e.ID
+            WHERE er.UserID = %s
+              AND TIMESTAMP(e.Date, e.StartTime) < NOW()
+              AND DAYOFWEEK(e.Date) IN (1, 7)  -- Sunday=1, Saturday=7
+            LIMIT 1
+        """
+        with self.get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id,))
+            return cursor.fetchone() is not None
+
     # ------------------------
     # Generic Event/Data Methods
     # ------------------------
@@ -287,65 +406,6 @@ class DataAccess:
         except Exception as e:
             print(f"Error in unregister_user_from_event: {e}")
             raise
-
-     # ------------------------
-    # Generic Event/Data Methods
-    # ------------------------
-    def get_event_details(self):
-        try:
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute("SELECT * FROM Event")
-                rows = cursor.fetchall()
-                cols = [col[0] for col in cursor.description]
-                return rows, cols
-        except Exception as e:
-            print(f"Error in get_event_details: {e}")
-            raise
-
-    def get_id_by_email(self, email):
-        try:
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute("SELECT ID FROM User WHERE Email = %s", (email,))
-                row = cursor.fetchone()
-                return row[0] if row else None
-        except Exception as e:
-            print(f"Error in get_id_by_email: {e}")
-            raise
-
-    def store_user_event_id(self, user_email, event_id):
-        try:
-            user_id = self.get_id_by_email(user_email)
-            sql = "INSERT INTO EventRegistration (UserID, EventID) VALUES (%s, %s)"
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute(sql, (user_id, event_id))
-                # autocommit=True
-        except Exception as e:
-            print(f"Error in store_user_event_id: {e}")
-            raise
-
-    def get_user_events(self, user_email):
-        try:
-            user_id = self.get_id_by_email(user_email)
-            sql = "SELECT EventID FROM EventRegistration WHERE UserID = %s"
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute(sql, (user_id,))  # NOTE the comma -> (user_id,)
-                return cursor.fetchall()
-        except Exception as e:
-            print(f"Error in check_user_event_signup: {e}")
-            raise
-
-    def delete_user_from_event(self, user_email, event_id):
-        try:
-            user_id = self.get_id_by_email(user_email)
-            sql = "DELETE FROM EventRegistration WHERE UserID = %s AND EventID = %s"
-            with self.get_connection() as conn, conn.cursor() as cursor:
-                cursor.execute(sql, (user_id, event_id))
-                # autocommit=True
-        except Exception as e:
-            print(f"Error in unregister_user_from_event: {e}")
-            raise
-
-
 
 
     # ------------------------
@@ -485,3 +545,123 @@ class DataAccess:
         except pymysql.MySQLError as e:
             print(f"Database error in get_event_by_id: {e}")
         return event
+
+
+    
+    # -----------------------------
+    # Teams: Data Access methods
+    # -----------------------------
+    def create_team(self, name, description, department, capacity, owner_user_id, join_code):
+        """
+        Insert a new team row and return the created team as a dict.
+        """
+        with self.get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO Team (Name, Description, Department, Capacity, OwnerUserID, JoinCode)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (name, description, department, capacity, owner_user_id, join_code),
+            )
+            new_id = cursor.lastrowid
+        self.insert_user_in_team(owner_user_id, new_id)
+        return self.get_team_by_id(new_id)
+
+    def get_team_by_id(self, team_id: int):
+        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT * FROM Team WHERE ID = %s", (team_id,))
+            return cursor.fetchone()
+
+    def get_team_by_join_code(self, join_code: str):
+        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("SELECT * FROM Team WHERE JoinCode = %s LIMIT 1", (join_code,))
+            return cursor.fetchone()
+
+    def list_all_teams(self, user_email):
+        """
+        Return ALL teams, newest first (ID DESC).
+        """
+        user_id = self.get_id_by_email(user_email)
+        sql =  """
+                SELECT ID, Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive,
+                CASE 
+                WHEN OwnerUserID = %s THEN TRUE 
+                ELSE FALSE 
+                END AS IsOwner
+                FROM Team
+                ORDER BY ID DESC
+                """
+        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(sql, (user_id, ))
+            return cursor.fetchall()
+
+
+    # ------------------------
+    # Team Logic Methods
+    # ------------------------
+
+    """Insert userID and teamID into TeamMembership table"""
+    def insert_user_in_team(self, user_id, team_id):
+        try:
+            sql = "INSERT INTO TeamMembership (UserID, TeamID) VALUES (%s, %s)"
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (user_id, team_id))
+        except Exception as e:
+            print(f"Error in insert_user_in_team: {e}")
+            raise
+
+    """ Read team code using team ID """   
+    def get_team_code(self, team_id):
+        try:
+            sql = "SELECT JoinCode FROM Team WHERE ID = %s"
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (team_id,))
+                row = cursor.fetchone()
+                return row[0] if row else None
+        except Exception as e:
+            print(f"Error in select_team_code: {e}")
+            raise
+    
+    # """Delete userId and teamID from TeamMembership"""
+    # def delete_user_from_team(self, user_email, team_id):
+    #     user_id = self.get_id_by_email(user_email)
+    #     try:
+    #         sql = "DELETE FROM TeamMembership WHERE UserID = %s AND TeamID= %s"
+    #         with self.get_connection() as conn, conn.cursor() as cursor:
+    #             cursor.execute(sql, (user_id, team_id))
+    #     except Exception as e:
+    #         print(f"Error in delete_user_from_team: {e}")
+    #         raise
+    
+    """Read all information on teams a user has joined"""
+    def get_all_joined_teams(self, user_email):
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = """
+                SELECT 
+                    t.ID,
+                    t.Name,
+                    t.Description,
+                    t.Department,
+                    t.Capacity,
+                    t.OwnerUserID,
+                    t.JoinCode,
+                    t.IsActive,
+                    CASE 
+                        WHEN t.OwnerUserID = %s THEN TRUE 
+                        ELSE FALSE 
+                    END AS IsOwner
+                FROM Team AS t
+                JOIN TeamMembership AS tm 
+                    ON t.ID = tm.TeamID
+                WHERE tm.UserID = %s
+            """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (user_id, user_id))
+                result = cursor.fetchall()
+                print("TEAMS IN DA")
+                print(result)
+                return result
+        except Exception as e:
+            print(f"Error in get_all_joined_teams: {e}")
+            raise
