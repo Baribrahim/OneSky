@@ -31,6 +31,19 @@ def signup_event():
     user_email = g.current_user.get("sub", "User") 
     con = Connector()
     con.register_user_for_event(user_email, event_id)
+    
+    # Check for badges after successful event registration
+    try:
+        from badges.connector import BadgeConnector
+        badge_connector = BadgeConnector()
+        user_id = con.get_user_id_by_email(user_email)
+        if user_id:
+            newly_awarded = badge_connector.check_and_award_event_badges(user_id)
+            if newly_awarded:
+                print(f"User {user_email} earned {len(newly_awarded)} new badges!")
+    except Exception as e:
+        print(f"Error checking badges after event signup: {e}")
+    
     return jsonify({"message": "Successfully registered for event!"}), 200
 
 @bp.route("/signup-status", methods=["GET"])
@@ -66,23 +79,22 @@ def filter_events():
     return jsonify([{"city": loc} for loc in locations])
 
 
-# @bp.route('/events', methods=['GET'])
-# def get_filtered_events():
-#     location = request.args.get('location') or None
-#     events = data_access.get_all_events(location)
-#     print("===Events===")
-#     print(events)
-#     return jsonify(events)
-
 @bp.route('/events', methods=['GET'])
 def get_filtered_events_route():
     keyword = request.args.get('keyword') or None
     location = request.args.get('location') or None
-    # date = request.args.get('date') or None
     start_date = request.args.get('startDate') or None
     end_date = request.args.get('endDate') or None
-
     events = data_access.get_filtered_events(keyword, location, start_date, end_date)
+
+
+  # Add full image URL for each event
+    
+    for event in events:
+        path = event.get('Image_path') or event.get('image_path')
+        event['Image_url'] = f"{request.host_url}static/{path}" if path else None
+
+
     return jsonify(events)
 
 

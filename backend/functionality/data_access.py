@@ -7,6 +7,8 @@ import os
 import pymysql
 import random
 from pymysql.cursors import DictCursor
+from flask import request
+from datetime import date, timedelta
 
 class DataAccess:
     load_dotenv()
@@ -232,6 +234,123 @@ class DataAccess:
 
 
     # ------------------------
+    # Badge Methods
+    # ------------------------
+    def get_user_badges(self, user_id: int):
+        """
+        Retrieve all badges earned by the user.
+        
+        Args:
+            user_id (int): The ID of the user
+            
+        Returns:
+            List[Dict]: List of badge dictionaries
+        """
+        sql = """
+            SELECT b.ID, b.Name, b.Description, b.IconURL
+            FROM UserBadge ub
+            JOIN Badge b ON b.ID = ub.BadgeID
+            WHERE ub.UserID = %s
+            ORDER BY b.Name ASC
+        """
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id,))
+            return cursor.fetchall()
+
+    def get_all_badges(self):
+        """
+        Retrieve all available badges in the system.
+        
+        Returns:
+            List[Dict]: List of all badge dictionaries
+        """
+        sql = """
+            SELECT ID, Name, Description, IconURL
+            FROM Badge
+            ORDER BY Name ASC
+        """
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql)
+            return cursor.fetchall()
+
+    def get_badge_by_name(self, badge_name: str):
+        """
+        Retrieve a specific badge by its name.
+        
+        Args:
+            badge_name (str): The name of the badge
+            
+        Returns:
+            Dict: Badge dictionary or None if not found
+        """
+        sql = """
+            SELECT ID, Name, Description, IconURL
+            FROM Badge
+            WHERE Name = %s
+            LIMIT 1
+        """
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (badge_name,))
+            return cursor.fetchone()
+
+    def user_has_badge(self, user_id: int, badge_id: int) -> bool:
+        """
+        Check if a user has a specific badge.
+        
+        Args:
+            user_id (int): The ID of the user
+            badge_id (int): The ID of the badge
+            
+        Returns:
+            bool: True if user has the badge, False otherwise
+        """
+        sql = """
+            SELECT 1 FROM UserBadge
+            WHERE UserID = %s AND BadgeID = %s
+            LIMIT 1
+        """
+        with self.get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id, badge_id))
+            return cursor.fetchone() is not None
+
+    def award_badge_to_user(self, user_id: int, badge_id: int):
+        """
+        Award a badge to a user.
+        
+        Args:
+            user_id (int): The ID of the user
+            badge_id (int): The ID of the badge to award
+        """
+        sql = """
+            INSERT INTO UserBadge (UserID, BadgeID)
+            VALUES (%s, %s)
+        """
+        with self.get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id, badge_id))
+
+    def user_completed_weekend_event(self, user_id: int) -> bool:
+        """
+        Check if a user has completed any events on weekends (Saturday or Sunday).
+        
+        Args:
+            user_id (int): The ID of the user
+            
+        Returns:
+            bool: True if user has completed a weekend event, False otherwise
+        """
+        sql = """
+            SELECT 1 FROM Event e
+            JOIN EventRegistration er ON er.EventID = e.ID
+            WHERE er.UserID = %s
+              AND TIMESTAMP(e.Date, e.StartTime) < NOW()
+              AND DAYOFWEEK(e.Date) IN (1, 7)  -- Sunday=1, Saturday=7
+            LIMIT 1
+        """
+        with self.get_connection() as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id,))
+            return cursor.fetchone() is not None
+
+    # ------------------------
     # Generic Event/Data Methods
     # ------------------------
     def get_event_details(self):
@@ -311,10 +430,14 @@ class DataAccess:
     def get_filtered_events(self, keyword=None, location=None, start_date=None, end_date=None):
         events = []
         try:
+            if not start_date and not end_date:
+                start_date = date.today()
+                # If we want to filter by default 30 days then uncomment below
+                # end_date = start_date + timedelta(days=30)
             with self.get_connection(use_dict_cursor=True) as conn:
                 with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                     query = """
-                    SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity,
+                    SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path,
                         c.Name AS CauseName,
                         GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
                     FROM Event e
@@ -343,9 +466,10 @@ class DataAccess:
                     elif end_date:
                         query += " AND e.Date <= %s"
                         params.append(end_date)
+                    
 
                     query += """
-                    GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.Capacity, c.Name
+                    GROUP BY e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path, c.Name
                     ORDER BY e.Date ASC;
                     """
 
@@ -363,7 +487,9 @@ class DataAccess:
                             'EndTime': str(item["EndTime"]),
                             'LocationCity': item["LocationCity"],
                             'Address': item["Address"],
+                            'LocationPostcode': item['LocationPostcode'],
                             'Capacity': item["Capacity"],
+                            'Image_path': item['Image_path'],
                             'CauseName': item['CauseName'],
                             'TagName': item["TagName"]
                         })
