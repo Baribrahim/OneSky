@@ -7,8 +7,9 @@ import "../../styles/statCard.css";
  * - Icon, label, big value, helper text
  * - Optional onClick handler for interactive cards
  */
-export default function StatCard({ icon, label, value, helper, onClick, clickable = false }) {
-  const cardClasses = `stat-card card ${clickable ? 'stat-card--clickable' : ''}`;
+export default function StatCard({ icon, label, value, helper, onClick, clickable = false, variant }) {
+  const variantClass = variant ? `stat-card--${variant}` : '';
+  const cardClasses = `stat-card card ${clickable ? 'stat-card--clickable' : ''} ${variantClass}`;
   
   return (
     <div 

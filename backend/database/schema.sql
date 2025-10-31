@@ -111,6 +111,15 @@ create table TeamEventRegistration
     TeamID int,
     FOREIGN KEY (TeamID) references Team(ID)
 	);
+  
+-- Insert badges
+INSERT INTO Badge (Name, Description, IconURL) VALUES
+('Event Starter', 'Registered for your first upcoming event', '/src/assets/badges/firstStep.png'),
+('Event Enthusiast', 'Registered for 5 upcoming events', '/src/assets/badges/eduEnthusiast.png'),
+('First Step', 'Completed your first volunteering event', '/src/assets/badges/firstStep.png'),
+('Volunteer Veteran', 'Completed 10 volunteering events', '/src/assets/badges/volunteerVetran.png'),
+('Marathon Helper', 'Contributed 20+ total volunteering hours', '/src/assets/badges/marathonVolunteer.png'),
+('Weekend Warrior', 'Completed an event on a Saturday or Sunday', '/src/assets/badges/weekendWarrior.png');
 
 -- Dummy data for events --
    
@@ -227,5 +236,4 @@ VALUES
 ('Creative Crew', 'Design team creating UX/UI assets and branding materials.', 'Design', 8, 1, 'C5D6E7F8', 1),
 ('Delta Data', 'Analytics team working on data modeling and performance metrics.', 'Data Science', 9, 1, 'D7E8F9G0', 1),
 ('Echo Executives', 'Leadership group coordinating company-wide strategy.', 'Management', 5, 1, 'E9F0G1H2', 1)
-
 

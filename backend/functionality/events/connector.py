@@ -46,5 +46,6 @@ class EventConnector():
     """ Passes team id and event id to dao"""
     def register_team_for_event(self, team_id, event_id):
         self.dao.insert_team_to_event_registration(team_id, event_id)
-
     
+    def get_user_id_by_email(self, email):
+        return self.dao.get_user_id_by_email(email)
