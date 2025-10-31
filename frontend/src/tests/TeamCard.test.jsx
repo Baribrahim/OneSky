@@ -2,7 +2,6 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, beforeEach, afterEach, expect } from "vitest";
 import TeamCard from "../components/TeamCard";
 import * as apiClient from "../lib/apiClient";
-import "@testing-library/jest-dom";
 
 // Mock the API client
 vi.mock("../lib/apiClient", () => {
