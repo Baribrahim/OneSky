@@ -5,7 +5,14 @@ import * as apiClient from "../lib/apiClient";
 import "@testing-library/jest-dom";
 
 // Mock the API client
-vi.mock("../lib/apiClient");
+vi.mock("../lib/apiClient", () => {
+  return {
+    api: {
+      post: vi.fn(),
+    },
+    toResult: vi.fn(),
+  };
+});
 
 describe("TeamCard", () => {
   const mockTeam = {
@@ -19,14 +26,12 @@ describe("TeamCard", () => {
 
   //On api post request to api/teams/join return success and no error
   beforeEach(() => {
-    apiClient.api.post = vi.fn(() =>
-      Promise.resolve({ data: { success: true } })
-    );
-
+    apiClient.api.post.mockResolvedValue({ data: { success: true } });
     apiClient.toResult.mockImplementation((promise) =>
       promise.then((res) => ({ data: res.data, error: null }))
     );
   });
+
 
   afterEach(() => {
     vi.clearAllMocks();
