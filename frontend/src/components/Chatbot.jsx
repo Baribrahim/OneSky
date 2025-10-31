@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
+import { api, toResult } from "../lib/apiClient";
 import "../styles/chatbot.css";
 import logo from "../assets/OneSky-logo.png";
 
 /**
  * Chatbot Component
  * Floating chat interface with toggle button in bottom-right corner
- * Uses placeholder API calls until backend is ready
+ * Uses apiClient for consistent API calls across the project
  */
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -65,46 +66,53 @@ export default function Chatbot() {
     setMessages((prev) => [...prev, newUserMessage]);
     setIsLoading(true);
 
-    // TODO: Replace with actual API call when backend is ready
-    // const response = await fetch('/api/chatbot/chat', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   credentials: 'include',
-    //   body: JSON.stringify({ message: userMessage }),
-    // });
-    // const data = await response.json();
+    // Call chatbot API using apiClient
+    try {
+      const { data, error } = await toResult(
+        api.post('/api/chatbot/chat', { message: userMessage })
+      );
 
-    // Placeholder: Simulate API delay and response
-    setTimeout(() => {
-      const placeholderResponse = generatePlaceholderResponse(userMessage);
+      if (error) {
+        console.error('Chatbot error:', error);
+        const errorMessage = {
+          role: "bot",
+          content: error.message || "Sorry, I'm having trouble connecting right now. Please try again.",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+        return;
+      }
+
+      // Check if response has an error field
+      if (data?.error) {
+        const errorMessage = {
+          role: "bot",
+          content: data.error + (data.details ? `: ${data.details}` : ''),
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+        return;
+      }
+
       const botMessage = {
         role: "bot",
-        content: placeholderResponse,
+        content: data?.response || "Sorry, I couldn't process that request.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Chatbot error:', error);
+      const errorMessage = {
+        role: "bot",
+        content: "Sorry, I'm having trouble connecting right now. Please try again.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
-  // Placeholder response generator (remove when backend is connected)
-  const generatePlaceholderResponse = (message) => {
-    const lowerMessage = message.toLowerCase();
-    
-    if (lowerMessage.includes("event") || lowerMessage.includes("volunteer")) {
-      return "I can help you find volunteer events! Once the backend is connected, I'll search our database for events matching your interests.";
-    }
-    if (lowerMessage.includes("badge") || lowerMessage.includes("achievement")) {
-      return "I can show you your earned badges and achievements. This feature will be available once the backend is connected.";
-    }
-    if (lowerMessage.includes("impact") || lowerMessage.includes("hours") || lowerMessage.includes("stats")) {
-      return "I can share your volunteering impact and statistics. This will work once the backend is connected.";
-    }
-    if (lowerMessage.includes("team")) {
-      return "I can help you with team-related questions. This feature will be available once the backend is connected.";
-    }
-    return "Thanks for your message! The chatbot backend is not yet connected, but you're seeing how the interface will work.";
-  };
 
   const formatTime = (date) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });

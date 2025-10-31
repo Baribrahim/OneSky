@@ -39,7 +39,8 @@ create table Event
     LocationPostcode varchar(10) not null,
     Address varchar(255) not null,
     Capacity int not null,
-    Image_path varchar(255)not null
+    Image_path varchar(255)not null,
+    Embedding text
     );
     
 Create table Tag
