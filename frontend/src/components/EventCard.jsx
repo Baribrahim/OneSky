@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import {api, toResult} from '../lib/apiClient.js';
 import { formatDate, formatTime, timeUnicode } from '../utils/format.jsx';
 import { Link } from "react-router-dom";
+import EventTeamsPopup from "./EventTeamsPopup.jsx";
 
 
-// I have changed eventCard so that it represents an individual event and no longer fetches all events. The event card now only handles signup/unregister. This means that the events page(parent) handles the filtering and fetching, and eventcard(child) handles the display and interaction. 
 
-function EventCard({ event }) {
+function EventCard({ event}) {
   const [isSignedUp, setIsSignedUp] = useState(false); //tracks signup for individual event 
+
 
   // Fetch signup status for this specific event
   const fetchSignupStatus = async () => {
@@ -92,7 +93,10 @@ function EventCard({ event }) {
               Register
             </button>
           )}
-        </div>
+          <EventTeamsPopup eventID={event.ID}></EventTeamsPopup>
+        
+
+      </div>
       </div>
     </Link>
   );
