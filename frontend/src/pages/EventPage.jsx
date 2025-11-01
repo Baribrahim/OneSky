@@ -5,6 +5,7 @@ import EventInfoCards from '../components/EventComponents/EventInfoCards';
 import EventDescription from '../components/EventComponents/EventDescription';
 import EventActivities from '../components/EventComponents/EventActivities';
 import EventRequirements from '../components/EventComponents/EventRequirements';
+import EventMap from '../components/EventComponents/EventMap';
 
 function EventPage(){
     const { id } = useParams();
@@ -63,6 +64,10 @@ function EventPage(){
             <EventRequirements
                 requirements={event.Requirements}
             />
+
+            <EventMap latitude={event.Latitude} longitude={event.Longitude} />
+
+            {/* <EventMap latitude={51.5074} longitude={-0.0275} /> */}
         </div>
     );
 }

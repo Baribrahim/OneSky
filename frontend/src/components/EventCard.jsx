@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {api, toResult} from '../lib/apiClient.js';
 import { formatDate, formatTime, timeUnicode } from '../utils/format.jsx';
+import { Link } from "react-router-dom";
 
 
 // I have changed eventCard so that it represents an individual event and no longer fetches all events. The event card now only handles signup/unregister. This means that the events page(parent) handles the filtering and fetching, and eventcard(child) handles the display and interaction. 
@@ -46,38 +47,40 @@ function EventCard({ event }) {
   };
 
   return (
-    <div className="card event-card">
-      {/* When we depoloy this it update the URL to match backend domain/ api base url */}
-      <img className='event-image' src={`http://127.0.0.1:5000/static/${event.Image_path}`}
-          alt={event.Title}
-        />
-      <div className="card-body">
-        <h3 className="card-subtitle mb-2 text-muted">{event.Title}</h3>
-        <p className="card-text">{event.About}</p>
-        <div className="event-info">
-          <div className='event-location'>
-            <span role="img" aria-label="location">{'\u{1F4CD}'}</span>
-            {event.Address}, {event.LocationCity}, {event.LocationPostcode}
+     <Link to={`/events/${event.ID}`} className="card event-card">
+      <div className="card event-card">
+        {/* When we depoloy this it update the URL to match backend domain/ api base url */}
+        <img className='event-image' src={`http://127.0.0.1:5000/static/${event.Image_path}`}
+            alt={event.Title}
+          />
+        <div className="card-body">
+          <h3 className="card-subtitle mb-2 text-muted">{event.Title}</h3>
+          <p className="card-text">{event.About}</p>
+          <div className="event-info">
+            <div className='event-location'>
+              <span role="img" aria-label="location">{'\u{1F4CD}'}</span>
+              {event.Address}, {event.LocationCity}, {event.LocationPostcode}
+            </div>
+
+            <p className="card-text">{'\u{1F4C5}'} {formatDate(event.Date)}</p>
+            <p className="card-text">
+              {timeUnicode(event.StartTime)} {formatTime(event.StartTime)} - {formatTime(event.EndTime)}
+            </p>
+            <p className="card-text">{'\u{1F465}'} {event.Capacity}</p>
           </div>
 
-          <p className="card-text">{'\u{1F4C5}'} {formatDate(event.Date)}</p>
-          <p className="card-text">
-            {timeUnicode(event.StartTime)} {formatTime(event.StartTime)} - {formatTime(event.EndTime)}
-          </p>
-          <p className="card-text">{'\u{1F465}'} {event.Capacity}</p>
+          {isSignedUp ? (
+            <button className="button inverse" onClick={handleUnregister}>
+              Unregister
+            </button>
+          ) : (
+            <button className="button" onClick={handleSignup}>
+              Register
+            </button>
+          )}
         </div>
-
-        {isSignedUp ? (
-          <button className="button inverse" onClick={handleUnregister}>
-            Unregister
-          </button>
-        ) : (
-          <button className="button" onClick={handleSignup}>
-            Register
-          </button>
-        )}
       </div>
-    </div>
+    </Link>
   );
 }
 

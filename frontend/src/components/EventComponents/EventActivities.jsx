@@ -5,7 +5,7 @@ function EventActivities({ activities}) {
     const activityList = activities ? activities.split(',') : []
 
     return (
-        <section className="event-activities">
+        <section className="event-section">
             <h2>What You'll Be Doing</h2>
             <ul>
                 {activityList.map((activity, index) => (

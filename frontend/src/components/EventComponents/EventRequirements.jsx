@@ -16,7 +16,8 @@ function EventRequirements({ requirements }) {
     }
 
     return (
-        <section className="event-requirements">
+        <section className="event-section">
+
             <h2>Requirements</h2>
             <div className="requirements-container">
                 <div className="requirements-section">
@@ -28,7 +29,7 @@ function EventRequirements({ requirements }) {
                     </ul>
                 </div>
             
-                <div className="requirements-sections">
+                <div className="requirements-section">
                     <h3>Please Bring</h3>
                     <ul>
                         {bring.map((item, index) => (
@@ -37,6 +38,7 @@ function EventRequirements({ requirements }) {
                     </ul>
                 </div>
             </div>
+        
         </section>
     );
 }
