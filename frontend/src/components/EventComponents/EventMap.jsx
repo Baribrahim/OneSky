@@ -18,7 +18,7 @@ function EventMap({ latitude, longitude }) {
           <iframe
             title="Event Location"
             src={mapSrc}
-            width="50%"
+            width="100%"
             height="400"
             style={{ borderRadius: "10px", border: "none" }}
             allowFullScreen

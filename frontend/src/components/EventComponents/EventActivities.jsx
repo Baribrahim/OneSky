@@ -2,7 +2,7 @@ import React from "react";
 import "../../styles/events.css";
 
 function EventActivities({ activities}) {
-    const activityList = activities ? activities.split(',') : []
+    const activityList = activities ? activities.split(';') : []
 
     return (
         <section className="event-section">
