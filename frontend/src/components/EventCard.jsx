@@ -52,9 +52,21 @@ function EventCard({ event }) {
      <Link to={`/events/${event.ID}`} className="card event-card">
       <div className="card event-card">
         {/* When we depoloy this, update the URL to match backend domain/ api base url */}
-        <img className='event-image' src={`http://127.0.0.1:5000/static/${event.Image_path}`}
-            alt={event.Title}
-          />
+                
+        <img
+          className="event-image"
+          src={
+            event.Image_path
+              ? `http://127.0.0.1:5000/static/${event.Image_path}`
+              : `http://127.0.0.1:5000/static/event-images/default-event.jpeg`
+          }
+          alt={event.Title}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = `http://127.0.0.1:5000/static/event-images/default-event.jpeg`;
+          }}
+        />
+
         <div className="card-body">
           <h3 className="card-subtitle mb-2 text-muted">{event.Title}</h3>
           <p className="card-text">{firstSentence}</p>
