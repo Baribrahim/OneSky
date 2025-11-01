@@ -45,17 +45,19 @@ function EventCard({ event }) {
       console.error("Unregister failed:", error.message);
     }
   };
+  // takes the first sentance from the about section from db.
+  const firstSentence = event.About.match(/.*?[.!?]/)?.[0] || event.About;
 
   return (
      <Link to={`/events/${event.ID}`} className="card event-card">
       <div className="card event-card">
-        {/* When we depoloy this it update the URL to match backend domain/ api base url */}
+        {/* When we depoloy this, update the URL to match backend domain/ api base url */}
         <img className='event-image' src={`http://127.0.0.1:5000/static/${event.Image_path}`}
             alt={event.Title}
           />
         <div className="card-body">
           <h3 className="card-subtitle mb-2 text-muted">{event.Title}</h3>
-          <p className="card-text">{event.About}</p>
+          <p className="card-text">{firstSentence}</p>
           <div className="event-info">
             <div className='event-location'>
               <span role="img" aria-label="location">{'\u{1F4CD}'}</span>
