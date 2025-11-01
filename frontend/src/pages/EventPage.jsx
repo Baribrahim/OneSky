@@ -36,13 +36,15 @@ function EventPage(){
     if (error) return <p>{error}</p>;
 
     return (
-        <div className='event-page'>
-            <EventHeader
+        <div className="events-wrapper">
+            <div className="page-container">
+                <EventHeader
                 title={event.Title}
                 causeName={event.CauseName}
                 tags={event.TagName}
-            />
-            <EventInfoCards
+                />
+
+                <EventInfoCards
                 date={event.Date}
                 startTime={event.StartTime}
                 endTime={event.EndTime}
@@ -51,23 +53,23 @@ function EventPage(){
                 locationPostCode={event.LocationPostcode}
                 capacity={event.Capacity}
                 causeName={event.CauseName}
-            />
+                />
 
-            <EventDescription
-                about={event.About}
-            />
+                <EventDescription about={event.About} />
 
-            <EventActivities
-                activities={event.Activities}
-            />
-
-            <EventRequirements
-                requirementsBring={event.RequirementsBring}
-                requirementsProvided={event.RequirementsProvided}
-            />
-
-            <EventMap latitude={event.Latitude} longitude={event.Longitude} />
-
+                <div className="event-details-container">
+                <div className="left-column">
+                    <EventActivities activities={event.Activities} />
+                    <EventRequirements
+                    requirementsBring={event.RequirementsBring}
+                    requirementsProvided={event.RequirementsProvided}
+                    />
+                </div>
+                <div className="right-column">
+                    <EventMap latitude={event.Latitude} longitude={event.Longitude} />
+                </div>
+                </div>
+            </div>
         </div>
     );
 }
