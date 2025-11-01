@@ -62,12 +62,12 @@ function EventPage(){
             />
 
             <EventRequirements
-                requirements={event.Requirements}
+                requirementsBring={event.RequirementsBring}
+                requirementsProvided={event.RequirementsProvided}
             />
 
             <EventMap latitude={event.Latitude} longitude={event.Longitude} />
 
-            {/* <EventMap latitude={51.5074} longitude={-0.0275} /> */}
         </div>
     );
 }

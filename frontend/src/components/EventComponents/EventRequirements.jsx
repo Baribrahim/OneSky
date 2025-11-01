@@ -1,19 +1,10 @@
 import React from "react";
 import "../../styles/events.css";
 
-function EventRequirements({ requirements }) {
-    //splits the requirements into two arrays
-    let provided = [];
-    let bring = [];
+function EventRequirements({ requirementsBring, requirementsProvided }) {
+    const bring = requirementsBring ? requirementsBring.split(',').map(item => item.trim().charAt(0).toUpperCase() + item.trim().slice(1)) : [];
 
-    if (requirements) {
-        const parts = requirements.split('|');
-        const providedPart = parts [0]?.replace('What We Provide:', '').trim();
-        const bringPart = parts [1]?.replace('What to Bring:', '').trim();
-
-        provided = providedPart ? providedPart.split(',') : [];
-        bring = bringPart ? bringPart.split(',') : [];
-    }
+    const provided = requirementsProvided ? requirementsProvided.split(',').map(item => item.trim().charAt(0).toUpperCase() + item.trim().slice(1)): [];
 
     return (
         <section className="event-section">
@@ -21,7 +12,7 @@ function EventRequirements({ requirements }) {
             <h2>Requirements</h2>
             <div className="requirements-container">
                 <div className="requirements-section">
-                    <h3>What We Provide</h3>
+                    <h3>What We Provide:</h3>
                     <ul>
                         {provided.map((item, index) => (
                             <li key={index}>{item.trim()}</li>
@@ -30,7 +21,7 @@ function EventRequirements({ requirements }) {
                 </div>
             
                 <div className="requirements-section">
-                    <h3>Please Bring</h3>
+                    <h3>Please Bring:</h3>
                     <ul>
                         {bring.map((item, index) => (
                             <li key={index}>{item.trim()}</li>
