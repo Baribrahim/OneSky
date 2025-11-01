@@ -68,6 +68,6 @@ class TeamConnector:
         actual_code = self.da.get_team_code(team_id)
         return actual_code == join_code
     
-    """ Passes teams user has joined"""
+    """ Gets teams user has joined"""
     def browse_joined_teams(self, user_email):
         return self.da.get_all_joined_teams(user_email)

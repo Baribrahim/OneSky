@@ -611,9 +611,52 @@ class DataAccess:
             with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute(sql, (user_id, user_id))
                 result = cursor.fetchall()
-                print("TEAMS IN DA")
-                print(result)
                 return result
         except Exception as e:
             print(f"Error in get_all_joined_teams: {e}")
             raise
+
+    #Team Event registration methods
+    """Read all team information for teams a user owns and team is not registered for event"""
+    def read_user_teams_with_registration_status(self, event_id, user_email):
+        """Read all teams a user owns (and is a member of) with a column indicating registration status for an event."""
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = """
+                SELECT 
+                    t.ID, 
+                    t.Name,
+                    CASE 
+                        WHEN ter.TeamID IS NOT NULL THEN 1 
+                        ELSE 0 
+                    END AS isRegistered
+                FROM Team t
+                JOIN TeamMembership tm 
+                    ON tm.TeamID = t.ID
+                LEFT JOIN TeamEventRegistration ter 
+                    ON ter.TeamID = t.ID 
+                    AND ter.EventID = %s
+                WHERE t.OwnerUserID = %s 
+                AND tm.UserID = %s
+                AND t.IsActive = 1
+            """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (event_id, user_id, user_id))
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Error in read_user_teams_with_registration_status: {e}")
+            raise
+
+
+
+    """Insert TeamID and EventID into TeamEventRegistration table"""
+    def insert_team_to_event_registration(self, team_id, event_id):
+        sql = "INSERT INTO TeamEventRegistration(TeamID, EventID) VALUES (%s, %s)"
+        try:
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (team_id, event_id))
+        except Exception as e:
+            print(f"Error in insert_team_to_event_registration: {e}")
+            raise
+
+

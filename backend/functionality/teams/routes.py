@@ -18,9 +18,9 @@ def require_auth(f):
         return decorated(*args, **kwargs)
     return wrapped
 
-def list_teams(all=True):
+def list_teams(all=False):
     """
-    Lists all teams (newest first) or all joined teams depending on all flag.
+    Lists all teams (newest first) or all joined/owned teams depending on flags.
     Returns: { teams: [...], count: n }
     """
     try:
@@ -42,8 +42,13 @@ def list_teams(all=True):
                 "is_owner": t.get("IsOwner", 1),
                 
             }
-            for t in items
+            for t in items 
         ]
+
+        # #Return only the teams the user is the owner of
+        # if owner:
+        #     teams_out = [t for t in teams_out if t["is_owner"] == 1]
+
         return jsonify({"teams": teams_out, "count": len(teams_out)}), 200
 
     except Exception as e:
@@ -100,7 +105,7 @@ def list_all_teams():
 
 """Signs the user up to the selected team"""
 @bp.route("/join", methods=["POST"])
-@token_required  
+@require_auth 
 def signup_to_team():
     data = request.get_json(silent=True) or {}
     team_id = data.get("team_id")
@@ -128,11 +133,8 @@ def signup_to_team():
 def list_joined_teams():
    return list_teams(all=False)
 
-# @bp.route("/join-status", methods=["GET"])
-# @token_required
-# def check_join_status():
-#     user_email = g.current_user.get("sub", "User")
-#     con = Connector()
-#     joined_teams = con.user_joined_teams(user_email)
-#     return jsonify(joined_teams), 200
+# @bp.route("/owns", methods=["GET"])
+# @require_auth
+# def list_owned_teams():
+#    return list_teams(owner=True)
 
