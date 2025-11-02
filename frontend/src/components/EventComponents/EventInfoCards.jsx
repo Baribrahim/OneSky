@@ -1,8 +1,10 @@
 import React from "react";
 import "../../styles/events.css";
 import EventActions from "./EventActions.jsx";
+import EventHeader from "./EventHeader.jsx";
 
-function EventInfoCards({ date, startTime, endTime, location, address, locationPostCode, capacity, causeName, event}) {
+
+function EventInfoCards({ date, startTime, endTime, location, address, locationPostCode, capacity, causeName, event, title, tags}) {
     // formate the date
     const formattedDate = new Date(date).toLocaleDateString('en-GB', {
         day: 'numeric',
@@ -22,6 +24,10 @@ function EventInfoCards({ date, startTime, endTime, location, address, locationP
 
     return (
         <div className="event-info-cards-wrapper">
+            <EventHeader
+                title={event.Title}
+                tags={event.TagName}
+            />
             <div className="event-info-card">
                 <div className="info-item">
                     <h4>Date & Time</h4>
@@ -31,7 +37,11 @@ function EventInfoCards({ date, startTime, endTime, location, address, locationP
 
                 <div className="info-item">
                     <h4>Location</h4>
-                    <p>{address}, {location}, {locationPostCode} </p>
+                    <p>
+                        {address}, {location}
+                        <br />
+                        {locationPostCode} 
+                    </p>
                 </div>
 
                 <div className="info-item">
@@ -40,7 +50,7 @@ function EventInfoCards({ date, startTime, endTime, location, address, locationP
                 </div>
 
                 <div className="info-item">
-                    <h4>Cause</h4>
+                    <h4> Associated Cause</h4>
                     <p> {causeName} </p>
                 </div>
             </div>
