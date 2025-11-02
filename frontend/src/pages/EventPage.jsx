@@ -6,6 +6,7 @@ import EventDescription from '../components/EventComponents/EventDescription';
 import EventActivities from '../components/EventComponents/EventActivities';
 import EventRequirements from '../components/EventComponents/EventRequirements';
 import EventMap from '../components/EventComponents/EventMap';
+import EventActions from '../components/EventComponents/EventActions';
 
 function EventPage(){
     const { id } = useParams();
@@ -54,6 +55,8 @@ function EventPage(){
                 capacity={event.Capacity}
                 causeName={event.CauseName}
                 />
+
+                <EventActions event={event} />
 
                 <EventDescription about={event.About} />
 

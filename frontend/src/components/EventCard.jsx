@@ -50,10 +50,9 @@ function EventCard({ event}) {
   const firstSentence = event.About.match(/.*?[.!?]/)?.[0] || event.About;
 
   return (
-     <Link to={`/events/${event.ID}`} className="card event-card">
-      <div className="card event-card">
-        {/* When we depoloy this, update the URL to match backend domain/ api base url */}
-                
+    <div className="card event-card">
+      {/* Clickable area for navigation */}
+      <Link to={`/events/${event.ID}`} className="event-card-link">
         <img
           className="event-image"
           src={
@@ -67,38 +66,31 @@ function EventCard({ event}) {
             e.target.src = `http://127.0.0.1:5000/static/event-images/default-event.jpeg`;
           }}
         />
-
-        <div className="card-body">
-          <h3 className="card-subtitle mb-2 text-muted">{event.Title}</h3>
-          <p className="card-text">{firstSentence}</p>
-          <div className="event-info">
-            <div className='event-location'>
-              <span role="img" aria-label="location">{'\u{1F4CD}'}</span>
-              {event.Address}, {event.LocationCity}, {event.LocationPostcode}
-            </div>
-
-            <p className="card-text">{'\u{1F4C5}'} {formatDate(event.Date)}</p>
-            <p className="card-text">
-              {timeUnicode(event.StartTime)} {formatTime(event.StartTime)} - {formatTime(event.EndTime)}
-            </p>
-            <p className="card-text">{'\u{1F465}'} {event.Capacity}</p>
-          </div>
-
-          {isSignedUp ? (
-            <button className="button inverse" onClick={handleUnregister}>
-              Unregister
-            </button>
-          ) : (
-            <button className="button" onClick={handleSignup}>
-              Register
-            </button>
-          )}
-          <EventTeamsPopup eventID={event.ID}></EventTeamsPopup>
         
+        <div className="card-body">
+              <h3>{event.Title}</h3>
+              <p>{firstSentence}</p>
+              <div className="event-info">
+                <p>📍 {event.Address}, {event.LocationCity}</p>
+                <p>📅 {formatDate(event.Date)}</p>
+                <p>{timeUnicode(event.StartTime)} {formatTime(event.StartTime)} - {formatTime(event.EndTime)}</p>
+                <p>👥 {event.Capacity}</p>
+              </div>
+            </div>
+        </Link>
 
+      {/* Buttons */}
+      <div className="event-actions">
+        {isSignedUp ? (
+          <button className="button inverse" onClick={handleUnregister}>Unregister</button>
+        ) : (
+          <button className="button" onClick={handleSignup}>👤 Register</button>
+        )}
+        <EventTeamsPopup eventID={event.ID} />
       </div>
-      </div>
-    </Link>
+    </div>
+
+
   );
 }
 
