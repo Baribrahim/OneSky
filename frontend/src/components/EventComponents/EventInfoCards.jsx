@@ -1,7 +1,8 @@
 import React from "react";
 import "../../styles/events.css";
+import EventActions from "./EventActions.jsx";
 
-function EventInfoCards({ date, startTime, endTime, location, address, locationPostCode, capacity, causeName}) {
+function EventInfoCards({ date, startTime, endTime, location, address, locationPostCode, capacity, causeName, event}) {
     // formate the date
     const formattedDate = new Date(date).toLocaleDateString('en-GB', {
         day: 'numeric',
@@ -43,6 +44,7 @@ function EventInfoCards({ date, startTime, endTime, location, address, locationP
                     <p> {causeName} </p>
                 </div>
             </div>
+            <EventActions event={event} />
         </div>
     );
 }

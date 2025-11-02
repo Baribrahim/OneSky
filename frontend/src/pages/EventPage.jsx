@@ -6,7 +6,6 @@ import EventDescription from '../components/EventComponents/EventDescription';
 import EventActivities from '../components/EventComponents/EventActivities';
 import EventRequirements from '../components/EventComponents/EventRequirements';
 import EventMap from '../components/EventComponents/EventMap';
-import EventActions from '../components/EventComponents/EventActions';
 
 function EventPage(){
     const { id } = useParams();
@@ -54,9 +53,8 @@ function EventPage(){
                 locationPostCode={event.LocationPostcode}
                 capacity={event.Capacity}
                 causeName={event.CauseName}
+                event={event}
                 />
-
-                <EventActions event={event} />
 
                 <EventDescription about={event.About} />
 
@@ -64,8 +62,8 @@ function EventPage(){
                 <div className="left-column">
                     <EventActivities activities={event.Activities} />
                     <EventRequirements
-                    requirementsBring={event.RequirementsBring}
-                    requirementsProvided={event.RequirementsProvided}
+                        requirementsBring={event.RequirementsBring}
+                        requirementsProvided={event.RequirementsProvided}
                     />
                 </div>
                 <div className="right-column">

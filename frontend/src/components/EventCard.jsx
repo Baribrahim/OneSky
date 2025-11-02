@@ -71,7 +71,11 @@ function EventCard({ event}) {
               <h3>{event.Title}</h3>
               <p>{firstSentence}</p>
               <div className="event-info">
-                <p>📍 {event.Address}, {event.LocationCity}</p>
+                <p>
+                  📍{event.Address}, {event.LocationCity}
+                  <br />
+                  {event.LocationPostcode}
+                </p>
                 <p>📅 {formatDate(event.Date)}</p>
                 <p>{timeUnicode(event.StartTime)} {formatTime(event.StartTime)} - {formatTime(event.EndTime)}</p>
                 <p>👥 {event.Capacity}</p>

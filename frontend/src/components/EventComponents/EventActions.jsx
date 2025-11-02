@@ -41,7 +41,7 @@ function EventActions({ event }) {
   };
 
   return (
-    <div>
+    <div className="event-actions">
       {isSignedUp ? (
         <button className="button inverse" onClick={handleUnregister}>
           Unregister
