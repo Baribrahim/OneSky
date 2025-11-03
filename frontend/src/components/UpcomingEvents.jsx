@@ -61,6 +61,7 @@ const UpcomingEvents = () => {
               <h3>{event.Title}</h3>
               <p>{formatDate(event.Date)}</p>
               <p>{formatTime(event.StartTime)} • {event.LocationCity}</p>
+              {event.RegistrationType != 'Individual' && <p>With {event.RegistrationType}</p>}
             </div>
           </div>
         ))}

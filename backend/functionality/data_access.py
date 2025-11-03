@@ -96,74 +96,85 @@ class DataAccess:
 
     def get_upcoming_events(self, user_id: int, limit: int = 5):
         """
-        Get upcoming events a user has registered for (future only).
+        Get upcoming events a user has registered for (future only),
+        specifying if registered individually or via a team. Team overrides individual.
         """
         sql = """
-                SELECT 
-                    e.ID,
-                    e.Title,
-                    DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
-                    DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
-                    DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
-                    e.LocationCity
-                FROM Event e
-                WHERE e.ID IN (
-                    -- Events the user registered individually
+            SELECT 
+                e.ID,
+                e.Title,
+                DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
+                DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
+                DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                e.LocationCity,
+                COALESCE(tr.TeamName, 'Individual') AS RegistrationType
+            FROM Event e
+            LEFT JOIN (
+                -- Team registrations for the user
+                SELECT ter.EventID, t.Name AS TeamName
+                FROM TeamMembership tm
+                JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID
+                JOIN Team t ON t.ID = tm.TeamID
+                WHERE tm.UserID = %s
+            ) tr ON tr.EventID = e.ID
+            WHERE (
+                -- Individual registrations
+                e.ID IN (
                     SELECT er.EventID
                     FROM EventRegistration er
                     WHERE er.UserID = %s
-
-                    UNION
-
-                    -- Events the user is registered to through a team
-                    SELECT ter.EventID
-                    FROM TeamMembership tm
-                    JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID
-                    WHERE tm.UserID = %s
                 )
-                AND TIMESTAMP(e.Date, e.StartTime) > NOW()
-                ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
-                LIMIT %s
+                OR tr.EventID IS NOT NULL
+            )
+            AND TIMESTAMP(e.Date, e.StartTime) > NOW()
+            ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
+            LIMIT %s
         """
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id, user_id, int(limit)))
-            result = cursor.fetchall()
-            return result
-    
+            return cursor.fetchall()
+
+
     def get_upcoming_events_paged(self, user_id: int, limit: int = 5, offset: int = 0):
         """
-        Get upcoming events a user has registered for (future only) with pagination.
+        Get upcoming events a user has registered for (future only) with pagination,
+        specifying if registered individually or via a team. Team overrides individual.
         """
         sql = """
-                SELECT 
-                    e.ID,
-                    e.Title,
-                    DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
-                    DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
-                    DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
-                    e.LocationCity
-                FROM Event e
-                WHERE e.ID IN (
-                    -- Events the user registered individually
+            SELECT 
+                e.ID,
+                e.Title,
+                DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
+                DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
+                DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                e.LocationCity,
+                COALESCE(tr.TeamName, 'Individual') AS RegistrationType
+            FROM Event e
+            LEFT JOIN (
+                -- Team registrations for the user
+                SELECT ter.EventID, t.Name AS TeamName
+                FROM TeamMembership tm
+                JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID
+                JOIN Team t ON t.ID = tm.TeamID
+                WHERE tm.UserID = %s
+            ) tr ON tr.EventID = e.ID
+            WHERE (
+                -- Individual registrations
+                e.ID IN (
                     SELECT er.EventID
                     FROM EventRegistration er
                     WHERE er.UserID = %s
-
-                    UNION
-
-                    -- Events the user is registered to through a team
-                    SELECT ter.EventID
-                    FROM TeamMembership tm
-                    JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID
-                    WHERE tm.UserID = %s
                 )
-                AND TIMESTAMP(e.Date, e.StartTime) > NOW()
-                ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
-                LIMIT %s OFFSET %s
+                OR tr.EventID IS NOT NULL
+            )
+            AND TIMESTAMP(e.Date, e.StartTime) > NOW()
+            ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
+            LIMIT %s OFFSET %s
         """
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id, user_id, int(limit), int(offset)))
             return cursor.fetchall()
+
 
     
     def get_upcoming_events_count(self, user_id: int) -> int:

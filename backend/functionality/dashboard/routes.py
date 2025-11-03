@@ -72,6 +72,20 @@ def dashboard_upcoming():
 
     try:
         items = dc.get_upcoming_events_paged(email, limit=limit, offset=offset)
+
+        # Deduplicate events by ID, preferring team registrations
+        deduped = {}
+        for item in items:
+            event_id = item["ID"]
+            team_name = item.get("RegistrationType")
+            
+            # If event not seen yet, or current item has a team (overrides Individual)
+            if event_id not in deduped or (team_name != "Individual"):
+                deduped[event_id] = item
+
+        # Keep the order same as original
+        items = list(deduped.values())
+
         total = dc.get_upcoming_events_count(email)
         has_more = (offset + len(items)) < total
 
@@ -81,6 +95,7 @@ def dashboard_upcoming():
             "total": int(total),
             "has_more": bool(has_more)
         }), 200
+
 
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
