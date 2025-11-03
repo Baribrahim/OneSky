@@ -1,17 +1,14 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { vi, describe, it, beforeEach, afterEach, expect } from "vitest";
 import TeamCard from "../components/TeamCard";
 import * as apiClient from "../lib/apiClient";
 
 // Mock the API client
-vi.mock("../lib/apiClient", () => {
-  return {
-    api: {
-      post: vi.fn(),
-    },
-    toResult: vi.fn(),
-  };
-});
+jest.mock("../lib/apiClient", () => ({
+  api: {
+    post: jest.fn(),
+  },
+  toResult: jest.fn(),
+}));
 
 describe("TeamCard", () => {
   const mockTeam = {
@@ -23,17 +20,12 @@ describe("TeamCard", () => {
     join_code: "ABC123",
   };
 
-  //On api post request to api/teams/join return success and no error
   beforeEach(() => {
+    jest.clearAllMocks();
     apiClient.api.post.mockResolvedValue({ data: { success: true } });
     apiClient.toResult.mockImplementation((promise) =>
       promise.then((res) => ({ data: res.data, error: null }))
     );
-  });
-
-
-  afterEach(() => {
-    vi.clearAllMocks();
   });
 
   it("renders team info", () => {
@@ -46,7 +38,9 @@ describe("TeamCard", () => {
 
   it("renders buttons", () => {
     render(<TeamCard team={mockTeam} />);
-    expect(screen.getByRole("button", { name: /request to join/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /request to join/i })
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /view/i })).toBeInTheDocument();
   });
 
@@ -55,13 +49,17 @@ describe("TeamCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /request to join/i }));
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Join code is required.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Join code is required."
+    );
   });
 
   it("calls API when join code is entered", async () => {
     render(<TeamCard team={mockTeam} />);
     fireEvent.click(screen.getByRole("button", { name: /request to join/i }));
-    fireEvent.change(screen.getByPlaceholderText("Code"), { target: { value: "ABC123" } });
+    fireEvent.change(screen.getByPlaceholderText("Code"), {
+      target: { value: "ABC123" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
 
     await waitFor(() =>
@@ -73,17 +71,21 @@ describe("TeamCard", () => {
   });
 
   it("simulates a failed join attempt", async () => {
-    // Override api.post just for this test to simulate invalid code error
-    apiClient.api.post = vi.fn(() =>
-      Promise.resolve({ data: { success: false, message: "Invalid code" } })
-    );
+    apiClient.api.post.mockResolvedValue({
+      data: { success: false, message: "Invalid code" },
+    });
     apiClient.toResult.mockImplementation((promise) =>
-      promise.then((res) => ({ data: null, error: { message: res.data.message } }))
+      promise.then((res) => ({
+        data: null,
+        error: { message: res.data.message },
+      }))
     );
 
     render(<TeamCard team={mockTeam} />);
     fireEvent.click(screen.getByRole("button", { name: /request to join/i }));
-    fireEvent.change(screen.getByPlaceholderText("Code"), { target: { value: "WRONGCODE" } });
+    fireEvent.change(screen.getByPlaceholderText("Code"), {
+      target: { value: "WRONGCODE" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
 
     const alert = await screen.findByRole("alert");
@@ -92,7 +94,9 @@ describe("TeamCard", () => {
 
   it("does not render request to join button if already in team", () => {
     render(<TeamCard team={mockTeam} isMember={true} />);
-    const joinBtn = screen.queryByRole("button", { name: /request to join/i });
+    const joinBtn = screen.queryByRole("button", {
+      name: /request to join/i,
+    });
     expect(joinBtn).not.toBeInTheDocument();
   });
 
@@ -104,7 +108,9 @@ describe("TeamCard", () => {
 
   it("renders view/manage button if team owner", () => {
     render(<TeamCard team={mockTeam} isOwner={true} />);
-    expect(screen.getByRole("button", { name: /view\/manage/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /view\/manage/i })
+    ).toBeInTheDocument();
   });
 
   it("renders join code only if showJoinCode is true", () => {
