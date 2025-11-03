@@ -317,20 +317,56 @@ class ChatbotConnector:
     
     def _handle_teams_category(self, user_message, user_email=None):
         """Handle Teams category - team-related queries."""
+        # Fetch team data if user is logged in
+        user_teams = []
+        all_teams = []
+        team_events = []
+        
+        if user_email:
+            try:
+                user_teams = self.dao.get_all_joined_teams(user_email)
+                all_teams = self.dao.get_all_teams()
+                team_events = self.dao.get_team_events(user_email)
+            except Exception as e:
+                print(f"Error fetching team data: {e}")
+        
+        formatted_user_teams = self._format_teams_for_context(user_teams)
+        formatted_all_teams = self._format_teams_for_context(all_teams[:10]) if all_teams else "No teams available"
+        formatted_team_events = self._format_events_for_context(team_events) if team_events else "No team events"
+        
         prompt = f"""You are a helpful assistant for OneSky, a volunteering platform.
 
 User's question: {user_message}
 
-OneSky supports team collaboration for group volunteering.
+IMPORTANT - Team Instructions:
+
+**Joining a Team:**
+Go to Teams in the header menu, browse available teams, and join using a join code.
+
+**Creating a Team:**
+Go to Teams in the header menu, click on "Create Team" in the My Teams section, fill in the details (name, description, department, capacity), click Create, and share the join code with others so they can join.
+
+**Registering as a Team for an Event:**
+The team owner can go to Events in the header menu, find an event, click on "Register as a Team" to register the team to that event.
+
+User's teams ({len(user_teams)}):
+{formatted_user_teams}
+
+Available teams (showing first 10):
+{formatted_all_teams}
+
+Events your teams are registered for:
+{formatted_team_events}
 
 Instructions:
-- Keep your response CONCISE - 1-2 short paragraphs maximum
+- Keep your response CONCISE - 2-3 short paragraphs maximum
 - Directly answer what the user is asking about teams
+- If they ask about joining: explain they should go to Teams in header, browse teams, join using a code
+- If they ask about creating: explain they should go to Teams in header, click Create Team in My Teams section, fill details, share code
+- If they ask about registering a team for an event: explain the owner should go to Events in header, click "Register as a Team" on an event
 - Only provide information relevant to their specific question
 - Use emojis sparingly (👥 🤝) - only if helpful
 - Be friendly but brief - no lengthy explanations
-- If they ask "what is teams" - briefly explain in 2 sentences
-- If they ask "how to join" - briefly explain in 2 sentences
 - Don't provide information they didn't ask for"""
         
         return self.get_ai_response(prompt)
@@ -612,6 +648,30 @@ Instructions:
             return "No badges available."
         
         formatted = [f"- {badge['Name']}: {badge['Description']}" for badge in badges[:20]]
+        return "\n".join(formatted)
+    
+    def _format_teams_for_context(self, teams):
+        """
+        Format teams data for AI context.
+        
+        Args:
+            teams (list): List of team dictionaries
+            
+        Returns:
+            str: Formatted team context string
+        """
+        if not teams:
+            return "No teams found."
+        
+        formatted = []
+        for team in teams[:10]:
+            team_str = f"Team ID {team['ID']}: {team.get('Name', 'Unnamed Team')}"
+            if team.get('Description'):
+                team_str += f" - {team['Description'][:100]}"
+            if team.get('Department'):
+                team_str += f" - Department: {team['Department']}"
+            formatted.append(team_str)
+        
         return "\n".join(formatted)
     
     # ============================================================================

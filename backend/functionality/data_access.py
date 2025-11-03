@@ -916,5 +916,69 @@ class DataAccess:
         except Exception as e:
             print(f"Error in insert_team_to_event_registration: {e}")
             raise
+    
+    def get_all_teams(self):
+        """
+        Get all teams without filtering by user.
+        Returns all teams, newest first.
+        """
+        try:
+            sql = """
+                SELECT ID, Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive
+                FROM Team
+                WHERE IsActive = 1
+                ORDER BY ID DESC
+            """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Error in get_all_teams: {e}")
+            raise
+    
+    def get_team_events(self, user_email):
+        """
+        Get all events that teams the user is a member of are registered for.
+        
+        Args:
+            user_email (str): User's email
+            
+        Returns:
+            list: List of event dictionaries with team information
+        """
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = """
+                SELECT DISTINCT
+                    e.ID,
+                    e.Title,
+                    e.About,
+                    e.Date,
+                    e.StartTime,
+                    e.EndTime,
+                    e.LocationCity,
+                    e.Address,
+                    e.LocationPostcode,
+                    e.Capacity,
+                    e.Image_path,
+                    c.Name AS CauseName,
+                    t.ID AS TeamID,
+                    t.Name AS TeamName
+                FROM Event e
+                JOIN Cause c ON e.CauseID = c.ID
+                JOIN TeamEventRegistration ter ON e.ID = ter.EventID
+                JOIN Team t ON ter.TeamID = t.ID
+                JOIN TeamMembership tm ON t.ID = tm.TeamID
+                WHERE tm.UserID = %s
+                  AND t.IsActive = 1
+                  AND TIMESTAMP(e.Date, e.StartTime) >= NOW()
+                ORDER BY e.Date ASC, e.StartTime ASC
+            """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (user_id,))
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Error in get_team_events: {e}")
+            raise
 
 
