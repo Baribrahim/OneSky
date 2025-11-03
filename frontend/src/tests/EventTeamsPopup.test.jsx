@@ -1,23 +1,30 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { vi, describe, it, beforeEach, afterEach, expect } from "vitest";
 import EventTeamsPopup from "../components/EventTeamsPopup";
 import * as apiClient from "../lib/apiClient";
 import "@testing-library/jest-dom";
 import userEvent from "@testing-library/user-event";
 
-// Mock the Popup library 
-vi.mock("reactjs-popup", () => ({
+// Mock the Popup library
+jest.mock("reactjs-popup", () => ({
   __esModule: true,
   default: ({ trigger, children, onOpen }) => (
     <div>
       <div onClick={onOpen} data-testid="trigger">{trigger}</div>
-      <div data-testid="popup">{typeof children === "function" ? children(() => {}) : children}</div>
+      <div data-testid="popup">
+        {typeof children === "function" ? children(() => {}) : children}
+      </div>
     </div>
   ),
 }));
 
 // Mock the API client
-vi.mock("../lib/apiClient");
+jest.mock("../lib/apiClient", () => ({
+  api: {
+    post: jest.fn(),
+  },
+  toResult: jest.fn(),
+}));
+
 
 describe("EventTeamsPopup", () => {
   const mockTeams = [
@@ -27,17 +34,19 @@ describe("EventTeamsPopup", () => {
   ];
 
   beforeEach(() => {
-    // Default: successful GET and POST
-    apiClient.api.get = vi.fn(() => Promise.resolve({ data: { teams: mockTeams } }));
-    apiClient.api.post = vi.fn(() => Promise.resolve({ data: { message: "ok" } }));
+    // Reset mocks and default responses
+    jest.clearAllMocks();
+
+    apiClient.api.get = jest.fn(() =>
+      Promise.resolve({ data: { teams: mockTeams } })
+    );
+    apiClient.api.post = jest.fn(() =>
+      Promise.resolve({ data: { message: "ok" } })
+    );
 
     apiClient.toResult.mockImplementation((promise) =>
       promise.then((res) => ({ data: res.data, error: null }))
     );
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
   });
 
   // ---------------------------------------------------------
@@ -46,12 +55,12 @@ describe("EventTeamsPopup", () => {
   it("fetches and displays teams when opened", async () => {
     render(<EventTeamsPopup eventID={5} />);
 
-    // Open popup (simulate trigger click)
     fireEvent.click(screen.getByTestId("trigger"));
 
-    expect(apiClient.api.get).toHaveBeenCalledWith("/api/events/5/available-teams");
+    expect(apiClient.api.get).toHaveBeenCalledWith(
+      "/api/events/5/available-teams"
+    );
 
-    // Wait for teams to render
     await waitFor(() => {
       expect(screen.getByText("Team Alpha")).toBeInTheDocument();
       expect(screen.getByText("Team Beta")).toBeInTheDocument();
@@ -60,7 +69,7 @@ describe("EventTeamsPopup", () => {
 
   it("shows loading state while teams are fetched", async () => {
     let resolveFn;
-    apiClient.api.get = vi.fn(() => new Promise((r) => (resolveFn = r)));
+    apiClient.api.get = jest.fn(() => new Promise((r) => (resolveFn = r)));
 
     render(<EventTeamsPopup eventID={1} />);
     fireEvent.click(screen.getByTestId("trigger"));
@@ -69,11 +78,16 @@ describe("EventTeamsPopup", () => {
 
     // Resolve the pending promise
     resolveFn({ data: { teams: mockTeams } });
-    await waitFor(() => expect(screen.queryByText(/loading teams/i)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(/loading teams/i)).not.toBeInTheDocument()
+    );
   });
 
   it("shows error if fetching teams fails", async () => {
-    apiClient.toResult.mockResolvedValueOnce({ data: null, error: { message: "Network error" } });
+    apiClient.toResult.mockResolvedValueOnce({
+      data: null,
+      error: { message: "Network error" },
+    });
 
     render(<EventTeamsPopup eventID={1} />);
     fireEvent.click(screen.getByTestId("trigger"));
@@ -84,7 +98,10 @@ describe("EventTeamsPopup", () => {
   });
 
   it("shows message if no teams are available", async () => {
-    apiClient.toResult.mockResolvedValueOnce({ data: { teams: [] }, error: null });
+    apiClient.toResult.mockResolvedValueOnce({
+      data: { teams: [] },
+      error: null,
+    });
 
     render(<EventTeamsPopup eventID={99} />);
     fireEvent.click(screen.getByTestId("trigger"));
@@ -123,7 +140,7 @@ describe("EventTeamsPopup", () => {
 
     await waitFor(() => screen.getByText("Team Alpha"));
 
-    const teamItems = screen.getAllByRole('listitem');
+    const teamItems = screen.getAllByRole("listitem");
     await userEvent.click(teamItems[1]);
     await userEvent.click(teamItems[2]);
 
@@ -132,14 +149,14 @@ describe("EventTeamsPopup", () => {
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(apiClient.api.post).toHaveBeenCalledWith("/api/events/signup-team", {
-        event_id: 5,
-        team_id: 2,
-      });
-      expect(apiClient.api.post).toHaveBeenCalledWith("/api/events/signup-team", {
-        event_id: 5,
-        team_id: 3,
-      });
+      expect(apiClient.api.post).toHaveBeenCalledWith(
+        "/api/events/signup-team",
+        { event_id: 5, team_id: 2 }
+      );
+      expect(apiClient.api.post).toHaveBeenCalledWith(
+        "/api/events/signup-team",
+        { event_id: 5, team_id: 3 }
+      );
     });
   });
 });
