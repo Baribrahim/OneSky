@@ -639,7 +639,7 @@ class DataAccess:
             sql += " AND LOWER(TRIM(e.LocationCity)) = %s"
             params.append(location.lower().strip())
         
-        sql += " ORDER BY e.Date ASC LIMIT 200"
+        sql += " ORDER BY e.Date ASC LIMIT 50"
         
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, params)

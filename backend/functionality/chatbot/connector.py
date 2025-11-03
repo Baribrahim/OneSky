@@ -5,6 +5,7 @@ Supports Events, Teams, Badges, Impact, and General categories.
 """
 import os
 import re
+import numpy as np
 from dotenv import load_dotenv
 from openai import OpenAI
 from data_access import DataAccess
@@ -12,12 +13,78 @@ from .embedding_helper import EmbeddingHelper
 
 load_dotenv()
 
+# Module-level cache for category embeddings (shared across all instances)
+_category_embeddings_cache = {}
+_category_embeddings_initialized = False
+
 
 class ChatbotConnector:
     """
     Main chatbot connector that routes user messages to appropriate handlers
     and generates AI-powered responses.
     """
+    
+    # Category example texts for embedding-based classification
+    CATEGORY_EXAMPLES = {
+        "events": [
+            "find volunteer events",
+            "give me recommendations for volunteering events",
+            "search for volunteer opportunities",
+            "what events are available",
+            "show me events in my area",
+            "find volunteering activities",
+            "events near me",
+            "upcoming volunteer events",
+            "what can I volunteer for"
+        ],
+        "teams": [
+            "what teams are available",
+            "how can I join a team",
+            "join a team",
+            "create a team",
+            "team collaboration",
+            "group volunteering",
+            "how do teams work",
+            "join team for volunteering",
+            "create volunteer team"
+        ],
+        "badges": [
+            "what badges do I have",
+            "show my achievements",
+            "my earned badges",
+            "badges I've earned",
+            "what achievements can I get",
+            "view my badges",
+            "how does badges work",
+            "what badges are available"
+        ],
+        "impact": [
+            "my hours volunteered",
+            "my upcoming events",
+            "my completed events",
+            "my stats",
+            "my progress",
+            "how many hours have I volunteered",
+            "events I've done",
+            "what I've volunteered",
+            "my volunteering history",
+            "show my impact"
+        ],
+        "general": [
+            "help",
+            "what can I do",
+            "what can you do",
+            "how do I use this",
+            "how to navigate",
+            "hello",
+            "hi",
+            "what is this platform",
+            "how does this work",
+            "what is OneSky",
+            "What is this platform",
+            "how does this platform work"
+        ]
+    }
     
     # ============================================================================
     # Initialization
@@ -31,6 +98,15 @@ class ChatbotConnector:
             raise ValueError("OPENAI_API_KEY not found in environment variables")
         self.openai_client = OpenAI(api_key=api_key)
         self.embedding_helper = EmbeddingHelper(api_key)
+        
+        # Initialize category embeddings only once (shared across all instances)
+        global _category_embeddings_cache, _category_embeddings_initialized
+        if not _category_embeddings_initialized:
+            _category_embeddings_cache = self._initialize_category_embeddings()
+            _category_embeddings_initialized = True
+        
+        # Use the shared cache
+        self.category_embeddings = _category_embeddings_cache
     
     # ============================================================================
     # Main Entry Point
@@ -48,11 +124,12 @@ class ChatbotConnector:
         Returns:
             tuple: (response_text, category) - AI response and detected category
         """
-        category = self._classify_intent_with_ai(user_message)
+        category, message_embedding = self._classify_intent_with_ai(user_message)
         
         # Route to appropriate category handler
+        # For events, pass the embedding to reuse it (saves one API call)
         if category == "events":
-            response = self._handle_events_category(user_message, user_email)
+            response = self._handle_events_category(user_message, user_email, message_embedding)
         elif category == "teams":
             response = self._handle_teams_category(user_message, user_email)
         elif category == "badges":
@@ -68,56 +145,90 @@ class ChatbotConnector:
     # Intent Classification
     # ============================================================================
     
+    def _initialize_category_embeddings(self):
+        """
+        Generate and cache embeddings for category example texts at startup.
+        Creates representative embeddings for each category by averaging example embeddings.
+        Only called once when first instance is created.
+        
+        Returns:
+            dict: Dictionary mapping category names to their averaged embeddings
+        """
+        category_embeddings = {}
+        try:
+            for category, examples in self.CATEGORY_EXAMPLES.items():
+                # Generate embeddings for all examples in this category
+                example_embeddings = []
+                for example_text in examples:
+                    embedding = self.embedding_helper.generate_embedding(example_text)
+                    if embedding:
+                        example_embeddings.append(embedding)
+                
+                if example_embeddings:
+                    # Average the embeddings to create a category representation
+                    # This creates a single embedding that represents the category
+                    avg_embedding = np.mean(example_embeddings, axis=0).tolist()
+                    category_embeddings[category] = avg_embedding
+                else:
+                    print(f"Warning: Could not generate embeddings for category: {category}")
+        except Exception as e:
+            print(f"Error initializing category embeddings: {e}")
+            # Return empty dict - will fall back to keyword classification
+        
+        return category_embeddings
+    
     def _classify_intent_with_ai(self, message):
         """
-        Use AI reasoning to classify user intent into one of 5 categories.
+        Use embeddings-based classification to categorize user intent.
+        Compares user message embedding with cached category embeddings.
         
         Args:
             message (str): User message
             
         Returns:
-            str: One of "events", "teams", "badges", "impact", or "general"
+            tuple: (category, message_embedding) - Category name and embedding (can be None)
+                   The embedding is returned so it can be reused for events search
         """
         if not message or not message.strip():
-            return "general"
+            return ("general", None)
+        
+        # If category embeddings weren't initialized, fall back to keyword classification
+        if not self.category_embeddings:
+            print("Category embeddings not available, using fallback classification")
+            return (self._classify_intent_fallback(message), None)
         
         try:
-            classification_prompt = f"""You are an intent classifier for a volunteering platform chatbot called OneSky.
-
-User message: "{message}"
-
-Classify this message into ONE of these categories:
-
-1. "events" - Asking about finding/searching volunteer events, activities, opportunities to participate in (general search/discovery)
-2. "teams" - Asking about joining/creating teams, team collaboration, group volunteering
-3. "badges" - Asking about achievements, badges earned, awards, accomplishments
-4. "impact" - Asking about PERSONAL statistics, MY hours volunteered, MY progress, MY completed events, MY upcoming events, MY volunteering history. Uses words like "my", "I", "me", "my upcoming", "my completed", "events I've done", "what I've volunteered"
-5. "general" - General questions, platform help, navigation, greetings, or unclear intent
-
-IMPORTANT: If the message asks about "my upcoming events", "my completed events", "events I've done", "what I've volunteered", "my progress", "my stats", "my hours" - classify as "impact".
-
-Respond with ONLY the category name (lowercase): events, teams, badges, impact, or general"""
+            # Generate embedding for user message
+            message_embedding = self.embedding_helper.generate_embedding(message)
             
-            response = self.openai_client.chat.completions.create(
-                model="gpt-5-nano",
-                messages=[{"role": "user", "content": classification_prompt}]
-            )
+            if not message_embedding:
+                # If embedding generation fails, use fallback
+                return (self._classify_intent_fallback(message), None)
             
-            if response and response.choices and len(response.choices) > 0:
-                content = response.choices[0].message.content.strip().lower()
+            # Compare with each category embedding and find the best match
+            best_category = "general"
+            best_similarity = -1.0
+            
+            for category, category_embedding in self.category_embeddings.items():
+                similarity = self.embedding_helper.cosine_similarity(
+                    message_embedding, 
+                    category_embedding
+                )
                 
-                # Validate and return category
-                valid_categories = ["events", "teams", "badges", "impact", "general"]
-                for category in valid_categories:
-                    if category in content:
-                        return category
-                
-                return "general"
+                if similarity > best_similarity:
+                    best_similarity = similarity
+                    best_category = category
             
-            return "general"
+            # If similarity is too low, might be unclear intent - use general
+            # Threshold of 0.3 ensures reasonable confidence
+            if best_similarity < 0.3:
+                return ("general", message_embedding)
+            
+            return (best_category, message_embedding)
+            
         except Exception as e:
-            print(f"Error in AI intent classification: {e}")
-            return self._classify_intent_fallback(message)
+            print(f"Error in embedding-based classification: {e}")
+            return (self._classify_intent_fallback(message), None)
     
     def _classify_intent_fallback(self, message):
         """
@@ -171,10 +282,20 @@ Respond with ONLY the category name (lowercase): events, teams, badges, impact, 
     # Category Handlers
     # ============================================================================
     
-    def _handle_events_category(self, user_message, user_email=None):
-        """Handle Events category - find and search volunteer events."""
+    def _handle_events_category(self, user_message, user_email=None, query_embedding=None):
+        """
+        Handle Events category - find and search volunteer events.
+        
+        Args:
+            user_message (str): User's message
+            user_email (str, optional): User's email
+            query_embedding (list, optional): Pre-generated embedding to reuse (saves API call)
+        """
         location = self._extract_location(user_message)
-        query_embedding = self.embedding_helper.generate_embedding(user_message)
+        
+        # Reuse embedding if provided, otherwise generate new one
+        if not query_embedding:
+            query_embedding = self.embedding_helper.generate_embedding(user_message)
         
         if not query_embedding:
             # Fallback to keyword search
