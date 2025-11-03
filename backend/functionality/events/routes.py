@@ -104,6 +104,8 @@ def search_events():
     events = data_access.search_events(keyword, location, date)
     return jsonify(events)
 
+
+
 ############################
 # Single Event Page Routes #
 ############################
@@ -115,10 +117,19 @@ def get_event(id):
         return jsonify({"error": "Event not found"}), 404
     return jsonify(event)
 
+@bp.route('/events/<int:event_id>/schedule', methods=['GET'])
+def get_schedule(event_id):
+    try:
+        schedule = data_access.get_event_schedule(event_id)
+        return jsonify(schedule)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
 ############################
 # Team Sign up Routes #
 ############################
-
 
 @bp.route("/signup-team", methods=["POST"])
 @token_required  

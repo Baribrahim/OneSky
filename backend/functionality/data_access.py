@@ -508,7 +508,7 @@ class DataAccess:
             with self.get_connection(use_dict_cursor=True) as conn:
                 with conn.cursor(pymysql.cursors.DictCursor) as cursor:
                     query = """
-                    SELECT e.ID, e.Title, e.About, e.Activities, e.RequirementsProvided, e.RequirementsBring, e.Schedule, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Latitude, e.Longitude, e.Address, e.LocationPostcode, e.Capacity, e.Image_path,
+                    SELECT e.ID, e.Title, e.About, e.Activities, e.RequirementsProvided, e.RequirementsBring, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Latitude, e.Longitude, e.Address, e.LocationPostcode, e.Capacity, e.Image_path,
                         c.Name AS CauseName,
                         GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
                     FROM Event e
@@ -516,7 +516,7 @@ class DataAccess:
                     JOIN CauseTag ct ON c.ID = ct.CauseID
                     JOIN Tag t ON ct.TagID = t.ID
                     WHERE e.ID = %s
-                    GROUP BY e.ID, e.Title, e.About, e.Activities, e.RequirementsProvided, e.RequirementsBring, e.Schedule, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path, c.Name
+                    GROUP BY e.ID, e.Title, e.About, e.Activities, e.RequirementsProvided, e.RequirementsBring, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, e.Image_path, c.Name
                     """
 
                     cursor.execute(query, (event_id,))
@@ -530,7 +530,6 @@ class DataAccess:
                             'Activities': item["Activities"],
                             'RequirementsBring':item["RequirementsBring"],
                             'RequirementsProvided':item["RequirementsProvided"],
-                            'Schedule':item["Schedule"],
                             'Date': str(item["Date"]),
                             'StartTime': str(item["StartTime"]),
                             'EndTime': str(item["EndTime"]),
@@ -549,6 +548,33 @@ class DataAccess:
             print(f"Database error in get_event_by_id: {e}")
         return event
 
+    def get_event_schedule(self, event_id):
+        schedule = []
+        try:
+            with self.get_connection(use_dict_cursor=True) as conn:
+                with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                    query = """
+                    SELECT Time, Title, Description
+                    FROM EventSchedule
+                    WHERE EventID =%s
+                    ORDER BY Time ASC
+                    """
+                    cursor.execute(query, (event_id,))
+                    rows = cursor.fetchall()
+                    
+                    # Converts timedelta into a string.
+                    for row in rows:
+                        if isinstance(row["Time"], timedelta):
+                            total_seconds = int(row["Time"].total_seconds())
+                            hours = total_seconds // 3600
+                            minutes = (total_seconds % 3600) // 60
+                            seconds = total_seconds % 60
+                            row["Time"] = f"{hours:02}:{minutes:02}:{seconds:02}"
+                        schedule.append(row)
+
+        except pymysql.MySQLError as e:
+            print(f"Database error in get_event_schedule: {e}")
+        return schedule
 
     
     # -----------------------------
