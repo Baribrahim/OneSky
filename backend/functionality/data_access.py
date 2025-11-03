@@ -99,61 +99,98 @@ class DataAccess:
         Get upcoming events a user has registered for (future only).
         """
         sql = """
-            SELECT 
-                e.ID,
-                e.Title,
-                DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
-                DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
-                DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
-                e.LocationCity
-            FROM Event e
-            JOIN EventRegistration er ON er.EventID = e.ID
-            WHERE er.UserID = %s
-              AND TIMESTAMP(e.Date, e.StartTime) > NOW()
-            ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
-            LIMIT %s
+                SELECT 
+                    e.ID,
+                    e.Title,
+                    DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
+                    DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
+                    DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                    e.LocationCity
+                FROM Event e
+                WHERE e.ID IN (
+                    -- Events the user registered individually
+                    SELECT er.EventID
+                    FROM EventRegistration er
+                    WHERE er.UserID = %s
+
+                    UNION
+
+                    -- Events the user is registered to through a team
+                    SELECT ter.EventID
+                    FROM TeamMembership tm
+                    JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID
+                    WHERE tm.UserID = %s
+                )
+                AND TIMESTAMP(e.Date, e.StartTime) > NOW()
+                ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
+                LIMIT %s
         """
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
-            cursor.execute(sql, (user_id, int(limit)))
-            return cursor.fetchall()
+            cursor.execute(sql, (user_id, user_id, int(limit)))
+            result = cursor.fetchall()
+            return result
     
     def get_upcoming_events_paged(self, user_id: int, limit: int = 5, offset: int = 0):
         """
         Get upcoming events a user has registered for (future only) with pagination.
         """
         sql = """
-            SELECT 
-                e.ID,
-                e.Title,
-                DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
-                DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
-                DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
-                e.LocationCity
-            FROM Event e
-            JOIN EventRegistration er ON er.EventID = e.ID
-            WHERE er.UserID = %s
-            AND TIMESTAMP(e.Date, e.StartTime) > NOW()
-            ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
-            LIMIT %s OFFSET %s
+                SELECT 
+                    e.ID,
+                    e.Title,
+                    DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
+                    DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
+                    DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                    e.LocationCity
+                FROM Event e
+                WHERE e.ID IN (
+                    -- Events the user registered individually
+                    SELECT er.EventID
+                    FROM EventRegistration er
+                    WHERE er.UserID = %s
+
+                    UNION
+
+                    -- Events the user is registered to through a team
+                    SELECT ter.EventID
+                    FROM TeamMembership tm
+                    JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID
+                    WHERE tm.UserID = %s
+                )
+                AND TIMESTAMP(e.Date, e.StartTime) > NOW()
+                ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
+                LIMIT %s OFFSET %s
         """
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
-            cursor.execute(sql, (user_id, int(limit), int(offset)))
+            cursor.execute(sql, (user_id, user_id, int(limit), int(offset)))
             return cursor.fetchall()
 
     
     def get_upcoming_events_count(self, user_id: int) -> int:
         """
-        Count all future events a user has registered for (no limit).
+        Count all future events a user has registered for (individual or via team).
         """
         sql = """
             SELECT COUNT(*) AS UpcomingCount
             FROM Event e
-            JOIN EventRegistration er ON er.EventID = e.ID
-            WHERE er.UserID = %s
+            WHERE e.ID IN (
+                -- Events the user registered individually
+                SELECT er.EventID
+                FROM EventRegistration er
+                WHERE er.UserID = %s
+
+                UNION
+
+                -- Events the user is registered to through a team
+                SELECT ter.EventID
+                FROM TeamMembership tm
+                JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID
+                WHERE tm.UserID = %s
+            )
             AND TIMESTAMP(e.Date, e.StartTime) > NOW()
         """
-        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            cursor.execute(sql, (user_id,))
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id, user_id))
             row = cursor.fetchone()
             return int(row["UpcomingCount"]) if row and row["UpcomingCount"] is not None else 0
 
@@ -573,18 +610,7 @@ class DataAccess:
         except Exception as e:
             print(f"Error in select_team_code: {e}")
             raise
-    
-    # """Delete userId and teamID from TeamMembership"""
-    # def delete_user_from_team(self, user_email, team_id):
-    #     user_id = self.get_id_by_email(user_email)
-    #     try:
-    #         sql = "DELETE FROM TeamMembership WHERE UserID = %s AND TeamID= %s"
-    #         with self.get_connection() as conn, conn.cursor() as cursor:
-    #             cursor.execute(sql, (user_id, team_id))
-    #     except Exception as e:
-    #         print(f"Error in delete_user_from_team: {e}")
-    #         raise
-    
+        
     """Read all information on teams a user has joined"""
     def get_all_joined_teams(self, user_email):
         try:
