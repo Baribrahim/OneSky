@@ -1,13 +1,16 @@
 .timeline-container {
   max-width: 700px;
-  max-height: 480px;   /* limits height to 480px */
+  width: 95%;           /* make width responsive */
+  max-height: 480px;   
   padding: 10px;
-  overflow-y: auto;   /* enables vertical scrolling if content is taller */
+  overflow-y: auto;
   background: #fff;
+  margin: 0 auto;       /* center on smaller screens */
 }
 
 .timeline-item {
   display: flex;
+  flex-wrap: wrap;      /* allow wrapping on small screens */
   align-items: flex-start;
   border-bottom: 1px solid #eee;
   padding: 15px 0;
@@ -18,7 +21,7 @@
 .timeline-item:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-2);
-  border-color: var(--brand-primary) ;
+  border-color: var(--brand-primary);
 }
 
 .timeline-image {
@@ -27,9 +30,9 @@
   object-fit: cover;
   border-radius: 5px;
   margin-right: 20px;
+  margin-left: 10px;
   flex-shrink: 0;
   transition: transform 0.3s ease;
-  margin-left: 10px;  /* add left margin */
 }
 
 .timeline-item:hover .timeline-image {
@@ -38,6 +41,7 @@
 
 .timeline-content {
   flex: 1;
+  min-width: 200px;     /* ensures content doesn't shrink too small */
 }
 
 .timeline-content h3 {
@@ -71,6 +75,31 @@
   text-align: center;
 }
 
-.with{
-    font-style:italic;
+.with {
+  font-style: italic;
+}
+
+/* -------------------- MEDIA QUERIES -------------------- */
+@media (max-width: 600px) {
+  .timeline-item {
+    flex-direction: column;    /* stack image & content vertically */
+  }
+
+  .timeline-image {
+    margin: 0 0 10px 0;
+    width: 90%;
+    height: auto;              /* maintain aspect ratio */
+  }
+
+  .timeline-content {
+    min-width: auto;
+  }
+
+  .timeline-content h3 {
+    font-size: 1rem;
+  }
+
+  .timeline-content p {
+    font-size: 0.85rem;
+  }
 }
