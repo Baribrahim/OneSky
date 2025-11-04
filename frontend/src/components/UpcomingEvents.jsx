@@ -24,7 +24,7 @@ const UpcomingEvents = () => {
         return;
       }
 
-      const nextItems = data?.upcoming_events ?? [];
+      const nextItems = data?.upcoming_events ?? []; 
       const nextTotal = data?.total ?? 0;
 
       if (opts.append) {
@@ -61,7 +61,7 @@ const UpcomingEvents = () => {
               <h3>{event.Title}</h3>
               <p>{formatDate(event.Date)}</p>
               <p>{formatTime(event.StartTime)} • {event.LocationCity}</p>
-              {event.RegistrationType != 'Individual' && <p className>with <em>{event.RegistrationType}</em></p>}
+              {event.RegistrationType != 'Individual' && <p>with <em>{event.RegistrationType}</em></p>}
             </div>
           </div>
         ))}
