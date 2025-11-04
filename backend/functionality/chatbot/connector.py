@@ -3,1260 +3,28 @@ Chatbot Connector
 Handles chatbot logic for categorizing and responding to user queries.
 Supports Events, Teams, Badges, Impact, and General categories.
 """
+
 import os
 import re
 import numpy as np
+from typing import Any, Dict, List, Optional, Tuple
+
 from dotenv import load_dotenv
 from openai import OpenAI
+
 from data_access import DataAccess
 from .embedding_helper import EmbeddingHelper
 
 load_dotenv()
 
 # Module-level cache for category embeddings (shared across all instances)
-_category_embeddings_cache = {}
+_category_embeddings_cache: Dict[str, List[float]] = {}
 _category_embeddings_initialized = False
 
-
-class ChatbotConnector:
-    """
-    Main chatbot connector that routes user messages to appropriate handlers
-    and generates AI-powered responses.
-    """
-    
-    # Category example texts for embedding-based classification
-    CATEGORY_EXAMPLES = {
-        "events": [
-            "find volunteer events",
-            "give me recommendations for volunteering events",
-            "search for volunteer opportunities",
-            "what events are available",
-            "show me events in my area",
-            "find volunteering activities",
-            "events near me",
-            "upcoming volunteer events",
-            "what can I volunteer for"
-        ],
-        "teams": [
-            "what teams are available",
-            "how can I join a team",
-            "join a team",
-            "create a team",
-            "team collaboration",
-            "group volunteering",
-            "how do teams work",
-            "join team for volunteering",
-            "create volunteer team",
-            "what are the upcoming events for my teams"
-        ],
-        "badges": [
-            "what badges do I have",
-            "show my achievements",
-            "my earned badges",
-            "badges I've earned",
-            "what achievements can I get",
-            "view my badges",
-            "how does badges work",
-            "what badges are available"
-        ],
-        "impact": [
-            "my hours volunteered",
-            "my upcoming events",
-            "my completed events",
-            "my stats",
-            "my progress",
-            "how many hours have I volunteered",
-            "events I've done",
-            "what I've volunteered",
-            "my volunteering history",
-            "show my impact"
-        ],
-        "general": [
-            "help",
-            "what can I do",
-            "what can you do",
-            "how do I use this",
-            "how to navigate",
-            "hello",
-            "hi",
-            "what is this platform",
-            "how does this work",
-            "what is OneSky",
-            "What is this platform",
-            "how does this platform work"
-        ]
-    }
-    
-    # ============================================================================
-    # Initialization
-    # ============================================================================
-    
-    def __init__(self):
-        """Initialize chatbot connector with data access and OpenAI client."""
-        self.dao = DataAccess()
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY not found in environment variables")
-        self.openai_client = OpenAI(api_key=api_key)
-        self.embedding_helper = EmbeddingHelper(api_key)
-        
-        # Initialize category embeddings only once (shared across all instances)
-        global _category_embeddings_cache, _category_embeddings_initialized
-        if not _category_embeddings_initialized:
-            _category_embeddings_cache = self._initialize_category_embeddings()
-            _category_embeddings_initialized = True
-        
-        # Use the shared cache
-        self.category_embeddings = _category_embeddings_cache
-    
-    # ============================================================================
-    # Main Entry Point
-    # ============================================================================
-    
-    def process_message(self, user_message, user_email=None):
-        """
-        Main entry point - processes user message and returns AI response.
-        Routes to appropriate category handler based on intent classification.
-        
-        Args:
-            user_message (str): User's message/query
-            user_email (str, optional): User's email for personalized responses
-            
-        Returns:
-            tuple: (response_text, category, events_list, teams_list, badges_list) - AI response, detected category, and lists for events/teams/badges
-                   For non-matching categories, the respective list will be None
-        """
-        category, message_embedding = self._classify_intent_with_ai(user_message)
-        
-        # Route to appropriate category handler
-        # For events, pass the embedding to reuse it (saves one API call)
-        if category == "events":
-            response, events_list = self._handle_events_category(user_message, user_email, message_embedding)
-            return response, category, events_list, None, None, None
-        elif category == "teams":
-            response, teams_list, team_events = self._handle_teams_category(user_message, user_email)
-            return response, category, None, teams_list, None, team_events
-        elif category == "badges":
-            response, badges_list = self._handle_badges_category(user_message, user_email)
-            return response, category, None, None, badges_list, None
-        elif category == "impact":
-            response = self._handle_impact_category(user_message, user_email)
-            return response, category, None, None, None, None
-        else:  # general
-            response = self._handle_general_category(user_message)
-            return response, category, None, None, None, None
-        
-        return response, category, None, None, None
-    
-    # ============================================================================
-    # Intent Classification
-    # ============================================================================
-    
-    def _initialize_category_embeddings(self):
-        """
-        Generate and cache embeddings for category example texts at startup.
-        Creates representative embeddings for each category by averaging example embeddings.
-        Only called once when first instance is created.
-        
-        Returns:
-            dict: Dictionary mapping category names to their averaged embeddings
-        """
-        category_embeddings = {}
-        try:
-            for category, examples in self.CATEGORY_EXAMPLES.items():
-                # Generate embeddings for all examples in this category
-                example_embeddings = []
-                for example_text in examples:
-                    embedding = self.embedding_helper.generate_embedding(example_text)
-                    if embedding:
-                        example_embeddings.append(embedding)
-                
-                if example_embeddings:
-                    # Average the embeddings to create a category representation
-                    # This creates a single embedding that represents the category
-                    avg_embedding = np.mean(example_embeddings, axis=0).tolist()
-                    category_embeddings[category] = avg_embedding
-                else:
-                    print(f"Warning: Could not generate embeddings for category: {category}")
-        except Exception as e:
-            print(f"Error initializing category embeddings: {e}")
-            # Return empty dict - will fall back to keyword classification
-        
-        return category_embeddings
-    
-    def _classify_intent_with_ai(self, message):
-        """
-        Use embeddings-based classification to categorize user intent.
-        Compares user message embedding with cached category embeddings.
-        
-        Args:
-            message (str): User message
-            
-        Returns:
-            tuple: (category, message_embedding) - Category name and embedding (can be None)
-                   The embedding is returned so it can be reused for events search
-        """
-        if not message or not message.strip():
-            return ("general", None)
-        
-        msg = message.lower()
-        
-        personal_words = ("my", "i ", "i'm", "i am", "me ", "me?")
-        is_personal = any(w in msg for w in personal_words)
-
-        # "what teams am I in", "show my teams", "teams I belong to"
-        if "team" in msg and (is_personal or "am i in" in msg or "i'm in" in msg or "belong" in msg):
-            return ("teams", None)
-
-        # "what badges have I earned", "my badges"
-        if "badge" in msg or "achievement" in msg:
-            if is_personal or "have i earned" in msg or "i earned" in msg or "i've earned" in msg:
-                return ("badges", None)
-
-        # "my upcoming events", "what events do i have coming up", "events i'm attending"
-        if ("event" in msg or "upcoming" in msg or "coming up" in msg or "attending" in msg) and is_personal:
-            return ("events", None)
-        
-        # If category embeddings weren't initialized, fall back to keyword classification
-        if not self.category_embeddings:
-            print("Category embeddings not available, using fallback classification")
-            return (self._classify_intent_fallback(message), None)
-        
-        try:
-            # Generate embedding for user message
-            message_embedding = self.embedding_helper.generate_embedding(message)
-            
-            if not message_embedding:
-                # If embedding generation fails, use fallback
-                return (self._classify_intent_fallback(message), None)
-            
-            # Compare with each category embedding and find the best match
-            best_category = "general"
-            best_similarity = -1.0
-            
-            for category, category_embedding in self.category_embeddings.items():
-                similarity = self.embedding_helper.cosine_similarity(
-                    message_embedding, 
-                    category_embedding
-                )
-                
-                if similarity > best_similarity:
-                    best_similarity = similarity
-                    best_category = category
-            
-            # If similarity is too low, might be unclear intent - use general
-            # Threshold of 0.3 ensures reasonable confidence
-            if best_similarity < 0.3:
-                return ("general", message_embedding)
-            
-            return (best_category, message_embedding)
-            
-        except Exception as e:
-            print(f"Error in embedding-based classification: {e}")
-            return (self._classify_intent_fallback(message), None)
-    
-    def _classify_intent_fallback(self, message):
-        """
-        Fallback keyword-based classification if AI fails.
-        Checks for personal context first, then general keywords.
-        
-        Args:
-            message (str): User message
-            
-        Returns:
-            str: Detected category
-        """
-        if not message or not message.strip():
-            return "general"
-        
-        message_lower = message.lower()
-        
-        # Check for personal queries first (impact category)
-        personal_indicators = ["my", "i", "me", "mine", "i've", "i have", "i did", "i completed"]
-        personal_event_terms = ["upcoming", "completed", "events", "event", "volunteer", "volunteered", 
-                               "hours", "stats", "statistics", "progress", "history"]
-        
-        has_personal = any(indicator in message_lower for indicator in personal_indicators)
-        has_personal_event_term = any(term in message_lower for term in personal_event_terms)
-        
-        if has_personal and has_personal_event_term:
-            return "impact"
-        
-        # Standalone impact keywords
-        standalone_impact_keywords = ["impact", "my hours", "my stats", "my progress", "my badges", "my achievements"]
-        if any(keyword in message_lower for keyword in standalone_impact_keywords):
-            return "impact"
-        
-        # Other categories
-        teams_keywords = ["team", "teams", "group", "groups", "collaborate", "join"]
-        if any(keyword in message_lower for keyword in teams_keywords):
-            return "teams"
-        
-        badges_keywords = ["badge", "badges", "achievement", "achievements", "award", "awards", "earned"]
-        if any(keyword in message_lower for keyword in badges_keywords):
-            return "badges"
-        
-        events_keywords = ["event", "events", "volunteer", "volunteering", "opportunity", 
-                          "opportunities", "activity", "activities"]
-        if any(keyword in message_lower for keyword in events_keywords):
-            return "events"
-        
-        return "general"
-    
-    # ============================================================================
-    # Category Handlers
-    # ============================================================================
-    
-    def _handle_events_category(self, user_message, user_email=None, query_embedding=None):
-        """
-        Handle Events category - find and search volunteer events.
-        Now also handles "my upcoming / registered events" as a fast path.
-        """
-        msg_lower = user_message.lower() if user_message else ""
-
-        # =========================================================
-        # 1) FAST PATH: user is asking about *their* own events
-        # =========================================================
-        user_is_asking_for_their_events = (
-            user_email
-            and (
-                "my" in msg_lower
-                or "i'm" in msg_lower
-                or "i am" in msg_lower
-                or "events i have" in msg_lower
-                or "attending" in msg_lower
-            )
-            and (
-                "upcoming" in msg_lower
-                or "coming up" in msg_lower
-                or "signed up" in msg_lower
-                or "registered" in msg_lower
-                or "attending" in msg_lower
-            )
-        )
-
-        if user_is_asking_for_their_events:
-            user_events = []  # make sure it's always defined
-            user_id = self.dao.get_user_id_by_email(user_email)
-
-            # 1) try proper upcoming events
-            if user_id:
-                try:
-                    user_events = self.dao.get_upcoming_events(user_id, limit=5) or []
-                except Exception as e:
-                    print(f"Error getting upcoming events for user {user_id}: {e}")
-                    user_events = []
-
-            # 2) fallback: some setups only store "user events" (often as IDs/tuples)
-            if not user_events and user_email:
-                try:
-                    registered = self.dao.get_user_events(user_email) or []
-                    full_events = []
-                    for item in registered:
-                        # item could be (id,) or just id
-                        event_id = item[0] if isinstance(item, tuple) else item
-                        if not event_id:
-                            continue
-                        # only try this if DAO has such a method
-                        if hasattr(self.dao, "get_event_by_id"):
-                            ev = self.dao.get_event_by_id(event_id)
-                            if ev:
-                                full_events.append(ev)
-                    if full_events:
-                        user_events = full_events
-                except Exception as e:
-                    print(f"Error falling back to user_events for {user_email}: {e}")
-
-            system_prompt = self._build_system_prompt()
-            formatted_user_events = self._format_events_for_context(user_events) if user_events else "No upcoming events"
-
-            prompt = f"""{system_prompt}
-
-    User's question: {user_message}
-
-    User's upcoming/registered events:
-    {formatted_user_events}
-
-    CRITICAL - Response Formatting:
-    - Events will be displayed as interactive cards below your message, so DO NOT mention specific event details (title, date, time, location) in your text response
-    - Keep it to 1–2 sentences, friendly.
-    """
-            response_text = self.get_ai_response(prompt)
-
-            # normalize for frontend cards
-            events_list = []
-            for event in user_events:
-                event_dict = dict(event) if not isinstance(event, dict) else event
-
-                # normalize common fields for the frontend
-                if 'ID' in event_dict and 'id' not in event_dict:
-                    event_dict['id'] = event_dict['ID']
-                if 'Title' in event_dict and 'title' not in event_dict:
-                    event_dict['title'] = event_dict['Title']
-                if 'LocationCity' in event_dict and 'location' not in event_dict:
-                    event_dict['location'] = event_dict['LocationCity']
-                if 'Capacity' in event_dict and 'capacity' not in event_dict:
-                    event_dict['capacity'] = event_dict['Capacity']
-
-                events_list.append(event_dict)
-
-            return response_text, events_list
-
-        # =========================================================
-        # 2) ORIGINAL SEARCH / RECOMMENDATION LOGIC
-        # =========================================================
-        location = self._extract_location(user_message)
-
-        # Detect if user wants a single event
-        wants_single_event = self._detect_single_event_request(user_message)
-
-        # Reuse embedding if provided, otherwise generate new one
-        if not query_embedding:
-            query_embedding = self.embedding_helper.generate_embedding(user_message)
-
-        if not query_embedding:
-            # Fallback to keyword search
-            message_for_keywords = self._remove_location_from_message(user_message, location) if location else user_message
-            keyword = self._extract_keyword(message_for_keywords)
-            events = self.dao.get_filtered_events(keyword, location, None, None)
-        else:
-            # Use embedding-based search
-            events = self.dao.search_events_with_embeddings(
-                query_embedding=query_embedding,
-                location=location,
-                limit=10,
-                similarity_threshold=0.3
-            )
-
-        # Filter out events user is already registered for (for recommendations)
-        if user_email and events:
-            try:
-                user_registered_events = self.dao.get_user_events(user_email)
-                registered_event_ids = set()
-                if user_registered_events:
-                    for event_tuple in user_registered_events:
-                        event_id = event_tuple[0] if isinstance(event_tuple, tuple) else event_tuple
-                        if event_id:
-                            registered_event_ids.add(int(event_id))
-
-                filtered_events = []
-                for event in events:
-                    event_id = event.get('ID') or event.get('id')
-                    if event_id:
-                        event_id_int = int(event_id)
-                        if event_id_int not in registered_event_ids:
-                            filtered_events.append(event)
-                    else:
-                        filtered_events.append(event)
-
-                events = filtered_events
-            except Exception as e:
-                print(f"Error filtering user's registered events: {e}")
-                import traceback
-                traceback.print_exc()
-
-        formatted_events = self._format_events_for_context(events)
-        system_prompt = self._build_system_prompt()
-
-        prompt = f"""{system_prompt}
-
-    User's question: {user_message}
-
-    Available events from database ({len(events)} found):
-    {formatted_events}
-
-    IMPORTANT - Event Registration Process:
-    When users ask to "sign up", "register", or "join" an event, they mean registering for a volunteer event:
-    1. Go to the Events page via the header menu
-    2. Find the event you want
-    3. Click Register (or Volunteer)
-    4. The event will appear in your upcoming events on the home dashboard
-
-    CRITICAL - Response Formatting:
-    - Events will be displayed as interactive cards below your message, so DO NOT mention specific event details
-    - Keep your response CONCISE - just 1-2 sentences maximum
-    - Be friendly and brief
-    """
-        response_text = self.get_ai_response(prompt)
-
-        # Return events list - limit based on user request
-        events_list = []
-        if events:
-            limit = 1 if wants_single_event else 3
-            for event in events[:limit]:
-                event_dict = dict(event) if not isinstance(event, dict) else event
-                # normalize for frontend
-                if 'ID' in event_dict and 'id' not in event_dict:
-                    event_dict['id'] = event_dict['ID']
-                if 'Title' in event_dict and 'title' not in event_dict:
-                    event_dict['title'] = event_dict['Title']
-                if 'LocationCity' in event_dict and 'location' not in event_dict:
-                    event_dict['location'] = event_dict['LocationCity']
-                if 'Capacity' in event_dict and 'capacity' not in event_dict:
-                    event_dict['capacity'] = event_dict['Capacity']
-                events_list.append(event_dict)
-
-        return response_text, events_list
-
-
-
-    
-    def _detect_single_event_request(self, message):
-        """
-        Detect if user is asking for a single event (e.g., "a event", "an event", "one event").
-        
-        Args:
-            message (str): User's message
-            
-        Returns:
-            bool: True if user wants a single event, False otherwise
-        """
-        if not message:
-            return False
-        
-        message_lower = message.lower()
-        
-        # Check for single event indicators
-        single_event_patterns = [
-            r'\b(a|an)\s+(event|volunteer|opportunity|activity)',
-            r'\bone\s+(event|volunteer|opportunity|activity)',
-            r'\b(a|an)\s+volunteering',
-            r'\bone\s+volunteering',
-            r'\bshow\s+me\s+(a|an|one)',
-            r'\bfind\s+me\s+(a|an|one)',
-            r'\bgive\s+me\s+(a|an|one)',
-            r'\bsuggest\s+(a|an|one)',
-            r'\brecommend\s+(a|an|one)',
-        ]
-        
-        for pattern in single_event_patterns:
-            if re.search(pattern, message_lower):
-                return True
-        
-        return False
-    
-    def _handle_teams_category(self, user_message, user_email=None):
-        """Handle Teams category - team-related queries."""
-        # Fetch team data if user is logged in
-        user_teams = []
-        all_teams = []
-        team_events = []
-        
-        if user_email:
-            try:
-                user_teams = self.dao.get_all_joined_teams(user_email)
-                all_teams = self.dao.get_all_teams()
-                team_events = self.dao.get_team_events(user_email)
-            except Exception as e:
-                print(f"Error fetching team data: {e}")
-
-        # =========================================================
-        # 1) FAST PATH: user is clearly asking about *their* teams
-        # =========================================================
-        if self._is_asking_about_my_teams(user_message):
-            system_prompt = self._build_system_prompt()
-            formatted_user_teams = self._format_teams_for_context(user_teams)
-
-            prompt = f"""{system_prompt}
-
-    User's question: {user_message}
-
-    User's teams ({len(user_teams)}):
-    {formatted_user_teams}
-
-    CRITICAL - Response Formatting:
-    - Teams will be displayed as interactive cards below your message, so DO NOT mention specific team details (name, description, department) in your text response
-    - Keep it to 1–2 sentences, e.g. "Here are your teams:" or "These are the teams you're part of."
-    """
-            response_text = self.get_ai_response(prompt)
-
-            # Return just the user's teams as cards
-            teams_list = []
-            user_id = None
-            if user_email:
-                try:
-                    user_id = self.dao.get_user_id_by_email(user_email)
-                except Exception as e:
-                    print(f"Error getting user ID: {e}")
-
-            for team in user_teams:
-                team_dict = dict(team) if not isinstance(team, dict) else team
-                if 'ID' in team_dict:
-                    team_dict['id'] = team_dict['ID']
-                if 'Name' in team_dict:
-                    team_dict['name'] = team_dict['Name']
-                if 'JoinCode' in team_dict:
-                    team_dict['join_code'] = team_dict['JoinCode']
-                # owner flag
-                if 'IsOwner' not in team_dict or team_dict['IsOwner'] is None:
-                    if user_id and 'OwnerUserID' in team_dict:
-                        team_dict['is_owner'] = (team_dict['OwnerUserID'] == user_id)
-                    elif 'IsOwner' in team_dict:
-                        team_dict['is_owner'] = team_dict['IsOwner']
-                    else:
-                        team_dict['is_owner'] = False
-                else:
-                    team_dict['is_owner'] = team_dict['IsOwner']
-                teams_list.append(team_dict)
-
-            return response_text, teams_list, team_events
-
-        # =========================================================
-        # 2) ORIGINAL LOGIC FOR GENERIC TEAM QUERIES
-        # =========================================================
-        # Detect if user wants all teams or a specific team
-        wants_all_teams = self._detect_all_teams_request(user_message)
-        wants_single_team = self._detect_single_team_request(user_message)
-        
-        # Check if user is asking for a specific team by name (even without "a team" phrase)
-        matching_team_by_name = self._find_matching_team(user_message, all_teams)
-        
-        # Determine which teams to return
-        teams_to_return = []
-        if wants_all_teams:
-            # User wants all available teams (but exclude teams they're already in)
-            teams_to_return = all_teams[:10] if all_teams else []
-        elif matching_team_by_name:
-            # User mentioned a specific team name - return that team (but only if not already a member)
-            if user_email and user_teams:
-                # Get user's joined team IDs (convert to integers for comparison)
-                user_team_ids = set()
-                for team in user_teams:
-                    team_id = team.get('ID') or team.get('id')
-                    if team_id:
-                        user_team_ids.add(int(team_id))
-                
-                matching_team_id = matching_team_by_name.get('ID') or matching_team_by_name.get('id')
-                if matching_team_id:
-                    matching_team_id_int = int(matching_team_id)
-                    if matching_team_id_int not in user_team_ids:
-                        teams_to_return = [matching_team_by_name]
-                    # If already a member, don't return it (user can see it in "my teams")
-                else:
-                    teams_to_return = [matching_team_by_name]
-            else:
-                teams_to_return = [matching_team_by_name]
-        elif wants_single_team:
-            # User wants a single team but no specific name matched - return first team
-            teams_to_return = all_teams[:1] if all_teams else []
-        else:
-            # Default: show a few teams as suggestions
-            teams_to_return = all_teams[:3] if all_teams else []
-        
-        # Filter out teams user is already a member of (since this is NOT the "my teams" path)
-        if user_email and teams_to_return:
-            try:
-                # Get user's joined team IDs (convert to integers for comparison)
-                user_team_ids = set()
-                for team in user_teams:
-                    team_id = team.get('ID') or team.get('id')
-                    if team_id:
-                        user_team_ids.add(int(team_id))
-                
-                # Filter out teams user is already a member of
-                filtered_teams = []
-                for team in teams_to_return:
-                    team_id = team.get('ID') or team.get('id')
-                    if team_id:
-                        team_id_int = int(team_id)
-                        if team_id_int not in user_team_ids:
-                            filtered_teams.append(team)
-                    else:
-                        # If team doesn't have ID, include it (shouldn't happen, but safe)
-                        filtered_teams.append(team)
-                
-                teams_to_return = filtered_teams
-            except Exception as e:
-                print(f"Error filtering user's joined teams: {e}")
-                import traceback
-                traceback.print_exc()
-        
-        formatted_user_teams = self._format_teams_for_context(user_teams)
-        formatted_all_teams = self._format_teams_for_context(all_teams[:10]) if all_teams else "No teams available"
-        formatted_team_events = self._format_events_for_context(team_events) if team_events else "No team events"
-        
-        system_prompt = self._build_system_prompt()
-        
-        prompt = f"""{system_prompt}
-
-    User's question: {user_message}
-
-    IMPORTANT - Team Instructions:
-
-    **Joining a Team:**
-    Go to Teams in the header menu, browse available teams, and join using a join code.
-
-    **Creating a Team:**
-    Go to Teams in the header menu, click on "Create Team" in the My Teams section, fill in the details (name, description, department, capacity), click Create, and share the join code with others so they can join.
-
-    **Registering as a Team for an Event:**
-    The team owner can go to Events in the header menu, find an event, click on "Register as a Team" to register the team to that event.
-
-    User's teams ({len(user_teams)}):
-    {formatted_user_teams}
-
-    Available teams (showing first 10):
-    {formatted_all_teams}
-
-    Events your teams are registered for:
-    {formatted_team_events}
-
-    CRITICAL - Response Formatting:
-    - Teams will be displayed as interactive cards below your message, so DO NOT mention specific team details (name, description, department) in your text response
-    - Instead, provide a brief introductory message such as:
-    * If showing teams: "Here are some teams matching what you asked for:" or "Here are teams that match your criteria:" or similar
-    * If showing one team: "Here's a team matching what you asked for:" or "Here's a team that might interest you:" or similar
-    * If no teams match: Briefly suggest checking the Teams section
-    - Keep your response CONCISE - just 1-2 sentences maximum
-    - Do NOT list team details in your text - those will be shown in the team cards
-    - Be friendly and brief"""
-        
-        response_text = self.get_ai_response(prompt)
-        
-        # Return teams list (convert to dict format for frontend)
-        teams_list = []
-        # Get user_id for owner checking
-        user_id = None
-        if user_email:
-            try:
-                user_id = self.dao.get_user_id_by_email(user_email)
-            except Exception as e:
-                print(f"Error getting user ID: {e}")
-        
-        for team in teams_to_return:
-            team_dict = dict(team) if not isinstance(team, dict) else team
-            # Ensure proper field names for TeamCard component
-            if 'ID' in team_dict:
-                team_dict['id'] = team_dict['ID']
-            if 'Name' in team_dict:
-                team_dict['name'] = team_dict['Name']
-            if 'JoinCode' in team_dict:
-                team_dict['join_code'] = team_dict['JoinCode']
-            # Check if user is owner (if not already set)
-            if 'IsOwner' not in team_dict or team_dict['IsOwner'] is None:
-                if user_id and 'OwnerUserID' in team_dict:
-                    team_dict['is_owner'] = (team_dict['OwnerUserID'] == user_id)
-                elif 'IsOwner' in team_dict:
-                    team_dict['is_owner'] = team_dict['IsOwner']
-                else:
-                    team_dict['is_owner'] = False
-            else:
-                team_dict['is_owner'] = team_dict['IsOwner']
-            teams_list.append(team_dict)
-        
-        return response_text, teams_list, team_events
-
-    
-    def _detect_all_teams_request(self, message):
-        """Detect if user is asking for all teams."""
-        if not message:
-            return False
-        
-        message_lower = message.lower()
-        all_teams_patterns = [
-            r'\ball\s+teams',
-            r'\bevery\s+team',
-            r'\bshow\s+(all|every)\s+teams',
-            r'\blist\s+(all|every)\s+teams',
-            r'\bbrowse\s+(all|every)\s+teams',
-            r'\bwhat\s+teams\s+(are\s+there|exist|available)',
-        ]
-        
-        for pattern in all_teams_patterns:
-            if re.search(pattern, message_lower):
-                return True
-        
-        return False
-    
-    def _detect_single_team_request(self, message):
-        """Detect if user is asking for a single team."""
-        if not message:
-            return False
-        
-        message_lower = message.lower()
-        single_team_patterns = [
-            r'\b(a|an)\s+team',
-            r'\bone\s+team',
-            r'\bshow\s+me\s+(a|an|one)\s+team',
-            r'\bfind\s+me\s+(a|an|one)\s+team',
-            r'\bgive\s+me\s+(a|an|one)\s+team',
-        ]
-        
-        for pattern in single_team_patterns:
-            if re.search(pattern, message_lower):
-                return True
-        
-        return False
-    
-    def _is_asking_about_my_teams(self, message):
-        """Detect if user is asking about their own teams."""
-        if not message:
-            return False
-        
-        message_lower = message.lower()
-        my_teams_patterns = [
-            r'\bmy\s+teams',
-            r'\bteams\s+I\s+(am\s+in|joined|belong\s+to)',
-            r'\bteams\s+I\'m\s+in',
-            r'\bwhat\s+teams\s+(am\s+I|do\s+I\s+have|am\s+I\s+part\s+of)',
-        ]
-        
-        for pattern in my_teams_patterns:
-            if re.search(pattern, message_lower):
-                return True
-        
-        return False
-    
-    def _find_matching_team(self, message, all_teams):
-        """
-        Find a team matching the user's query by name.
-        Uses flexible matching: exact match, word-boundary match, or partial match.
-        
-        Args:
-            message (str): User's message
-            all_teams (list): List of all teams
-            
-        Returns:
-            dict or None: Matching team dictionary, or None if no match found
-        """
-        if not all_teams:
-            return None
-        
-        message_lower = message.lower().strip()
-        
-        # Remove common query words to extract potential team name
-        query_words = ['team', 'teams', 'show', 'find', 'get', 'tell', 'me', 'about', 
-                      'the', 'a', 'an', 'is', 'are', 'what', 'which', 'who', 'how']
-        words = [w for w in message_lower.split() if w not in query_words and len(w) > 2]
-        potential_team_name = ' '.join(words).strip()
-        
-        best_match = None
-        best_score = 0
-        
-        for team in all_teams:
-            team_name = (team.get('Name') or team.get('name') or '').strip()
-            if not team_name:
-                continue
-                
-            team_name_lower = team_name.lower()
-            score = 0
-            
-            # Exact match (highest priority)
-            if team_name_lower == message_lower or team_name_lower == potential_team_name:
-                score = 100
-            # Word boundary match (e.g., "Marketing Team" matches "marketing")
-            elif re.search(r'\b' + re.escape(team_name_lower) + r'\b', message_lower):
-                score = 80
-            # Team name contains query words (e.g., "marketing" in "Marketing Team")
-            elif all(word in team_name_lower for word in words if len(word) > 2):
-                score = 60
-            # Partial match - team name contains in message or vice versa
-            elif team_name_lower in message_lower:
-                score = 50
-            elif any(word in team_name_lower for word in words if len(word) > 2):
-                score = 40
-            
-            if score > best_score:
-                best_score = score
-                best_match = team
-        
-        # Only return match if score is high enough (at least 40)
-        return best_match if best_score >= 40 else None
-    
-    def _handle_badges_category(self, user_message, user_email=None):
-        """Handle Badges category - user badges and achievements."""
-        if not user_email:
-            return "Please log in to view your badges and achievements.", None
-        
-        user_id = self.dao.get_user_id_by_email(user_email)
-        if not user_id:
-            return "Unable to retrieve your account information. Please try again.", None
-        
-        user_badges = self.dao.get_badges(user_id)
-        all_badges = self.dao.get_all_badges()
-        
-        # Detect if user is asking about their badges or all available badges
-        is_asking_about_my_badges = self._is_asking_about_my_badges(user_message)
-        is_asking_about_all_badges = (not is_asking_about_my_badges) and self._is_asking_about_all_badges(user_message)
-
-        # Determine which badges to return
-        badges_to_return = []
-        if is_asking_about_my_badges:
-            # User wants their earned badges
-            badges_to_return = user_badges[:5] if user_badges else []  # Limit to 5 for display
-        elif is_asking_about_all_badges:
-            # User wants to see next badges they could earn (not already earned)
-            # Create set of user's badge IDs (handle both dict keys and ensure int comparison)
-            user_badge_ids = set()
-            for badge in user_badges:
-                badge_id = badge.get('ID') or badge.get('id')
-                if badge_id:
-                    user_badge_ids.add(int(badge_id))  # Convert to int for comparison
-            
-            # Filter out badges user already has
-            available_badges = []
-            for badge in all_badges:
-                badge_id = badge.get('ID') or badge.get('id')
-                if badge_id:
-                    badge_id_int = int(badge_id)
-                    if badge_id_int not in user_badge_ids:
-                        available_badges.append(badge)
-            
-            badges_to_return = available_badges[:2] if available_badges else []  # Next 2 badges
-        else:
-            # Default: show user's badges if they have any, otherwise show next 2 available
-            if user_badges:
-                badges_to_return = user_badges[:3] if len(user_badges) > 3 else user_badges
-            else:
-                # Show next 2 badges they could earn
-                badges_to_return = all_badges[:2] if all_badges else []
-        
-        formatted_user_badges = self._format_badges_for_context(user_badges)
-        formatted_all_badges = self._format_all_badges_for_context(all_badges)
-        
-        system_prompt = self._build_system_prompt()
-        
-        prompt = f"""{system_prompt}
-
-User's question: {user_message}
-
-User's earned badges ({len(user_badges)} total):
-{formatted_user_badges}
-
-All available badges:
-{formatted_all_badges}
-
-CRITICAL - Response Formatting:
-- Badges will be displayed as interactive cards below your message, so DO NOT mention specific badge details (name, description) in your text response
-- Instead, provide a brief introductory message such as:
-  * If showing user's badges: "Here are your earned badges:" or "Here are the badges you've earned:" or similar
-  * If showing available badges: "Here are some badges you could earn:" or "Here are badges you can work towards:" or similar
-  * If no badges: Briefly suggest volunteering to earn badges
-- Keep your response CONCISE - just 1-2 sentences maximum
-- Do NOT list badge details in your text - those will be shown in the badge cards
-- Be friendly and brief"""
-        
-        response_text = self.get_ai_response(prompt)
-        
-        # Return badges list (convert to dict format for frontend)
-        badges_list = []
-        for badge in badges_to_return:
-            badge_dict = dict(badge) if not isinstance(badge, dict) else badge
-            # Ensure proper field names (ID should already be correct, but ensure consistency)
-            if 'ID' in badge_dict and 'id' not in badge_dict:
-                badge_dict['id'] = badge_dict['ID']
-            badges_list.append(badge_dict)
-        
-        return response_text, badges_list
-    
-    def _is_asking_about_my_badges(self, message):
-        """Detect if user is asking about their own badges."""
-        if not message:
-            return False
-        
-        message_lower = message.lower()
-        my_badges_patterns = [
-            r'\bmy\s+badges',
-            r'\bbadges\s+I\s+(have|earned|got|own)',
-            r'\bbadges\s+I\'ve\s+(earned|got)',
-            r'\bwhat\s+badges\s+(do\s+I\s+have|have\s+I\s+earned|am\s+I\s+part\s+of)',
-            r'\bshow\s+my\s+badges',
-        ]
-        
-        for pattern in my_badges_patterns:
-            if re.search(pattern, message_lower):
-                return True
-        
-        return False
-    
-    def _is_asking_about_all_badges(self, message):
-        if not message:
-            return False
-        msg = message.lower()
-
-        # only treat as "all badges" if they clearly want what's possible to earn
-        earn_words = [
-            "available", 
-            "can earn", 
-            "to earn", 
-            "work towards", 
-            "other badges", 
-            "what badges can i",
-            "missing",
-            "haven't earned",
-            "havent earned",
-            "haven’t got",
-            "can i earn",
-            "can i still earn",
-            "available badges",
-            "what can i still unlock",
-            "badges i don’t have",
-            "badges i dont have"
-        ]
-        return any(w in msg for w in earn_words)
-
-    
-    def _handle_impact_category(self, user_message, user_email=None):
-        """Handle Impact category - user statistics and progress."""
-        if not user_email:
-            return "Please log in to view your volunteering impact."
-        
-        user_id = self.dao.get_user_id_by_email(user_email)
-        if not user_id:
-            return "Unable to retrieve your account information. Please try again."
-        
-        # Get user statistics
-        total_hours = self.dao.get_total_hours(user_id)
-        completed_events_count = self.dao.get_completed_events_count(user_id)
-        upcoming_events_count = self.dao.get_upcoming_events_count(user_id)
-        badges_count = len(self.dao.get_badges(user_id))
-        
-        # Get actual events data
-        upcoming_events_list = self.dao.get_upcoming_events(user_id, limit=5)
-        completed_events_list = self.dao.get_completed_events(user_id, limit=5)
-        
-        formatted_upcoming = self._format_events_for_context(upcoming_events_list) if upcoming_events_list else "No upcoming events"
-        formatted_completed = self._format_events_for_context(completed_events_list) if completed_events_list else "No completed events yet"
-        
-        system_prompt = self._build_system_prompt()
-        
-        prompt = f"""{system_prompt}
-
-User's question: {user_message}
-
-User's volunteering impact:
-- Total hours volunteered: {total_hours:.1f} hours
-- Events completed: {completed_events_count}
-- Upcoming events: {upcoming_events_count}
-- Badges earned: {badges_count}
-
-Upcoming events (next 5):
-{formatted_upcoming}
-
-Recently completed events (last 5):
-{formatted_completed}
-
-NOTE: Only show stats, no events, teams or anything else.
-"""
-        
-        return self.get_ai_response(prompt)
-    
-    def _handle_general_category(self, user_message):
-        """Handle General category - platform help, navigation, greetings."""
-        system_prompt = self._build_system_prompt()
-        
-        prompt = f"""{system_prompt}
-
-User's question: {user_message}"""
-        
-        return self.get_ai_response(prompt)
-    
-    # ============================================================================
-    # Text Processing & Extraction
-    # ============================================================================
-    
-    def _extract_keyword(self, message):
-        """
-        Extract search keywords from user message.
-        
-        Args:
-            message (str): User message
-            
-        Returns:
-            str or None: Extracted keywords (up to 3), or None if no meaningful keywords
-        """
-        if not message or not message.strip():
-            return None
-        
-        stop_words = {
-            "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", 
-            "from", "what", "where", "when", "show", "me", "find", "search", "get", "list", 
-            "available", "events", "event", "are", "is", "am", "have", "has", "had", "do", 
-            "does", "did", "can", "could", "would", "should", "will", "this", "that", "these", "those"
-        }
-        
-        words = message.lower().strip().split()
-        keywords = [w.strip() for w in words if w not in stop_words and len(w.strip()) > 2]
-        keywords = [w for w in keywords if w and (w.isalnum() or any(c.isalpha() for c in w))]
-        
-        if not keywords:
-            return None
-        
-        result = " ".join(keywords[:3])
-        return result if result.strip() else None
-    
-    def _extract_location(self, message):
-        """
-        Extract location from message by matching against known cities.
-        
-        Args:
-            message (str): User message
-            
-        Returns:
-            str or None: Matched city name, or None if not found
-        """
-        locations = self.dao.get_location()
-        if not locations:
-            return None
-        
-        message_lower = message.lower()
-        sorted_locations = sorted(locations, key=len, reverse=True)
-        
-        for city in sorted_locations:
-            if not city:
-                continue
-            city_lower = city.lower().strip()
-            if city_lower and city_lower in message_lower:
-                return city
-        
-        return None
-    
-    def _remove_location_from_message(self, message, location):
-        """
-        Remove location from message in various patterns (case-insensitive).
-        
-        Args:
-            message (str): User message
-            location (str): Location to remove
-            
-        Returns:
-            str: Message with location removed
-        """
-        if not location:
-            return message
-        
-        location_patterns = [
-            r'\b' + re.escape(location.lower()) + r'\b',
-            r'\bin\s+' + re.escape(location.lower()) + r'\b',
-            r'\b' + re.escape(location.lower()) + r'\s+events?\b',
-            r'\bevents?\s+(?:in\s+)?' + re.escape(location.lower()) + r'\b',
-        ]
-        
-        result = message
-        for pattern in location_patterns:
-            result = re.sub(pattern, '', result, flags=re.IGNORECASE)
-        
-        return ' '.join(result.split())
-    
-    # ============================================================================
-    # Data Formatting
-    # ============================================================================
-    
-    def _format_events_for_context(self, events):
-        """
-        Format events data into readable context for AI.
-        Handles various event formats (search results, user events, etc.).
-        
-        Args:
-            events (list): List of event dictionaries
-            
-        Returns:
-            str: Formatted event context string
-        """
-        if not events:
-            return "No events found matching your criteria."
-        
-        formatted = []
-        for event in events[:10]:
-            event_str = f"Event ID {event['ID']}: {event['Title']}"
-            
-            # Date and time
-            if event.get('Date'):
-                event_str += f" - Date: {event['Date']}"
-            if event.get('StartTime') and event.get('EndTime'):
-                event_str += f" - Time: {event['StartTime']} to {event['EndTime']}"
-            elif event.get('StartTime'):
-                event_str += f" - Time: {event['StartTime']}"
-            
-            # Location
-            location_parts = []
-            if event.get('LocationCity'):
-                location_parts.append(event['LocationCity'])
-            if event.get('Address'):
-                location_parts.append(event['Address'])
-            if location_parts:
-                event_str += f" - Location: {', '.join(location_parts)}"
-            
-            # Duration (for completed events)
-            if event.get('DurationHours'):
-                event_str += f" - Duration: {event['DurationHours']:.1f} hours"
-            
-            # Description
-            if event.get('About'):
-                event_str += f" - About: {event['About'][:150]}"
-            
-            formatted.append(event_str)
-        
-        return "\n".join(formatted)
-    
-    def _format_badges_for_context(self, badges):
-        """
-        Format user badges data for AI context.
-        
-        Args:
-            badges (list): List of badge dictionaries
-            
-        Returns:
-            str: Formatted badge context string
-        """
-        if not badges:
-            return "No badges earned yet."
-        
-        formatted = [f"- {badge['Name']}: {badge['Description']}" for badge in badges]
-        return "\n".join(formatted)
-    
-    def _format_all_badges_for_context(self, badges):
-        """
-        Format all available badges for AI context.
-        
-        Args:
-            badges (list): List of badge dictionaries
-            
-        Returns:
-            str: Formatted badge context string
-        """
-        if not badges:
-            return "No badges available."
-        
-        formatted = [f"- {badge['Name']}: {badge['Description']}" for badge in badges[:20]]
-        return "\n".join(formatted)
-    
-    def _format_teams_for_context(self, teams):
-        """
-        Format teams data for AI context.
-        
-        Args:
-            teams (list): List of team dictionaries
-            
-        Returns:
-            str: Formatted team context string
-        """
-        if not teams:
-            return "No teams found."
-        
-        formatted = []
-        for team in teams[:10]:
-            team_str = f"Team ID {team['ID']}: {team.get('Name', 'Unnamed Team')}"
-            if team.get('Description'):
-                team_str += f" - {team['Description'][:100]}"
-            if team.get('Department'):
-                team_str += f" - Department: {team['Department']}"
-            formatted.append(team_str)
-        
-        return "\n".join(formatted)
-    
-    # ============================================================================
-    # Prompt Building
-    # ============================================================================
-    
-    def _build_system_prompt(self):
-        """
-        Build the shared system prompt for all handlers.
-        
-        Returns:
-            str: Base system prompt shared across all categories
-        """
-        return """You are OneSky Assistant, the helpful chatbot for OneSky — Sky's internal volunteering platform where employees can find volunteering opportunities, track impact, earn badges, and collaborate in teams.
+# ---------------------------------------------------------------------
+# Shared system prompt (moved out of the method for readability)
+# ---------------------------------------------------------------------
+SYSTEM_PROMPT = """You are OneSky Assistant, the helpful chatbot for OneSky — Sky's internal volunteering platform where employees can find volunteering opportunities, track impact, earn badges, and collaborate in teams.
 All navigation and features can be accessed from the header menu at the top of the page.
 
 When responding:
@@ -1301,36 +69,1015 @@ General OneSky Queries:
 
 Out-of-Scope Queries:
 If the user asks about anything unrelated to OneSky (e.g., Sky corporate info, personal help, or non-volunteering topics, jokes) reply politely:
-"I'm sorry, I can only help with volunteering events and features on the OneSky platform."""
-    
-    # ============================================================================
-    # AI Response Handling
-    # ============================================================================
-    
-    def get_ai_response(self, prompt):
+"I'm sorry, I can only help with volunteering events and features on the OneSky platform."
+"""
+
+
+class ChatbotConnector:
+    """
+    Main chatbot connector that routes user messages to appropriate handlers
+    and generates AI-powered responses.
+    """
+
+    # Category example texts for embedding-based classification
+    CATEGORY_EXAMPLES = {
+        "events": [
+            "find volunteer events",
+            "give me recommendations for volunteering events",
+            "search for volunteer opportunities",
+            "what events are available",
+            "show me events in my area",
+            "find volunteering activities",
+            "events near me",
+            "upcoming volunteer events",
+            "what can I volunteer for",
+        ],
+        "teams": [
+            "what teams are available",
+            "how can I join a team",
+            "join a team",
+            "create a team",
+            "team collaboration",
+            "group volunteering",
+            "how do teams work",
+            "join team for volunteering",
+            "create volunteer team",
+            "what are the upcoming events for my teams",
+        ],
+        "badges": [
+            "what badges do I have",
+            "show my achievements",
+            "my earned badges",
+            "badges I've earned",
+            "what achievements can I get",
+            "view my badges",
+            "how does badges work",
+            "what badges are available",
+        ],
+        "impact": [
+            "my hours volunteered",
+            "my upcoming events",
+            "my completed events",
+            "my stats",
+            "my progress",
+            "how many hours have I volunteered",
+            "events I've done",
+            "what I've volunteered",
+            "my volunteering history",
+            "show my impact",
+        ],
+        "general": [
+            "help",
+            "what can I do",
+            "what can you do",
+            "how do I use this",
+            "how to navigate",
+            "hello",
+            "hi",
+            "what is this platform",
+            "how does this work",
+            "what is OneSky",
+            "What is this platform",
+            "how does this platform work",
+        ],
+    }
+
+    # ======================================================================
+    # Initialization
+    # ======================================================================
+
+    def __init__(self):
+        """Initialize chatbot connector with data access and OpenAI client."""
+        self.dao = DataAccess()
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
+        self.openai_client = OpenAI(api_key=api_key)
+        self.embedding_helper = EmbeddingHelper(api_key)
+
+        # Initialize category embeddings only once (shared across all instances)
+        # These embeddings are used to classify user queries into categories
+        global _category_embeddings_cache, _category_embeddings_initialized
+        if not _category_embeddings_initialized:
+            _category_embeddings_cache = self._initialize_category_embeddings()
+            _category_embeddings_initialized = True
+
+        # Use the shared cache
+        self.category_embeddings = _category_embeddings_cache
+
+    # ======================================================================
+    # Main Entry Point
+    # ======================================================================
+
+    def process_message(
+        self, user_message: str, user_email: Optional[str] = None
+    ) -> Tuple[str, str, Optional[List[dict]], Optional[List[dict]], Optional[List[dict]], Optional[List[dict]]]:
         """
-        Call OpenAI API to get response.
-        
-        Args:
-            prompt (str): Complete prompt for AI
-            
-        Returns:
-            str: AI-generated response
+        Main entry point - processes user message and returns AI response.
+        Returns 6 values consistently:
+        (response_text, category, events, teams, badges, team_events)
+        """
+        # Classify the user's intent into a category (events, teams, badges, impact, general)
+        category, message_embedding = self._classify_intent_with_ai(user_message)
+
+        # Route to the appropriate handler based on category
+        if category == "events":
+            response, events_list = self._handle_events_category(
+                user_message, user_email, message_embedding
+            )
+            return response, category, events_list, None, None, None
+
+        if category == "teams":
+            response, teams_list, team_events = self._handle_teams_category(
+                user_message, user_email
+            )
+            return response, category, None, teams_list, None, team_events
+
+        if category == "badges":
+            response, badges_list = self._handle_badges_category(
+                user_message, user_email
+            )
+            return response, category, None, None, badges_list, None
+
+        if category == "impact":
+            response = self._handle_impact_category(user_message, user_email)
+            return response, category, None, None, None, None
+
+        # general
+        response = self._handle_general_category(user_message)
+        return response, category, None, None, None, None
+
+    # ======================================================================
+    # Intent Classification
+    # ======================================================================
+
+    def _initialize_category_embeddings(self) -> Dict[str, List[float]]:
+        """Generate and cache embeddings for category example texts at startup."""
+        category_embeddings: Dict[str, List[float]] = {}
+        try:
+            # For each category, create an average embedding from all example texts
+            # This creates a "representative" embedding for the category
+            for category, examples in self.CATEGORY_EXAMPLES.items():
+                example_embeddings = []
+                for example_text in examples:
+                    embedding = self.embedding_helper.generate_embedding(example_text)
+                    if embedding:
+                        example_embeddings.append(embedding)
+                if example_embeddings:
+                    # Average all embeddings to get a single category representation
+                    avg_embedding = np.mean(example_embeddings, axis=0).tolist()
+                    category_embeddings[category] = avg_embedding
+        except Exception as e:
+            print(f"Error initializing category embeddings: {e}")
+        return category_embeddings
+
+    def _match_personal_intent(self, msg: str) -> Optional[str]:
+        """
+        High-priority rule-based intent detection for 'my ...' style queries.
+        This runs before embedding classification to catch personal queries quickly.
+        """
+        personal_words = ("my", "i ", "i'm", "i am", "me ", "me?")
+        is_personal = any(w in msg for w in personal_words)
+
+        # Check for personal team queries
+        if "team" in msg and (is_personal or "am i in" in msg or "i'm in" in msg or "belong" in msg):
+            return "teams"
+
+        # Check for personal badge queries
+        if "badge" in msg or "achievement" in msg:
+            if is_personal or "have i earned" in msg or "i earned" in msg or "i've earned" in msg:
+                return "badges"
+
+        # Check for personal event queries
+        if ("event" in msg or "upcoming" in msg or "coming up" in msg or "attending" in msg) and is_personal:
+            return "events"
+
+        return None
+
+    def _classify_intent_with_ai(self, message: str) -> Tuple[str, Optional[List[float]]]:
+        """
+        Embedding-based classification with a rule-based layer first.
+        Uses semantic similarity to match user queries to categories.
+        """
+        if not message or not message.strip():
+            return ("general", None)
+
+        msg = message.lower()
+
+        # Step 1: Quick rule-based check for personal queries (faster than embeddings)
+        personal_category = self._match_personal_intent(msg)
+        if personal_category:
+            return personal_category, None
+
+        # Step 2: Use embedding-based classification for semantic matching
+        if not self.category_embeddings:
+            # fallback if embeddings were not initialized
+            return (self._classify_intent_fallback(message), None)
+
+        try:
+            # Generate embedding for the user's message
+            message_embedding = self.embedding_helper.generate_embedding(message)
+            if not message_embedding:
+                return (self._classify_intent_fallback(message), None)
+
+            # Compare user's message embedding with each category embedding
+            # Find the category with highest similarity
+            best_category = "general"
+            best_similarity = -1.0
+            for category, category_embedding in self.category_embeddings.items():
+                similarity = self.embedding_helper.cosine_similarity(
+                    message_embedding, category_embedding
+                )
+                if similarity > best_similarity:
+                    best_similarity = similarity
+                    best_category = category
+
+            # If similarity is too low, default to general
+            if best_similarity < 0.3:
+                return ("general", message_embedding)
+
+            return (best_category, message_embedding)
+        except Exception as e:
+            print(f"Error in embedding-based classification: {e}")
+            return (self._classify_intent_fallback(message), None)
+
+    def _classify_intent_fallback(self, message: str) -> str:
+        """Simple keyword-based fallback classifier."""
+        if not message or not message.strip():
+            return "general"
+
+        message_lower = message.lower()
+
+        personal_indicators = ["my", "i", "me", "mine", "i've", "i have", "i did", "i completed"]
+        personal_event_terms = [
+            "upcoming",
+            "completed",
+            "events",
+            "event",
+            "volunteer",
+            "volunteered",
+            "hours",
+            "stats",
+            "statistics",
+            "progress",
+            "history",
+        ]
+        has_personal = any(ind in message_lower for ind in personal_indicators)
+        has_personal_event = any(term in message_lower for term in personal_event_terms)
+        if has_personal and has_personal_event:
+            return "impact"
+
+        if any(k in message_lower for k in ["team", "teams", "group", "groups", "collaborate", "join"]):
+            return "teams"
+
+        if any(k in message_lower for k in ["badge", "badges", "achievement", "achievements", "award", "awards", "earned"]):
+            return "badges"
+
+        if any(k in message_lower for k in ["event", "events", "volunteer", "volunteering", "opportunity", "opportunities", "activity", "activities"]):
+            return "events"
+
+        return "general"
+
+    # ======================================================================
+    # Category Handlers
+    # ======================================================================
+
+    # ---------- EVENTS ----------
+
+    def _handle_events_category(
+        self, user_message: str, user_email: Optional[str] = None, query_embedding: Optional[List[float]] = None
+    ) -> Tuple[str, List[dict]]:
+        """
+        Entry for events: decide between personal events vs event search.
+        - Personal events: "my upcoming events", "events I'm registered for"
+        - Event search: general event discovery and recommendations
+        """
+        msg_lower = user_message.lower() if user_message else ""
+        # Check if user is asking about their own registered events
+        is_personal_events = (
+            user_email
+            and (
+                "my" in msg_lower
+                or "i'm" in msg_lower
+                or "i am" in msg_lower
+                or "events i have" in msg_lower
+                or "attending" in msg_lower
+            )
+            and (
+                "upcoming" in msg_lower
+                or "coming up" in msg_lower
+                or "signed up" in msg_lower
+                or "registered" in msg_lower
+                or "attending" in msg_lower
+            )
+        )
+
+        if is_personal_events:
+            return self._handle_personal_events(user_message, user_email)
+
+        return self._handle_event_search(user_message, user_email, query_embedding)
+
+    def _handle_personal_events(
+        self, user_message: str, user_email: str
+    ) -> Tuple[str, List[dict]]:
+        """
+        Handle 'my upcoming events', 'what events do I have coming up', etc.
+        Fetches the user's registered upcoming events from the database.
+        """
+        user_events: List[dict] = []
+        user_id = self.dao.get_user_id_by_email(user_email)
+
+        # Try to get upcoming events using user_id (preferred method)
+        if user_id:
+            try:
+                user_events = self.dao.get_upcoming_events(user_id, limit=5) or []
+            except Exception as e:
+                print(f"Error getting upcoming events for user {user_id}: {e}")
+                user_events = []
+
+        # Fallback: if that didn't work, try getting events by email
+        # Some database setups may return event IDs that need to be resolved
+        if not user_events and user_email:
+            try:
+                registered = self.dao.get_user_events(user_email) or []
+                full_events = []
+                for item in registered:
+                    event_id = item[0] if isinstance(item, tuple) else item
+                    if not event_id:
+                        continue
+                    if hasattr(self.dao, "get_event_by_id"):
+                        ev = self.dao.get_event_by_id(event_id)
+                        if ev:
+                            full_events.append(ev)
+                if full_events:
+                    user_events = full_events
+            except Exception as e:
+                print(f"Error falling back to user_events for {user_email}: {e}")
+
+        formatted_user_events = (
+            self._format_events_for_context(user_events) if user_events else "No upcoming events"
+        )
+        prompt = f"""{self._build_system_prompt()}
+
+User's question: {user_message}
+
+User's upcoming/registered events:
+{formatted_user_events}
+
+CRITICAL - Response Formatting:
+- Events will be displayed as interactive cards below your message, so DO NOT mention specific event details (title, date, time, location) in your text response
+- Keep it to 1–2 sentences, friendly.
+"""
+        response_text = self.get_ai_response(prompt)
+
+        events_list = [self._normalize_event(e) for e in user_events]
+        return response_text, events_list
+
+    def _handle_event_search(
+        self,
+        user_message: str,
+        user_email: Optional[str],
+        query_embedding: Optional[List[float]],
+    ) -> Tuple[str, List[dict]]:
+        """
+        Handle normal event search / recommendations.
+        Uses embedding-based search if available, otherwise falls back to keyword search.
+        Filters out events the user is already registered for.
+        """
+        location = self._extract_location(user_message)
+        wants_single_event = self._detect_single_event_request(user_message)
+
+        # Generate embedding if not provided (reuses embedding from classification when possible)
+        if not query_embedding:
+            query_embedding = self.embedding_helper.generate_embedding(user_message)
+
+        # Use embedding-based search if available, otherwise keyword search
+        if not query_embedding:
+            message_for_keywords = (
+                self._remove_location_from_message(user_message, location)
+                if location
+                else user_message
+            )
+            keyword = self._extract_keyword(message_for_keywords)
+            events = self.dao.get_filtered_events(keyword, location, None, None)
+        else:
+            # Semantic search using embeddings (better for understanding intent)
+            events = self.dao.search_events_with_embeddings(
+                query_embedding=query_embedding,
+                location=location,
+                limit=10,
+                similarity_threshold=0.3,
+            )
+
+        # Filter out events user is already registered for (for recommendations)
+        if user_email and events:
+            try:
+                user_registered_events = self.dao.get_user_events(user_email)
+                registered_event_ids = set()
+                if user_registered_events:
+                    for event_tuple in user_registered_events:
+                        event_id = event_tuple[0] if isinstance(event_tuple, tuple) else event_tuple
+                        if event_id:
+                            registered_event_ids.add(int(event_id))
+
+                filtered_events = []
+                for event in events:
+                    event_id = event.get("ID") or event.get("id")
+                    if event_id and int(event_id) in registered_event_ids:
+                        continue
+                    filtered_events.append(event)
+                events = filtered_events
+            except Exception as e:
+                print(f"Error filtering user's registered events: {e}")
+
+        formatted_events = self._format_events_for_context(events)
+        prompt = f"""{self._build_system_prompt()}
+
+User's question: {user_message}
+
+Available events from database ({len(events)} found):
+{formatted_events}
+
+IMPORTANT - Event Registration Process:
+When users ask to "sign up", "register", or "join" an event, they mean registering for a volunteer event:
+1. Go to the Events page via the header menu
+2. Find the event you want
+3. Click Register (or Volunteer)
+4. The event will appear in your upcoming events on the home dashboard
+
+CRITICAL - Response Formatting:
+- Events will be displayed as interactive cards below your message, so DO NOT mention specific event details
+- Keep your response CONCISE - just 1-2 sentences maximum
+- Be friendly and brief
+"""
+        response_text = self.get_ai_response(prompt)
+
+        events_list: List[dict] = []
+        if events:
+            limit = 1 if wants_single_event else 3
+            for event in events[:limit]:
+                events_list.append(self._normalize_event(event))
+
+        return response_text, events_list
+
+    # ---------- TEAMS ----------
+
+    def _handle_teams_category(
+        self, user_message: str, user_email: Optional[str] = None
+    ) -> Tuple[str, List[dict], List[dict]]:
+        """
+        Handle Teams category - team-related queries.
+        Returns: (response_text, teams_list, team_events_list)
+        """
+        user_teams: List[dict] = []
+        all_teams: List[dict] = []
+        team_events: List[dict] = []
+
+        # Fetch team data for logged-in users
+        if user_email:
+            try:
+                user_teams = self.dao.get_all_joined_teams(user_email)
+                all_teams = self.dao.get_all_teams()
+                team_events = self.dao.get_team_events(user_email)
+            except Exception as e:
+                print(f"Error fetching team data: {e}")
+
+        # Fast path: if user is asking about "my teams", return their teams directly
+        if self._is_asking_about_my_teams(user_message):
+            prompt = f"""{self._build_system_prompt()}
+
+User's question: {user_message}
+
+User's teams ({len(user_teams)}):
+{self._format_teams_for_context(user_teams)}
+
+CRITICAL - Response Formatting:
+- Teams will be displayed as interactive cards below your message, so DO NOT mention specific team details
+- Keep it to 1–2 sentences.
+"""
+            response_text = self.get_ai_response(prompt)
+
+            user_id = self.dao.get_user_id_by_email(user_email) if user_email else None
+            teams_list = [self._normalize_team(t, user_id) for t in user_teams]
+            return response_text, teams_list, team_events
+
+        # generic path
+        wants_all_teams = self._detect_all_teams_request(user_message)
+        wants_single_team = self._detect_single_team_request(user_message)
+        matching_team_by_name = self._find_matching_team(user_message, all_teams)
+
+        teams_to_return: List[dict] = []
+        if wants_all_teams:
+            teams_to_return = all_teams[:10] if all_teams else []
+        elif matching_team_by_name:
+            if user_email and user_teams:
+                joined_ids = {int(t.get("ID") or t.get("id")) for t in user_teams if t.get("ID") or t.get("id")}
+                mt_id = matching_team_by_name.get("ID") or matching_team_by_name.get("id")
+                if mt_id and int(mt_id) not in joined_ids:
+                    teams_to_return = [matching_team_by_name]
+            else:
+                teams_to_return = [matching_team_by_name]
+        elif wants_single_team:
+            teams_to_return = all_teams[:1] if all_teams else []
+        else:
+            teams_to_return = all_teams[:3] if all_teams else []
+
+        # filter out teams user is already in (for generic list)
+        if user_email and user_teams and teams_to_return:
+            try:
+                joined_ids = {int(t.get("ID") or t.get("id")) for t in user_teams if t.get("ID") or t.get("id")}
+                teams_to_return = [
+                    t for t in teams_to_return
+                    if not (t.get("ID") or t.get("id")) or int(t.get("ID") or t.get("id")) not in joined_ids
+                ]
+            except Exception as e:
+                print(f"Error filtering user's joined teams: {e}")
+
+        prompt = f"""{self._build_system_prompt()}
+
+User's question: {user_message}
+
+IMPORTANT - Team Instructions:
+
+**Joining a Team:**
+Go to Teams in the header menu, browse available teams, and join using a join code.
+
+**Creating a Team:**
+Go to Teams in the header menu, click on "Create Team" in the My Teams section, fill in the details (name, description, department, capacity), click Create, and share the join code with others so they can join.
+
+**Registering as a Team for an Event:**
+The team owner can go to Events in the header menu, find an event, click on "Register as a Team" to register the team to that event.
+
+User's teams ({len(user_teams)}):
+{self._format_teams_for_context(user_teams)}
+
+Available teams (showing first 10):
+{self._format_teams_for_context(all_teams[:10]) if all_teams else "No teams available"}
+
+Events your teams are registered for:
+{self._format_events_for_context(team_events) if team_events else "No team events"}
+
+CRITICAL - Response Formatting:
+- Teams will be displayed as interactive cards below your message, so DO NOT mention specific team details in your text response
+- Keep your response CONCISE - just 1-2 sentences maximum
+- Be friendly and brief
+"""
+        response_text = self.get_ai_response(prompt)
+
+        user_id = self.dao.get_user_id_by_email(user_email) if user_email else None
+        teams_list = [self._normalize_team(t, user_id) for t in teams_to_return]
+        return response_text, teams_list, team_events
+
+    # ---------- BADGES ----------
+
+    def _handle_badges_category(
+        self, user_message: str, user_email: Optional[str] = None
+    ) -> Tuple[str, List[dict]]:
+        """Handle Badges category - user badges and achievements."""
+        if not user_email:
+            return "Please log in to view your badges and achievements.", None
+
+        user_id = self.dao.get_user_id_by_email(user_email)
+        if not user_id:
+            return "Unable to retrieve your account information. Please try again.", None
+
+        user_badges = self.dao.get_badges(user_id)
+        all_badges = self.dao.get_all_badges()
+
+        is_asking_about_my_badges = self._is_asking_about_my_badges(user_message)
+        is_asking_about_all_badges = (not is_asking_about_my_badges) and self._is_asking_about_all_badges(user_message)
+
+        if is_asking_about_my_badges:
+            badges_to_return = user_badges[:5] if user_badges else []
+        elif is_asking_about_all_badges:
+            user_badge_ids = {int(b.get("ID") or b.get("id")) for b in user_badges if (b.get("ID") or b.get("id"))}
+            available_badges = [
+                b for b in all_badges
+                if (b.get("ID") or b.get("id")) and int(b.get("ID") or b.get("id")) not in user_badge_ids
+            ]
+            badges_to_return = available_badges[:2] if available_badges else []
+        else:
+            badges_to_return = user_badges[:3] if user_badges else all_badges[:2]
+
+        prompt = f"""{self._build_system_prompt()}
+
+User's question: {user_message}
+
+User's earned badges ({len(user_badges)} total):
+{self._format_badges_for_context(user_badges)}
+
+All available badges:
+{self._format_all_badges_for_context(all_badges)}
+
+CRITICAL - Response Formatting:
+- Badges will be displayed as interactive cards below your message, so DO NOT mention specific badge details
+- Keep your response CONCISE - just 1-2 sentences maximum
+"""
+        response_text = self.get_ai_response(prompt)
+
+        badges_list = []
+        for badge in badges_to_return:
+            badge_dict = dict(badge)
+            if "ID" in badge_dict and "id" not in badge_dict:
+                badge_dict["id"] = badge_dict["ID"]
+            badges_list.append(badge_dict)
+
+        return response_text, badges_list
+
+    # ---------- IMPACT ----------
+
+    def _handle_impact_category(self, user_message: str, user_email: Optional[str] = None) -> str:
+        """Handle Impact category - user statistics and progress."""
+        if not user_email:
+            return "Please log in to view your volunteering impact."
+
+        user_id = self.dao.get_user_id_by_email(user_email)
+        if not user_id:
+            return "Unable to retrieve your account information. Please try again."
+
+        total_hours = self.dao.get_total_hours(user_id)
+        completed_events_count = self.dao.get_completed_events_count(user_id)
+        upcoming_events_count = self.dao.get_upcoming_events_count(user_id)
+        badges_count = len(self.dao.get_badges(user_id))
+
+        upcoming_events_list = self.dao.get_upcoming_events(user_id, limit=5)
+        completed_events_list = self.dao.get_completed_events(user_id, limit=5)
+
+        prompt = f"""{self._build_system_prompt()}
+
+User's question: {user_message}
+
+User's volunteering impact:
+- Total hours volunteered: {total_hours:.1f} hours
+- Events completed: {completed_events_count}
+- Upcoming events: {upcoming_events_count}
+- Badges earned: {badges_count}
+
+Upcoming events (next 5):
+{self._format_events_for_context(upcoming_events_list) if upcoming_events_list else "No upcoming events"}
+
+Recently completed events (last 5):
+{self._format_events_for_context(completed_events_list) if completed_events_list else "No completed events yet"}
+
+NOTE: Only show stats, no events, teams or anything else.
+"""
+        return self.get_ai_response(prompt)
+
+    # ---------- GENERAL ----------
+
+    def _handle_general_category(self, user_message: str) -> str:
+        prompt = f"""{self._build_system_prompt()}
+
+User's question: {user_message}"""
+        return self.get_ai_response(prompt)
+
+    # ======================================================================
+    # Text Processing & Extraction
+    # ======================================================================
+
+    def _extract_keyword(self, message: str) -> Optional[str]:
+        if not message or not message.strip():
+            return None
+
+        stop_words = {
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "from",
+            "what",
+            "where",
+            "when",
+            "show",
+            "me",
+            "find",
+            "search",
+            "get",
+            "list",
+            "available",
+            "events",
+            "event",
+            "are",
+            "is",
+            "am",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "can",
+            "could",
+            "would",
+            "should",
+            "will",
+            "this",
+            "that",
+            "these",
+            "those",
+        }
+
+        words = message.lower().strip().split()
+        keywords = [w.strip() for w in words if w not in stop_words and len(w.strip()) > 2]
+        keywords = [w for w in keywords if w and (w.isalnum() or any(c.isalpha() for c in w))]
+        if not keywords:
+            return None
+        return " ".join(keywords[:3])
+
+    def _extract_location(self, message: str) -> Optional[str]:
+        locations = self.dao.get_location()
+        if not locations:
+            return None
+
+        message_lower = message.lower()
+        for city in sorted(locations, key=len, reverse=True):
+            if not city:
+                continue
+            if city.lower().strip() in message_lower:
+                return city
+        return None
+
+    def _remove_location_from_message(self, message: str, location: str) -> str:
+        if not location:
+            return message
+        location_patterns = [
+            r"\b" + re.escape(location.lower()) + r"\b",
+            r"\bin\s+" + re.escape(location.lower()) + r"\b",
+            r"\b" + re.escape(location.lower()) + r"\s+events?\b",
+            r"\bevents?\s+(?:in\s+)?"
+            + re.escape(location.lower())
+            + r"\b",
+        ]
+        result = message
+        for pattern in location_patterns:
+            result = re.sub(pattern, "", result, flags=re.IGNORECASE)
+        return " ".join(result.split())
+
+    def _detect_single_event_request(self, message: str) -> bool:
+        if not message:
+            return False
+        message_lower = message.lower()
+        single_event_patterns = [
+            r"\b(a|an)\s+(event|volunteer|opportunity|activity)",
+            r"\bone\s+(event|volunteer|opportunity|activity)",
+            r"\b(a|an)\s+volunteering",
+            r"\bone\s+volunteering",
+            r"\bshow\s+me\s+(a|an|one)",
+            r"\bfind\s+me\s+(a|an|one)",
+            r"\bgive\s+me\s+(a|an|one)",
+            r"\bsuggest\s+(a|an|one)",
+            r"\brecommend\s+(a|an|one)",
+        ]
+        return any(re.search(p, message_lower) for p in single_event_patterns)
+
+    def _detect_all_teams_request(self, message: str) -> bool:
+        if not message:
+            return False
+        msg = message.lower()
+        patterns = [
+            r"\ball\s+teams",
+            r"\bevery\s+team",
+            r"\bshow\s+(all|every)\s+teams",
+            r"\blist\s+(all|every)\s+teams",
+            r"\bbrowse\s+(all|every)\s+teams",
+            r"\bwhat\s+teams\s+(are\s+there|exist|available)",
+        ]
+        return any(re.search(p, msg) for p in patterns)
+
+    def _detect_single_team_request(self, message: str) -> bool:
+        if not message:
+            return False
+        msg = message.lower()
+        patterns = [
+            r"\b(a|an)\s+team",
+            r"\bone\s+team",
+            r"\bshow\s+me\s+(a|an|one)\s+team",
+            r"\bfind\s+me\s+(a|an|one)\s+team",
+            r"\bgive\s+me\s+(a|an|one)\s+team",
+        ]
+        return any(re.search(p, msg) for p in patterns)
+
+    def _is_asking_about_my_teams(self, message: str) -> bool:
+        if not message:
+            return False
+        msg = message.lower()
+        patterns = [
+            r"\bmy\s+teams",
+            r"\bteams\s+i\s+(am\s+in|joined|belong\s+to)",
+            r"\bteams\s+i'm\s+in",
+            r"\bwhat\s+teams\s+(am\s+i|do\s+i\s+have|am\s+i\s+part\s+of)",
+        ]
+        return any(re.search(p, msg) for p in patterns)
+
+    def _find_matching_team(self, message: str, all_teams: List[dict]) -> Optional[dict]:
+        if not all_teams:
+            return None
+        msg = message.lower().strip()
+        query_words = [
+            "team",
+            "teams",
+            "show",
+            "find",
+            "get",
+            "tell",
+            "me",
+            "about",
+            "the",
+            "a",
+            "an",
+            "is",
+            "are",
+            "what",
+            "which",
+            "who",
+            "how",
+        ]
+        words = [w for w in msg.split() if w not in query_words and len(w) > 2]
+        potential_team_name = " ".join(words).strip()
+
+        best_match = None
+        best_score = 0
+        for team in all_teams:
+            team_name = (team.get("Name") or team.get("name") or "").strip()
+            if not team_name:
+                continue
+            t = team_name.lower()
+            score = 0
+            if t == msg or t == potential_team_name:
+                score = 100
+            elif re.search(r"\b" + re.escape(t) + r"\b", msg):
+                score = 80
+            elif all(w in t for w in words if len(w) > 2):
+                score = 60
+            elif t in msg:
+                score = 50
+            elif any(w in t for w in words if len(w) > 2):
+                score = 40
+            if score > best_score:
+                best_score = score
+                best_match = team
+
+        return best_match if best_score >= 40 else None
+
+    def _is_asking_about_my_badges(self, message: str) -> bool:
+        if not message:
+            return False
+        msg = message.lower()
+        patterns = [
+            r"\bmy\s+badges",
+            r"\bbadges\s+i\s+(have|earned|got|own)",
+            r"\bbadges\s+i've\s+(earned|got)",
+            r"\bwhat\s+badges\s+(do\s+i\s+have|have\s+i\s+earned|am\s+i\s+part\s+of)",
+            r"\bshow\s+my\s+badges",
+        ]
+        return any(re.search(p, msg) for p in patterns)
+
+    def _is_asking_about_all_badges(self, message: str) -> bool:
+        if not message:
+            return False
+        msg = message.lower()
+        earn_words = [
+            "available",
+            "can earn",
+            "to earn",
+            "work towards",
+            "other badges",
+            "what badges can i",
+            "missing",
+            "haven't earned",
+            "havent earned",
+            "haven’t got",
+            "can i earn",
+            "can i still earn",
+            "available badges",
+            "what can i still unlock",
+            "badges i don’t have",
+            "badges i dont have",
+        ]
+        return any(w in msg for w in earn_words)
+
+    # ======================================================================
+    # Data Formatting / Normalisation
+    # ======================================================================
+
+    def _normalize_event(self, event: dict) -> dict:
+        """
+        Normalize event dictionary keys for frontend compatibility.
+        Converts database field names (ID, Title) to frontend-friendly names (id, title).
+        """
+        e = dict(event)
+        if "ID" in e and "id" not in e:
+            e["id"] = e["ID"]
+        if "Title" in e and "title" not in e:
+            e["title"] = e["Title"]
+        if "LocationCity" in e and "location" not in e:
+            e["location"] = e["LocationCity"]
+        if "Capacity" in e and "capacity" not in e:
+            e["capacity"] = e["Capacity"]
+        return e
+
+    def _normalize_team(self, team: dict, user_id: Optional[int] = None) -> dict:
+        """
+        Normalize team dictionary keys for frontend compatibility.
+        Also determines if the user is the team owner.
+        """
+        t = dict(team)
+        if "ID" in t:
+            t["id"] = t["ID"]
+        if "Name" in t:
+            t["name"] = t["Name"]
+        if "JoinCode" in t:
+            t["join_code"] = t["JoinCode"]
+        if "IsOwner" in t and t["IsOwner"] is not None:
+            t["is_owner"] = t["IsOwner"]
+        elif user_id and "OwnerUserID" in t:
+            t["is_owner"] = t["OwnerUserID"] == user_id
+        else:
+            t["is_owner"] = False
+        return t
+
+    def _format_events_for_context(self, events: List[dict]) -> str:
+        if not events:
+            return "No events found matching your criteria."
+        formatted = []
+        for event in events[:10]:
+            event_str = f"Event ID {event['ID']}: {event['Title']}"
+            if event.get("Date"):
+                event_str += f" - Date: {event['Date']}"
+            if event.get("StartTime") and event.get("EndTime"):
+                event_str += f" - Time: {event['StartTime']} to {event['EndTime']}"
+            elif event.get("StartTime"):
+                event_str += f" - Time: {event['StartTime']}"
+            location_parts = []
+            if event.get("LocationCity"):
+                location_parts.append(event["LocationCity"])
+            if event.get("Address"):
+                location_parts.append(event["Address"])
+            if location_parts:
+                event_str += f" - Location: {', '.join(location_parts)}"
+            if event.get("DurationHours"):
+                event_str += f" - Duration: {event['DurationHours']:.1f} hours"
+            if event.get("About"):
+                event_str += f" - About: {event['About'][:150]}"
+            formatted.append(event_str)
+        return "\n".join(formatted)
+
+    def _format_badges_for_context(self, badges: List[dict]) -> str:
+        if not badges:
+            return "No badges earned yet."
+        return "\n".join(f"- {b['Name']}: {b['Description']}" for b in badges)
+
+    def _format_all_badges_for_context(self, badges: List[dict]) -> str:
+        if not badges:
+            return "No badges available."
+        return "\n".join(f"- {b['Name']}: {b['Description']}" for b in badges[:20])
+
+    def _format_teams_for_context(self, teams: List[dict]) -> str:
+        if not teams:
+            return "No teams found."
+        formatted = []
+        for team in teams[:10]:
+            s = f"Team ID {team['ID']}: {team.get('Name', 'Unnamed Team')}"
+            if team.get("Description"):
+                s += f" - {team['Description'][:100]}"
+            if team.get("Department"):
+                s += f" - Department: {team['Department']}"
+            formatted.append(s)
+        return "\n".join(formatted)
+
+    # ======================================================================
+    # Prompt builder / AI
+    # ======================================================================
+
+    def _build_system_prompt(self) -> str:
+        return SYSTEM_PROMPT
+
+    def get_ai_response(self, prompt: str) -> str:
+        """
+        Generate AI response using OpenAI API.
+        Takes a formatted prompt and returns the AI's text response.
         """
         try:
             response = self.openai_client.chat.completions.create(
-                model="gpt-5-nano",
-                messages=[{"role": "user", "content": prompt}]
+                model="gpt-5-nano", messages=[{"role": "user", "content": prompt}]
             )
-            
             if response and response.choices and len(response.choices) > 0:
-                message = response.choices[0].message
-                if message and message.content:
-                    return message.content.strip()
-            
+                msg = response.choices[0].message
+                if msg and msg.content:
+                    return msg.content.strip()
             return "Sorry, I received an unexpected response from the AI. Please try again."
         except Exception as e:
             print(f"OpenAI API error: {e}")
             import traceback
+
             print(f"Traceback: {traceback.format_exc()}")
             return f"Sorry, I'm having trouble processing your request right now. Error: {str(e)[:100]}"
