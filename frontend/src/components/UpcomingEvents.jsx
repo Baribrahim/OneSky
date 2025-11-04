@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { api, toResult } from '../lib/apiClient.js';
-import '../styles/theme.css'
+import '../styles/upcomingEvents.css'
 import { formatDate, formatTime } from '../utils/format.jsx'
 
 const PAGE_SIZE = 5;
@@ -24,7 +24,7 @@ const UpcomingEvents = () => {
         return;
       }
 
-      const nextItems = data?.upcoming_events ?? [];
+      const nextItems = data?.upcoming_events ?? []; 
       const nextTotal = data?.total ?? 0;
 
       if (opts.append) {
@@ -56,11 +56,12 @@ const UpcomingEvents = () => {
       <div className="timeline-container">
         {events?.map((event) => (
           <div key={event.ID} className="timeline-item">
-            <div className="timeline-dot"></div>
+            <img src={`http://127.0.0.1:5000/static/${event.Image_path}`} alt={event.Title} className="timeline-image" />
             <div className="timeline-content">
               <h3>{event.Title}</h3>
               <p>{formatDate(event.Date)}</p>
               <p>{formatTime(event.StartTime)} • {event.LocationCity}</p>
+              {event.RegistrationType != 'Individual' && <p>with <em>{event.RegistrationType}</em></p>}
             </div>
           </div>
         ))}
@@ -72,7 +73,7 @@ const UpcomingEvents = () => {
         {hasMore && (
           <div className="timeline-show-more-container">
             <button
-              className="button button--secondary timeline-show-more"
+              className="button-sky"
               disabled={loading}
               onClick={() => fetchEvents({ append: true })}
             >
