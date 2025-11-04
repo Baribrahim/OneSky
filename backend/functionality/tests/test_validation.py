@@ -26,9 +26,9 @@ def client():
 def _rand_email(prefix="test"):
     n1 = random.randint(0, 9999)
     n2 = random.randint(0, 9999)
-    return f"{prefix}{n1}{n2}@test.com"
+    return f"{prefix}{n1}{n2}@sky.uk"
 
-def _register_user(client, email=None, password="password123!", first="Test", last="User"):
+def _register_user(client, email=None, password="Password123!", first="Test", last="User"):
     email = email or _rand_email()
     resp = client.post("/register", json={
         "email": email,
@@ -76,7 +76,7 @@ def test_register_sets_cookie_and_returns_token(client):
     # Act
     resp = client.post("/register", json={
         "email": email,
-        "password": "password123!",
+        "password": "Password123!",
         "first_name": "A",
         "last_name": "B"
     })
@@ -97,7 +97,7 @@ def test_register_duplicate_email_returns_400(client):
     # Act (duplicate)
     resp2 = client.post("/register", json={
         "email": email,
-        "password": "password123!",
+        "password": "Password123!",
         "first_name": "A",
         "last_name": "B"
     })
@@ -111,11 +111,11 @@ def test_register_duplicate_email_returns_400(client):
 
 def test_login_success_returns_token_and_sets_cookie(client):
     # Arrange
-    email, r = _register_user(client, password="password123!")
+    email, r = _register_user(client, password="Password123!")
     assert r.status_code == HTTPStatus.OK
 
     # Act
-    token, resp = _login_get_token(client, email, "password123!")
+    token, resp = _login_get_token(client, email, "Password123!")
 
     # Assert
     assert isinstance(token, str) and len(token) > 10
@@ -124,7 +124,7 @@ def test_login_success_returns_token_and_sets_cookie(client):
 
 def test_login_wrong_password_returns_401(client):
     # Arrange
-    email, r = _register_user(client, password="password123!")
+    email, r = _register_user(client, password="Password123!")
     assert r.status_code == HTTPStatus.OK
 
     # Act
@@ -134,6 +134,44 @@ def test_login_wrong_password_returns_401(client):
     assert resp.status_code == HTTPStatus.UNAUTHORIZED
     data = resp.get_json()
     assert data.get("error") == "Invalid credentials"
+
+# ---------- New validation tests to test validation logic ----------
+
+def test_register_invalid_email_domain_returns_400(client):
+    # Arrange
+    bad_email = "user@example.com"
+    # Act
+    resp = client.post("/register", json={
+        "email": bad_email,
+        "password": "Password123!",
+        "first_name": "A",
+        "last_name": "B"
+    })
+    # Assert
+    assert resp.status_code == HTTPStatus.BAD_REQUEST
+    data = resp.get_json()
+    assert data.get("error") == "Email address not in a valid format"
+
+@pytest.mark.parametrize("pwd, reason", [
+    ("Passw1!", "too short"),
+    ("password123!", "no uppercase"),
+    ("PASSWORD!!!", "no digit"),
+    ("Password123", "no special"),
+])
+def test_register_password_strength_enforced_returns_400(client, pwd, reason):
+    # Arrange
+    email = _rand_email()
+    # Act
+    resp = client.post("/register", json={
+        "email": email,
+        "password": pwd,
+        "first_name": "A",
+        "last_name": "B"
+    })
+    # Assert
+    assert resp.status_code == HTTPStatus.BAD_REQUEST, f"Expected 400 for {reason}"
+    data = resp.get_json()
+    assert data.get("error") == "Password must be at least 8 characters and include an uppercase letter, a number, and a special character."
 
 def test_login_missing_fields_returns_400(client):
     # Arrange
@@ -148,9 +186,9 @@ def test_login_missing_fields_returns_400(client):
 
 def test_me_returns_user_info_with_bearer_token(client):
     # Arrange: register + login to obtain token
-    email, r = _register_user(client, password="password123!", first="Jane", last="Doe")
+    email, r = _register_user(client, password="Password123!", first="Jane", last="Doe")
     assert r.status_code == HTTPStatus.OK
-    token, _ = _login_get_token(client, email, "password123!")
+    token, _ = _login_get_token(client, email, "Password123!")
 
     # Act: call /api/me with Authorization header
     resp = client.get("/api/me", headers={"Authorization": f"Bearer {token}"})
@@ -172,9 +210,9 @@ def test_dashboard_impact_requires_auth(client):
 
 def test_dashboard_impact_with_token_returns_200_and_shape(client):
     # Arrange
-    email, r = _register_user(client, password="password123!")
+    email, r = _register_user(client, password="Password123!")
     assert r.status_code == HTTPStatus.OK
-    token, _ = _login_get_token(client, email, "password123!")
+    token, _ = _login_get_token(client, email, "Password123!")
 
     # Act
     resp = client.get("/dashboard/impact", headers={"Authorization": f"Bearer {token}"})
