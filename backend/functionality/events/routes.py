@@ -81,18 +81,21 @@ def filter_events():
 # Get events based on filter selection
 @bp.route('/events', methods=['GET'])
 def get_filtered_events_route():
-    keyword = request.args.get('keyword') or None
-    location = request.args.get('location') or None
-    start_date = request.args.get('startDate') or None
-    end_date = request.args.get('endDate') or None
-    events = data_access.get_filtered_events(keyword, location, start_date, end_date)
+    try:
+        keyword = request.args.get('keyword') or None
+        location = request.args.get('location') or None
+        start_date = request.args.get('startDate') or None
+        end_date = request.args.get('endDate') or None
+        events = data_access.get_filtered_events(keyword, location, start_date, end_date)
 
-    # Add full image URL for each event
-    for event in events:
-        path = event.get('Image_path') or event.get('image_path')
-        event['Image_url'] = f"{request.host_url}static/{path}" if path else None
+        for event in events:
+            path = event.get('Image_path') or event.get('image_path')
+            event['Image_url'] = f"{request.host_url}static/{path}" if path else None
 
-    return jsonify(events)
+        return jsonify(events), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # Search bar
 @bp.route('/search', methods=['GET'])
@@ -101,7 +104,7 @@ def search_events():
     location = request.args.get('location', '')
     date = request.args.get('date', '')
 
-    events = data_access.search_events(keyword, location, date)
+    events = data_access.get_filtered_events(keyword, location, date)
     return jsonify(events)
 
 
@@ -112,10 +115,13 @@ def search_events():
 
 @bp.route('/events/<int:id>', methods=['GET'])
 def get_event(id):
-    event = data_access.get_event_by_id(id)
-    if not event:
-        return jsonify({"error": "Event not found"}), 404
-    return jsonify(event)
+    try:
+        event = data_access.get_event_by_id(id)
+        if not event:
+            return jsonify({"error": "Event not found"}), 404
+        return jsonify(event), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @bp.route('/events/<int:event_id>/schedule', methods=['GET'])
 def get_schedule(event_id):

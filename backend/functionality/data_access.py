@@ -451,7 +451,7 @@ class DataAccess:
                     result_set = cursor.fetchall()
                     location_list = sorted(set(row['LocationCity'] for row in result_set if row ['LocationCity']))
                     cursor.close()
-        except pymysql.MySQLError as e:
+        except Exception as e:
             print(f"Database error in get_location: {e} ")
         return location_list
     
@@ -522,7 +522,7 @@ class DataAccess:
                             'CauseName': item['CauseName'],
                             'TagName': item["TagName"]
                         })
-        except pymysql.MySQLError as e:
+        except Exception as e:
             print(f"Database error in get_filtered_events: {e}")
 
         return events
@@ -573,7 +573,7 @@ class DataAccess:
                             'TagName': item["TagName"]
                         }
                         
-        except pymysql.MySQLError as e:
+        except Exception as e:
             print(f"Database error in get_event_by_id: {e}")
         return event
 
@@ -601,7 +601,7 @@ class DataAccess:
                             row["Time"] = f"{hours:02}:{minutes:02}:{seconds:02}"
                         schedule.append(row)
 
-        except pymysql.MySQLError as e:
+        except Exception as e:
             print(f"Database error in get_event_schedule: {e}")
         return schedule
 
