@@ -322,6 +322,37 @@ class ChatbotConnector:
                 similarity_threshold=0.3
             )
         
+        # Filter out events user is already registered for
+        if user_email and events:
+            try:
+                # Get user's registered event IDs
+                user_registered_events = self.dao.get_user_events(user_email)
+                # Convert to set of integers for comparison
+                registered_event_ids = set()
+                if user_registered_events:
+                    for event_tuple in user_registered_events:
+                        event_id = event_tuple[0] if isinstance(event_tuple, tuple) else event_tuple
+                        if event_id:
+                            registered_event_ids.add(int(event_id))
+                
+                # Filter out events user is already registered for
+                filtered_events = []
+                for event in events:
+                    event_id = event.get('ID') or event.get('id')
+                    if event_id:
+                        event_id_int = int(event_id)
+                        if event_id_int not in registered_event_ids:
+                            filtered_events.append(event)
+                    else:
+                        # If event doesn't have ID, include it (shouldn't happen, but safe)
+                        filtered_events.append(event)
+                
+                events = filtered_events
+            except Exception as e:
+                print(f"Error filtering user's registered events: {e}")
+                import traceback
+                traceback.print_exc()
+        
         formatted_events = self._format_events_for_context(events)
         system_prompt = self._build_system_prompt()
         
@@ -427,11 +458,28 @@ CRITICAL - Response Formatting:
         # Determine which teams to return
         teams_to_return = []
         if wants_all_teams:
-            # User wants all available teams
+            # User wants all available teams (but exclude teams they're already in)
             teams_to_return = all_teams[:10] if all_teams else []
         elif matching_team_by_name:
-            # User mentioned a specific team name - return that team
-            teams_to_return = [matching_team_by_name]
+            # User mentioned a specific team name - return that team (but only if not already a member)
+            if user_email and user_teams:
+                # Get user's joined team IDs (convert to integers for comparison)
+                user_team_ids = set()
+                for team in user_teams:
+                    team_id = team.get('ID') or team.get('id')
+                    if team_id:
+                        user_team_ids.add(int(team_id))
+                
+                matching_team_id = matching_team_by_name.get('ID') or matching_team_by_name.get('id')
+                if matching_team_id:
+                    matching_team_id_int = int(matching_team_id)
+                    if matching_team_id_int not in user_team_ids:
+                        teams_to_return = [matching_team_by_name]
+                    # If already a member, don't return it (user can see it in "my teams")
+                else:
+                    teams_to_return = [matching_team_by_name]
+            else:
+                teams_to_return = [matching_team_by_name]
         elif wants_single_team:
             # User wants a single team but no specific name matched - return first team
             teams_to_return = all_teams[:1] if all_teams else []
@@ -442,6 +490,34 @@ CRITICAL - Response Formatting:
             else:
                 # Show a few teams as suggestions
                 teams_to_return = all_teams[:3] if all_teams else []
+        
+        # Filter out teams user is already a member of (unless asking about "my teams")
+        if user_email and not self._is_asking_about_my_teams(user_message) and teams_to_return:
+            try:
+                # Get user's joined team IDs (convert to integers for comparison)
+                user_team_ids = set()
+                for team in user_teams:
+                    team_id = team.get('ID') or team.get('id')
+                    if team_id:
+                        user_team_ids.add(int(team_id))
+                
+                # Filter out teams user is already a member of
+                filtered_teams = []
+                for team in teams_to_return:
+                    team_id = team.get('ID') or team.get('id')
+                    if team_id:
+                        team_id_int = int(team_id)
+                        if team_id_int not in user_team_ids:
+                            filtered_teams.append(team)
+                    else:
+                        # If team doesn't have ID, include it (shouldn't happen, but safe)
+                        filtered_teams.append(team)
+                
+                teams_to_return = filtered_teams
+            except Exception as e:
+                print(f"Error filtering user's joined teams: {e}")
+                import traceback
+                traceback.print_exc()
         
         formatted_user_teams = self._format_teams_for_context(user_teams)
         formatted_all_teams = self._format_teams_for_context(all_teams[:10]) if all_teams else "No teams available"
