@@ -3,6 +3,7 @@ import { api, toResult } from "../lib/apiClient";
 import "../styles/chatbot.css";
 import logo from "../assets/OneSky-logo.png";
 import EventCard from "./EventCard";
+import TeamCard from "./TeamCard";
 
 /**
  * Chatbot Component
@@ -27,11 +28,29 @@ export default function Chatbot() {
   // Whether the chatbot is currently processing a message
   const [isLoading, setIsLoading] = useState(false);
 
+  // User's joined teams (to determine isMember status)
+  const [myTeams, setMyTeams] = useState([]);
+
   // Reference to the bottom of the messages area
   const messagesEndRef = useRef(null);
 
   // Reference to the input text box
   const inputRef = useRef(null);
+
+  // Fetch user's teams on mount
+  useEffect(() => {
+    const fetchMyTeams = async () => {
+      try {
+        const { data, error } = await toResult(api.get('/api/teams/joined'));
+        if (!error && data?.teams) {
+          setMyTeams(data.teams);
+        }
+      } catch (err) {
+        console.error('Error fetching user teams:', err);
+      }
+    };
+    fetchMyTeams();
+  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -99,6 +118,7 @@ export default function Chatbot() {
         role: "bot",
         content: data?.response || "Sorry, I couldn't process that request.",
         events: data?.events || null, // Include events array if present
+        teams: data?.teams || null, // Include teams array if present
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
@@ -163,6 +183,26 @@ export default function Chatbot() {
                         <EventCard event={event} />
                       </div>
                     ))}
+                  </div>
+                )}
+                {/* Render team cards if teams are present */}
+                {message.teams && message.teams.length > 0 && (
+                  <div className="chatbot-teams-container">
+                    {message.teams.map((team) => {
+                      const teamId = team.id || team.ID;
+                      const isMember = myTeams.some(mt => (mt.id || mt.ID) === teamId);
+                      const isOwner = team.is_owner || team.IsOwner || false;
+                      return (
+                        <div key={teamId} className="chatbot-team-card-wrapper">
+                          <TeamCard 
+                            team={team}
+                            isMember={isMember}
+                            isOwner={isOwner}
+                            browseEvents={true}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 <span className="chatbot-message-time">

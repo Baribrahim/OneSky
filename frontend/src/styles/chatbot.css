@@ -406,3 +406,71 @@
 .chatbot-message--bot:has(.chatbot-events-container) {
   max-width: 100%;
 }
+
+/* Team Cards in Chatbot */
+.chatbot-teams-container {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.chatbot-team-card-wrapper {
+  width: 100%;
+  max-width: 100%;
+}
+
+.chatbot-team-card-wrapper .team-card {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.chatbot-team-card-wrapper .team-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.chatbot-team-card-wrapper .team-card h3 {
+  font-size: 0.95rem;
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+}
+
+.chatbot-team-card-wrapper .team-card .meta {
+  font-size: 0.85rem;
+  margin-bottom: var(--space-1);
+  line-height: 1.4;
+  color: var(--color-text);
+}
+
+.chatbot-team-card-wrapper .team-card .join-code {
+  font-size: 0.8rem;
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+}
+
+.chatbot-team-card-wrapper .team-card-actions {
+  margin-top: var(--space-3);
+}
+
+.chatbot-team-card-wrapper .button {
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.85rem;
+  margin-right: var(--space-2);
+}
+
+/* Adjust message width when teams are present */
+.chatbot-message--bot:has(.chatbot-teams-container) {
+  max-width: 100%;
+}

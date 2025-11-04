@@ -122,8 +122,8 @@ class ChatbotConnector:
             user_email (str, optional): User's email for personalized responses
             
         Returns:
-            tuple: (response_text, category, events_list) - AI response, detected category, and events list (if events category)
-                   For non-events categories, events_list will be None
+            tuple: (response_text, category, events_list, teams_list) - AI response, detected category, events list (if events category), teams list (if teams category)
+                   For non-events/teams categories, events_list and teams_list will be None
         """
         category, message_embedding = self._classify_intent_with_ai(user_message)
         
@@ -131,9 +131,10 @@ class ChatbotConnector:
         # For events, pass the embedding to reuse it (saves one API call)
         if category == "events":
             response, events_list = self._handle_events_category(user_message, user_email, message_embedding)
-            return response, category, events_list
+            return response, category, events_list, None
         elif category == "teams":
-            response = self._handle_teams_category(user_message, user_email)
+            response, teams_list = self._handle_teams_category(user_message, user_email)
+            return response, category, None, teams_list
         elif category == "badges":
             response = self._handle_badges_category(user_message, user_email)
         elif category == "impact":
@@ -141,7 +142,7 @@ class ChatbotConnector:
         else:  # general
             response = self._handle_general_category(user_message)
         
-        return response, category, None
+        return response, category, None, None
     
     # ============================================================================
     # Intent Classification
@@ -414,6 +415,32 @@ CRITICAL - Response Formatting:
             except Exception as e:
                 print(f"Error fetching team data: {e}")
         
+        # Detect if user wants all teams or a specific team
+        wants_all_teams = self._detect_all_teams_request(user_message)
+        wants_single_team = self._detect_single_team_request(user_message)
+        
+        # Check if user is asking for a specific team by name (even without "a team" phrase)
+        matching_team_by_name = self._find_matching_team(user_message, all_teams)
+        
+        # Determine which teams to return
+        teams_to_return = []
+        if wants_all_teams:
+            # User wants all available teams
+            teams_to_return = all_teams[:10] if all_teams else []
+        elif matching_team_by_name:
+            # User mentioned a specific team name - return that team
+            teams_to_return = [matching_team_by_name]
+        elif wants_single_team:
+            # User wants a single team but no specific name matched - return first team
+            teams_to_return = all_teams[:1] if all_teams else []
+        else:
+            # Default: show user's teams if asking about "my teams", otherwise show all
+            if self._is_asking_about_my_teams(user_message):
+                teams_to_return = user_teams[:5] if user_teams else []
+            else:
+                # Show a few teams as suggestions
+                teams_to_return = all_teams[:3] if all_teams else []
+        
         formatted_user_teams = self._format_teams_for_context(user_teams)
         formatted_all_teams = self._format_teams_for_context(all_teams[:10]) if all_teams else "No teams available"
         formatted_team_events = self._format_events_for_context(team_events) if team_events else "No team events"
@@ -442,9 +469,168 @@ Available teams (showing first 10):
 {formatted_all_teams}
 
 Events your teams are registered for:
-{formatted_team_events}"""
+{formatted_team_events}
+
+CRITICAL - Response Formatting:
+- Teams will be displayed as interactive cards below your message, so DO NOT mention specific team details (name, description, department) in your text response
+- Instead, provide a brief introductory message such as:
+  * If showing teams: "Here are some teams matching what you asked for:" or "Here are teams that match your criteria:" or similar
+  * If showing one team: "Here's a team matching what you asked for:" or "Here's a team that might interest you:" or similar
+  * If no teams match: Briefly suggest checking the Teams section
+- Keep your response CONCISE - just 1-2 sentences maximum
+- Do NOT list team details in your text - those will be shown in the team cards
+- Be friendly and brief"""
         
-        return self.get_ai_response(prompt)
+        response_text = self.get_ai_response(prompt)
+        
+        # Return teams list (convert to dict format for frontend)
+        teams_list = []
+        # Get user_id for owner checking
+        user_id = None
+        if user_email:
+            try:
+                user_id = self.dao.get_user_id_by_email(user_email)
+            except Exception as e:
+                print(f"Error getting user ID: {e}")
+        
+        for team in teams_to_return:
+            team_dict = dict(team) if not isinstance(team, dict) else team
+            # Ensure proper field names for TeamCard component
+            if 'ID' in team_dict:
+                team_dict['id'] = team_dict['ID']
+            if 'Name' in team_dict:
+                team_dict['name'] = team_dict['Name']
+            if 'JoinCode' in team_dict:
+                team_dict['join_code'] = team_dict['JoinCode']
+            # Check if user is owner (if not already set)
+            if 'IsOwner' not in team_dict or team_dict['IsOwner'] is None:
+                if user_id and 'OwnerUserID' in team_dict:
+                    team_dict['is_owner'] = (team_dict['OwnerUserID'] == user_id)
+                elif 'IsOwner' in team_dict:
+                    team_dict['is_owner'] = team_dict['IsOwner']
+                else:
+                    team_dict['is_owner'] = False
+            else:
+                team_dict['is_owner'] = team_dict['IsOwner']
+            teams_list.append(team_dict)
+        
+        return response_text, teams_list
+    
+    def _detect_all_teams_request(self, message):
+        """Detect if user is asking for all teams."""
+        if not message:
+            return False
+        
+        message_lower = message.lower()
+        all_teams_patterns = [
+            r'\ball\s+teams',
+            r'\bevery\s+team',
+            r'\bshow\s+(all|every)\s+teams',
+            r'\blist\s+(all|every)\s+teams',
+            r'\bbrowse\s+(all|every)\s+teams',
+            r'\bwhat\s+teams\s+(are\s+there|exist|available)',
+        ]
+        
+        for pattern in all_teams_patterns:
+            if re.search(pattern, message_lower):
+                return True
+        
+        return False
+    
+    def _detect_single_team_request(self, message):
+        """Detect if user is asking for a single team."""
+        if not message:
+            return False
+        
+        message_lower = message.lower()
+        single_team_patterns = [
+            r'\b(a|an)\s+team',
+            r'\bone\s+team',
+            r'\bshow\s+me\s+(a|an|one)\s+team',
+            r'\bfind\s+me\s+(a|an|one)\s+team',
+            r'\bgive\s+me\s+(a|an|one)\s+team',
+        ]
+        
+        for pattern in single_team_patterns:
+            if re.search(pattern, message_lower):
+                return True
+        
+        return False
+    
+    def _is_asking_about_my_teams(self, message):
+        """Detect if user is asking about their own teams."""
+        if not message:
+            return False
+        
+        message_lower = message.lower()
+        my_teams_patterns = [
+            r'\bmy\s+teams',
+            r'\bteams\s+I\s+(am\s+in|joined|belong\s+to)',
+            r'\bteams\s+I\'m\s+in',
+            r'\bwhat\s+teams\s+(am\s+I|do\s+I\s+have|am\s+I\s+part\s+of)',
+        ]
+        
+        for pattern in my_teams_patterns:
+            if re.search(pattern, message_lower):
+                return True
+        
+        return False
+    
+    def _find_matching_team(self, message, all_teams):
+        """
+        Find a team matching the user's query by name.
+        Uses flexible matching: exact match, word-boundary match, or partial match.
+        
+        Args:
+            message (str): User's message
+            all_teams (list): List of all teams
+            
+        Returns:
+            dict or None: Matching team dictionary, or None if no match found
+        """
+        if not all_teams:
+            return None
+        
+        message_lower = message.lower().strip()
+        
+        # Remove common query words to extract potential team name
+        query_words = ['team', 'teams', 'show', 'find', 'get', 'tell', 'me', 'about', 
+                      'the', 'a', 'an', 'is', 'are', 'what', 'which', 'who', 'how']
+        words = [w for w in message_lower.split() if w not in query_words and len(w) > 2]
+        potential_team_name = ' '.join(words).strip()
+        
+        best_match = None
+        best_score = 0
+        
+        for team in all_teams:
+            team_name = (team.get('Name') or team.get('name') or '').strip()
+            if not team_name:
+                continue
+                
+            team_name_lower = team_name.lower()
+            score = 0
+            
+            # Exact match (highest priority)
+            if team_name_lower == message_lower or team_name_lower == potential_team_name:
+                score = 100
+            # Word boundary match (e.g., "Marketing Team" matches "marketing")
+            elif re.search(r'\b' + re.escape(team_name_lower) + r'\b', message_lower):
+                score = 80
+            # Team name contains query words (e.g., "marketing" in "Marketing Team")
+            elif all(word in team_name_lower for word in words if len(word) > 2):
+                score = 60
+            # Partial match - team name contains in message or vice versa
+            elif team_name_lower in message_lower:
+                score = 50
+            elif any(word in team_name_lower for word in words if len(word) > 2):
+                score = 40
+            
+            if score > best_score:
+                best_score = score
+                best_match = team
+        
+        # Only return match if score is high enough (at least 40)
+        return best_match if best_score >= 40 else None
     
     def _handle_badges_category(self, user_message, user_email=None):
         """Handle Badges category - user badges and achievements."""

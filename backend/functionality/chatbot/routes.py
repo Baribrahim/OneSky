@@ -17,7 +17,7 @@ def chat():
     """
     POST /api/chatbot/chat
     Body: {"message": "user message here"}
-    Returns: {"response": "bot response", "category": "events|teams|badges|impact|general", "events": [...]}
+    Returns: {"response": "bot response", "category": "events|teams|badges|impact|general", "events": [...], "teams": [...]}
     """
     data = request.get_json()
     message = data.get("message", "").strip()
@@ -29,7 +29,7 @@ def chat():
 
     try:
         connector = ChatbotConnector()
-        response, category, events_list = connector.process_message(message, user_email)
+        response, category, events_list, teams_list = connector.process_message(message, user_email)
 
         response_data = {
             "response": response,
@@ -39,6 +39,10 @@ def chat():
         # Include events array if events category
         if category == "events" and events_list:
             response_data["events"] = events_list
+        
+        # Include teams array if teams category
+        if category == "teams" and teams_list:
+            response_data["teams"] = teams_list
 
         return jsonify(response_data), 200
 
