@@ -37,6 +37,14 @@ export function AuthProvider({ children }) {
     window.localStorage.setItem(TOKEN_KEY, token);
     setAuthToken(token);
     const me = await loadUser();
+    
+    // Check for badges after successful login
+    try {
+      await api.post("/api/badges/check");
+    } catch (err) {
+      console.warn("Failed to check badges after login:", err);
+    }
+    
     return { data: { token, user: me }, error: null };
   }, [loadUser]);
 
@@ -48,6 +56,14 @@ export function AuthProvider({ children }) {
     window.localStorage.setItem(TOKEN_KEY, token);
     setAuthToken(token);
     const me = await loadUser();
+    
+    // Check for badges after successful registration
+    try {
+      await api.post("/api/badges/check");
+    } catch (err) {
+      console.warn("Failed to check badges after registration:", err);
+    }
+    
     return { data: { token, user: me }, error: null };
   }, [loadUser]);
 

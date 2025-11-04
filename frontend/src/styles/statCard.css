@@ -9,6 +9,27 @@
   box-sizing: border-box;
 }
 
+/* Clickable variant */
+.stat-card--clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stat-card--clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--brand-primary);
+}
+
+.stat-card--clickable:focus {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+.stat-card--clickable:active {
+  transform: translateY(0);
+}
+
 /* Icon bubble */
 .stat-card__icon {
   width: 44px;
@@ -18,8 +39,43 @@
   color: var(--brand-primary);
   display: grid;
   place-items: center;
-  font-size: 22px;
   margin-bottom: 10px;
+}
+
+/* Ensure SVG icons scale nicely */
+.stat-card__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Subtle top accent and lively icon gradients per metric, using theme tokens */
+.stat-card.stat-card--hours { border-top: 3px solid var(--brand-primary); }
+.stat-card.stat-card--hours .stat-card__icon {
+  background: linear-gradient(135deg, var(--brand-primary-050), #dbe9f7);
+  color: var(--brand-primary);
+}
+
+.stat-card.stat-card--completed { border-top: 3px solid var(--color-success); }
+.stat-card.stat-card--completed .stat-card__icon {
+  background: linear-gradient(135deg, #e6fbf4, #d2f5ea);
+  color: var(--color-success);
+}
+
+.stat-card.stat-card--upcoming { border-top: 3px solid var(--brand-mid); }
+.stat-card.stat-card--upcoming .stat-card__icon {
+  background: linear-gradient(135deg, #f6e9fb, #eaf0ff);
+  color: var(--brand-mid);
+}
+
+.stat-card.stat-card--badges { border-top: 3px solid var(--brand-start); }
+.stat-card.stat-card--badges .stat-card__icon {
+  background: linear-gradient(135deg, #ffece3, #ffe6f0);
+  color: var(--brand-start);
+}
+
+/* Slight hover lift for clickable cards already exists; add glow to icon */
+.stat-card--clickable:hover .stat-card__icon {
+  box-shadow: 0 4px 12px rgba(47, 111, 178, 0.15);
 }
 
 /* Title + value + helper */

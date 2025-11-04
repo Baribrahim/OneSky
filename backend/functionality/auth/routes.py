@@ -1,4 +1,5 @@
 import datetime
+from datetime import UTC
 from functools import wraps
 
 import jwt
@@ -42,7 +43,7 @@ def generate_token(user_data: dict):
     payload = {
         "sub": user_data["email"],
         "first_name": user_data["first_name"],
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        "exp": datetime.datetime.now(UTC) + datetime.timedelta(hours=1)
     }
     secret = current_app.config.get("SECRET_KEY")
     if not isinstance(secret, str) or not secret:
@@ -92,6 +93,16 @@ def register():
             return jsonify({"error": message}), 400
         return render_template("register.html", title="Register", error=message)
 
+    # Check for badges after successful registration
+    try:
+        from badges.connector import BadgeConnector
+        badge_connector = BadgeConnector()
+        user_id = ca.get_user_id_by_email(email)
+        if user_id:
+            badge_connector.check_and_award_event_badges(user_id)
+    except Exception as e:
+        print(f"Error checking badges after registration: {e}")
+
     token = generate_token({"email": email, "first_name": first_name})
 
     if request.is_json:
@@ -128,6 +139,16 @@ def login():
     user = ca.verify_user_by_password(email, password)
     if not user:
         return jsonify({"error": "Invalid credentials"}), 401
+
+    # Check for badges after successful login
+    try:
+        from badges.connector import BadgeConnector
+        badge_connector = BadgeConnector()
+        user_id = ca.get_user_id_by_email(email)
+        if user_id:
+            badge_connector.check_and_award_event_badges(user_id)
+    except Exception as e:
+        print(f"Error checking badges after login: {e}")
 
     token = generate_token({"email": user["Email"], "first_name": user["FirstName"]})
 

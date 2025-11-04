@@ -1,0 +1,90 @@
+.popup-content.team-popup-content { 
+  margin-top: 15vh !important; 
+  top: auto !important; 
+  width: 400px
+  }
+
+  
+.team-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background-color: rgb(250, 250, 250);
+  border-radius: var(--radius-sm, 16px);
+  position: relative;
+  height: 300px;
+  width: 300px;
+  overflow: auto;
+  box-shadow: var(--shadow-1);
+}
+
+/* Gradient border with rounded corners */
+.team-list::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px; /* Border thickness */
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    #ff6a00,
+    #ff2d55,
+    #a100ff,
+    #007aff
+  );
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+
+.team-item {
+  display: flex;                /* Use flexbox */
+  justify-content: space-between; /* Name on left, status on right */
+  align-items: center;          /* Vertically center both items */
+  padding: 1rem 1rem;
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+  background-color: rgb(250, 250, 250);
+  transition: background-color 0.2s, color 0.2s;
+  border-bottom: 1px solid #e0e0e0;
+  white-space: normal;   
+  word-break: break-word; 
+  overflow-wrap: break-word;
+}
+
+.team-item:last-child {
+  border-bottom: none; /* remove last border */
+}
+
+.team-item:hover {
+  background-color: #e0eaff; 
+}
+
+.team-item.selected {
+  background-color: #4c88c7; 
+  color: white;
+}
+
+.popup-header {
+  color: rgb(74, 74, 74);
+  font-size: 1.25rem;
+  line-height: 1.5rem;
+}
+
+.team-item.registered {
+  color: gray;
+  cursor: not-allowed;
+}
+
+.registered-text {
+  margin-left: 10px;
+  font-size: 0.7rem;
+  color: #888;
+  flex-shrink: 0; 
+  font-style:italic
+}
