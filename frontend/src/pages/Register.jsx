@@ -20,8 +20,7 @@ export default function Register() {
   const handleEmailBlur = (event) => {
     const value = event.target.value.trim();
     if (value && !emailPattern.test(value)) {
-      alert("Email address not in a valid format");
-      event.target.focus();
+      setError("Email address not in a valid format");
     }
   };
 
@@ -69,8 +68,7 @@ export default function Register() {
           <input id="password" className="input" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} onBlur={(e) => {
             const value = e.target.value;
             if (value && !passwordPattern.test(value)) {
-              alert("Password must be at least 8 characters and include an uppercase letter, a number, and a special character.");
-              e.target.focus();
+              setError("Password must be at least 8 characters and include an uppercase letter, a number, and a special character.");
             }
           }} minLength={8} required style={{ marginTop: 8 }} />
           {error && <div className="error" role="alert">{error}</div>}
