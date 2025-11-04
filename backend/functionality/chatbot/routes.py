@@ -17,7 +17,7 @@ def chat():
     """
     POST /api/chatbot/chat
     Body: {"message": "user message here"}
-    Returns: {"response": "bot response", "category": "events|teams|badges|impact|general"}
+    Returns: {"response": "bot response", "category": "events|teams|badges|impact|general", "events": [...]}
     """
     data = request.get_json()
     message = data.get("message", "").strip()
@@ -29,12 +29,18 @@ def chat():
 
     try:
         connector = ChatbotConnector()
-        response, category = connector.process_message(message, user_email)
+        response, category, events_list = connector.process_message(message, user_email)
 
-        return jsonify({
+        response_data = {
             "response": response,
             "category": category
-        }), 200
+        }
+        
+        # Include events array if events category
+        if category == "events" and events_list:
+            response_data["events"] = events_list
+
+        return jsonify(response_data), 200
 
     except ValueError as ve:
         print(f"Chatbot configuration error: {ve}")

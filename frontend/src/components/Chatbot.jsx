@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { api, toResult } from "../lib/apiClient";
 import "../styles/chatbot.css";
 import logo from "../assets/OneSky-logo.png";
+import EventCard from "./EventCard";
 
 /**
  * Chatbot Component
@@ -97,6 +98,7 @@ export default function Chatbot() {
       const botMessage = {
         role: "bot",
         content: data?.response || "Sorry, I couldn't process that request.",
+        events: data?.events || null, // Include events array if present
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
@@ -153,6 +155,16 @@ export default function Chatbot() {
                 <div className="chatbot-message-content">
                   {message.content}
                 </div>
+                {/* Render event cards if events are present */}
+                {message.events && message.events.length > 0 && (
+                  <div className="chatbot-events-container">
+                    {message.events.map((event) => (
+                      <div key={event.ID} className="chatbot-event-card-wrapper">
+                        <EventCard event={event} />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <span className="chatbot-message-time">
                   {formatTime(message.timestamp)}
                 </span>

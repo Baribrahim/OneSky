@@ -334,3 +334,75 @@
     max-width: 85%;
   }
 }
+
+/* Event Cards in Chatbot */
+.chatbot-events-container {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.chatbot-event-card-wrapper {
+  width: 100%;
+  max-width: 100%;
+}
+
+.chatbot-event-card-wrapper .event-card {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chatbot-event-card-wrapper .event-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.chatbot-event-card-wrapper .event-card img {
+  height: 120px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.chatbot-event-card-wrapper .card-body {
+  padding: var(--space-3);
+}
+
+.chatbot-event-card-wrapper .card-subtitle {
+  font-size: 0.95rem;
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+}
+
+.chatbot-event-card-wrapper .card-text {
+  font-size: 0.85rem;
+  margin-bottom: var(--space-2);
+  line-height: 1.4;
+  color: var(--color-text);
+}
+
+.chatbot-event-card-wrapper .event-info {
+  font-size: 0.8rem;
+  margin-bottom: var(--space-3);
+}
+
+.chatbot-event-card-wrapper .event-location {
+  margin-bottom: var(--space-1);
+  font-size: 0.8rem;
+}
+
+.chatbot-event-card-wrapper .button {
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.85rem;
+  margin-right: var(--space-2);
+}
+
+/* Adjust message width when events are present */
+.chatbot-message--bot:has(.chatbot-events-container) {
+  max-width: 100%;
+}

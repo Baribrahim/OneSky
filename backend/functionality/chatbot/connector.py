@@ -122,14 +122,16 @@ class ChatbotConnector:
             user_email (str, optional): User's email for personalized responses
             
         Returns:
-            tuple: (response_text, category) - AI response and detected category
+            tuple: (response_text, category, events_list) - AI response, detected category, and events list (if events category)
+                   For non-events categories, events_list will be None
         """
         category, message_embedding = self._classify_intent_with_ai(user_message)
         
         # Route to appropriate category handler
         # For events, pass the embedding to reuse it (saves one API call)
         if category == "events":
-            response = self._handle_events_category(user_message, user_email, message_embedding)
+            response, events_list = self._handle_events_category(user_message, user_email, message_embedding)
+            return response, category, events_list
         elif category == "teams":
             response = self._handle_teams_category(user_message, user_email)
         elif category == "badges":
@@ -139,7 +141,7 @@ class ChatbotConnector:
         else:  # general
             response = self._handle_general_category(user_message)
         
-        return response, category
+        return response, category, None
     
     # ============================================================================
     # Intent Classification
@@ -290,8 +292,14 @@ class ChatbotConnector:
             user_message (str): User's message
             user_email (str, optional): User's email
             query_embedding (list, optional): Pre-generated embedding to reuse (saves API call)
+            
+        Returns:
+            tuple: (response_text, events_list) - AI response text and list of event dictionaries
         """
         location = self._extract_location(user_message)
+        
+        # Detect if user wants a single event
+        wants_single_event = self._detect_single_event_request(user_message)
         
         # Reuse embedding if provided, otherwise generate new one
         if not query_embedding:
@@ -314,6 +322,10 @@ class ChatbotConnector:
         formatted_events = self._format_events_for_context(events)
         system_prompt = self._build_system_prompt()
         
+        # Determine event count for display
+        limit = 1 if wants_single_event else 3
+        event_count_display = min(len(events), limit)
+        
         prompt = f"""{system_prompt}
 
 User's question: {user_message}
@@ -330,14 +342,62 @@ When users ask to "sign up", "register", or "join" an event, they mean registeri
 
 DO NOT confuse this with account sign-up. If they ask about "signing up for an event" or "registering for an event", they mean registering for a volunteer event, NOT creating an account.
 
-Additional formatting instructions:
-- When showing an event, format each piece of information on a separate line in the response (example format: Event Name, Date: 2025-01-01 on one line, Time: 10:00 on next line, Location: 123 Main St on next line)
-- If events are found, briefly mention 1-2 most relevant events with date, time, and location
-- If no events match, give a brief, helpful suggestion (1 sentence)
-- Focus ONLY on answering the user's specific question
-- Do NOT list all events or provide excessive detail"""
+CRITICAL - Response Formatting:
+- Events will be displayed as interactive cards below your message, so DO NOT mention specific event details (title, date, time, location) in your text response
+- Instead, provide a brief introductory message such as:
+  * If showing events: "Here are some events matching what you asked for:" or "Here are events that match your criteria:" or similar
+  * If showing one event: "Here's an event matching what you asked for:" or "Here's an event that might interest you:" or similar
+  * If no events found: Briefly suggest checking the Events section or trying different search terms
+- Keep your response CONCISE - just 1-2 sentences maximum
+- Do NOT list event details, dates, times, or locations in your text - those will be shown in the event cards
+- Be friendly and brief"""
         
-        return self.get_ai_response(prompt)
+        response_text = self.get_ai_response(prompt)
+        
+        # Return events list - limit based on user request
+        # Default: 2-3 events, but if user asks for "one", "a", or "an" event, show only 1
+        events_list = []
+        if events:
+            limit = 1 if wants_single_event else 3  # Show 1 if single requested, otherwise up to 3
+            for event in events[:limit]:
+                event_dict = dict(event) if not isinstance(event, dict) else event
+                events_list.append(event_dict)
+        
+        return response_text, events_list
+    
+    def _detect_single_event_request(self, message):
+        """
+        Detect if user is asking for a single event (e.g., "a event", "an event", "one event").
+        
+        Args:
+            message (str): User's message
+            
+        Returns:
+            bool: True if user wants a single event, False otherwise
+        """
+        if not message:
+            return False
+        
+        message_lower = message.lower()
+        
+        # Check for single event indicators
+        single_event_patterns = [
+            r'\b(a|an)\s+(event|volunteer|opportunity|activity)',
+            r'\bone\s+(event|volunteer|opportunity|activity)',
+            r'\b(a|an)\s+volunteering',
+            r'\bone\s+volunteering',
+            r'\bshow\s+me\s+(a|an|one)',
+            r'\bfind\s+me\s+(a|an|one)',
+            r'\bgive\s+me\s+(a|an|one)',
+            r'\bsuggest\s+(a|an|one)',
+            r'\brecommend\s+(a|an|one)',
+        ]
+        
+        for pattern in single_event_patterns:
+            if re.search(pattern, message_lower):
+                return True
+        
+        return False
     
     def _handle_teams_category(self, user_message, user_email=None):
         """Handle Teams category - team-related queries."""
