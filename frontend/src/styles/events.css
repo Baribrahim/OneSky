@@ -64,14 +64,13 @@
 }
 
 .event-card-link {
-  flex-grow: 1; /* Take up remaining space */
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   text-decoration: none;
   color: inherit;
 }
-
 
 .event-card img {
   width: 100%;
@@ -159,9 +158,8 @@
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  width: 100%; /* Let container control width */
-  margin-bottom: 20px
-
+  width: 100%;
+  margin-bottom: 20px;
 }
 
 .event-section:hover,
@@ -193,7 +191,6 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-
 
 .event-cause {
   color: #555;
@@ -231,6 +228,30 @@
   flex: 1 1 220px;
   text-align: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  
+}
+.info-item {
+  position: relative;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: var(--section-padding);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.info-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px; /* thickness of the border */
+  background: linear-gradient(90deg,
+    rgba(255, 128, 0, 0.8),   /* orange */
+    rgba(255, 0, 128, 0.8),   /* pink */
+    rgba(121, 40, 202, 0.8),  /* purple */
+    rgba(0, 114, 255, 0.8)    /* blue */
+  );
 }
 
 .info-item:hover {
@@ -316,7 +337,6 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-
 .left-column,
 .right-column {
   background: none;
@@ -337,38 +357,184 @@
   }
 }
 
-
 .event-actions {
-    display: flex;              /* Makes buttons sit side by side */
-    justify-content: space-between; /* Space between buttons */
-    gap: 10px;                  /* Optional: adds spacing */
-    margin-top: 10px;           /* Keeps some space from card content */
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .event-actions .button {
-    flex: 1;                    /* Makes both buttons equal width */
-    width: auto;                /* Override any width: 100% */
+  flex: 1;
+  width: auto;
 }
 
 /* Spacing in event card */
 .card-body h3 {
-    margin-bottom: 4px; /* Reduce space below title */
+  margin-bottom: 4px;
 }
 
 .card-body p {
-    margin: 2px 0; /* Reduce top and bottom margins for paragraphs */
+  margin: 2px 0;
 }
 
 .event-info p {
-    margin: 2px 0; /* Same for location/date/time lines */
+  margin: 2px 0;
 }
 
 .card-body {
-    padding: 10px; /* Optional: reduce padding inside the card */
+  padding: 10px;
 }
-
 
 .requirements-section h3 {
   margin-top: 4px;
   margin-bottom: 6px;
 }
+
+
+/* Event Schedule */
+/* ===== Event Schedule Section ===== */
+.event-schedule {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  font-family: 'Poppins', sans-serif;
+}
+
+.event-schedule h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+}
+
+/* Timeline container */
+.event-timeline-container {
+  display: flex;
+  position: relative;
+  padding-left: 40px; /* Space for timeline */
+}
+
+/* Rainbow timeline */
+
+.event-timeline {
+  position: absolute;
+  left: 16px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 128, 0, 0.6),   /* soft orange */
+    rgba(255, 0, 128, 0.6),   /* pink */
+    rgba(121, 40, 202, 0.6),  /* purple */
+    rgba(0, 114, 255, 0.6)    /* blue */
+  );
+  border-radius: 4px;
+}
+
+/* Schedule list */
+.schedule-list {
+  flex: 1;
+}
+
+/* Schedule item cards */
+.schedule-item {
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.schedule-item:hover {
+  transform: translateX(8px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Colorful dots */
+.schedule-item::before {
+  content: '';
+  position: absolute;
+  left: -32px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.schedule-item:nth-child(1)::before { background: rgba(255, 128, 0, 0.8); }
+.schedule-item:nth-child(2)::before { background: rgba(255, 0, 128, 0.8); }
+.schedule-item:nth-child(3)::before { background: rgba(121, 40, 202, 0.8); }
+.schedule-item:nth-child(4)::before { background: rgba(0, 114, 255, 0.8); }
+
+/* Typography */
+.time {
+  font-weight: 700;
+  color: #0078d4;
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+}
+
+.details strong {
+  font-size: 1.2rem;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.details p {
+  margin: 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .event-timeline-container {
+    padding-left: 24px;
+  }
+  .event-timeline {
+    left: 8px;
+  }
+  .schedule-item::before {
+    left: -24px;
+  }
+}
+
+
+.countdown-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  text-align: center;
+  margin-top: 16px;
+  width: 100%; 
+  min-height: 100px; 
+}
+
+.countdown-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--hover-shadow);
+}
+
+
+.countdown-card h4 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 4px;
+}
+.countdown-timer {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ff0080;
+}
+

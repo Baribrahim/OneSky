@@ -6,6 +6,7 @@ import EventActivities from '../components/EventComponents/EventActivities';
 import EventRequirements from '../components/EventComponents/EventRequirements';
 import EventMap from '../components/EventComponents/EventMap';
 import EventSchedule from '../components/EventComponents/EventSchedule';
+import EventCountdownTimer from '../components/EventComponents/EventCountdownTimer';
 
 function EventPage(){
     const { id } = useParams();
@@ -63,10 +64,11 @@ function EventPage(){
                         requirementsProvided={event.RequirementsProvided}
                     />
                     <EventSchedule event={event} />
-                    
+
                 </div>
                 <div className="right-column">
                     <EventMap latitude={event.Latitude} longitude={event.Longitude} />
+                    <EventCountdownTimer eventDate={event.Date + ' ' + event.StartTime} />
                 </div>
                 </div>
             </div>
