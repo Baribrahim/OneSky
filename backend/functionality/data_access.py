@@ -96,7 +96,8 @@ class DataAccess:
 
     def get_upcoming_events(self, user_id: int, limit: int = 5):
         """
-        Get upcoming events a user has registered for (future only).
+        Get upcoming events a user has registered for (future only), 
+        combining individual and team registrations. Multiple teams per event are joined into a single row.
         """
         sql = """
             SELECT 
@@ -105,21 +106,32 @@ class DataAccess:
                 DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
                 DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
                 DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
-                e.LocationCity
+                e.LocationCity,
+                e.Image_path,
+                IFNULL(
+                    GROUP_CONCAT(DISTINCT t.Name ORDER BY t.Name SEPARATOR ', '),
+                    'Individual'
+                ) AS RegistrationType
             FROM Event e
-            JOIN EventRegistration er ON er.EventID = e.ID
-            WHERE er.UserID = %s
-              AND TIMESTAMP(e.Date, e.StartTime) > NOW()
+            LEFT JOIN TeamMembership tm ON tm.UserID = %s
+            LEFT JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
+            LEFT JOIN Team t ON t.ID = tm.TeamID
+            LEFT JOIN EventRegistration er ON er.UserID = %s AND er.EventID = e.ID
+            WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
+            AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
+            GROUP BY e.ID
             ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
             LIMIT %s
         """
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
-            cursor.execute(sql, (user_id, int(limit)))
+            cursor.execute(sql, (user_id, user_id, int(limit)))
             return cursor.fetchall()
-    
+
+
     def get_upcoming_events_paged(self, user_id: int, limit: int = 5, offset: int = 0):
         """
-        Get upcoming events a user has registered for (future only) with pagination.
+        Get upcoming events with pagination, combining individual and team registrations.
+        Multiple teams per event are joined into a single row.
         """
         sql = """
             SELECT 
@@ -128,34 +140,51 @@ class DataAccess:
                 DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
                 DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
                 DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
-                e.LocationCity
+                e.LocationCity,
+                e.Image_path,
+                IFNULL(
+                    GROUP_CONCAT(DISTINCT t.Name ORDER BY t.Name SEPARATOR ', '),
+                    'Individual'
+                ) AS RegistrationType
             FROM Event e
-            JOIN EventRegistration er ON er.EventID = e.ID
-            WHERE er.UserID = %s
-            AND TIMESTAMP(e.Date, e.StartTime) > NOW()
+            LEFT JOIN TeamMembership tm ON tm.UserID = %s
+            LEFT JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
+            LEFT JOIN Team t ON t.ID = tm.TeamID
+            LEFT JOIN EventRegistration er ON er.UserID = %s AND er.EventID = e.ID
+            WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
+            AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
+            GROUP BY e.ID
             ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
             LIMIT %s OFFSET %s
         """
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
-            cursor.execute(sql, (user_id, int(limit), int(offset)))
+            cursor.execute(sql, (user_id, user_id, int(limit), int(offset)))
             return cursor.fetchall()
 
-    
+
     def get_upcoming_events_count(self, user_id: int) -> int:
         """
-        Count all future events a user has registered for (no limit).
+        Count all future events a user has registered for (individual or via teams),
+        returning unique events only.
         """
         sql = """
             SELECT COUNT(*) AS UpcomingCount
-            FROM Event e
-            JOIN EventRegistration er ON er.EventID = e.ID
-            WHERE er.UserID = %s
-            AND TIMESTAMP(e.Date, e.StartTime) > NOW()
+            FROM (
+                SELECT e.ID
+                FROM Event e
+                LEFT JOIN TeamMembership tm ON tm.UserID = %s
+                LEFT JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
+                LEFT JOIN EventRegistration er ON er.UserID = %s AND er.EventID = e.ID
+                WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
+                AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
+                GROUP BY e.ID
+            ) sub
         """
-        with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
-            cursor.execute(sql, (user_id,))
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (user_id, user_id))
             row = cursor.fetchone()
             return int(row["UpcomingCount"]) if row and row["UpcomingCount"] is not None else 0
+
 
 
     def get_total_hours(self, user_id: int):
@@ -573,18 +602,7 @@ class DataAccess:
         except Exception as e:
             print(f"Error in select_team_code: {e}")
             raise
-    
-    # """Delete userId and teamID from TeamMembership"""
-    # def delete_user_from_team(self, user_email, team_id):
-    #     user_id = self.get_id_by_email(user_email)
-    #     try:
-    #         sql = "DELETE FROM TeamMembership WHERE UserID = %s AND TeamID= %s"
-    #         with self.get_connection() as conn, conn.cursor() as cursor:
-    #             cursor.execute(sql, (user_id, team_id))
-    #     except Exception as e:
-    #         print(f"Error in delete_user_from_team: {e}")
-    #         raise
-    
+        
     """Read all information on teams a user has joined"""
     def get_all_joined_teams(self, user_email):
         try:
