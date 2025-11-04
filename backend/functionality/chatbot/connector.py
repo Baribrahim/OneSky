@@ -657,8 +657,22 @@ CRITICAL - Response Formatting:
             badges_to_return = user_badges[:5] if user_badges else []  # Limit to 5 for display
         elif is_asking_about_all_badges:
             # User wants to see next badges they could earn (not already earned)
-            user_badge_ids = {badge.get('ID') or badge.get('id') for badge in user_badges}
-            available_badges = [b for b in all_badges if (b.get('ID') or b.get('id')) not in user_badge_ids]
+            # Create set of user's badge IDs (handle both dict keys and ensure int comparison)
+            user_badge_ids = set()
+            for badge in user_badges:
+                badge_id = badge.get('ID') or badge.get('id')
+                if badge_id:
+                    user_badge_ids.add(int(badge_id))  # Convert to int for comparison
+            
+            # Filter out badges user already has
+            available_badges = []
+            for badge in all_badges:
+                badge_id = badge.get('ID') or badge.get('id')
+                if badge_id:
+                    badge_id_int = int(badge_id)
+                    if badge_id_int not in user_badge_ids:
+                        available_badges.append(badge)
+            
             badges_to_return = available_badges[:2] if available_badges else []  # Next 2 badges
         else:
             # Default: show user's badges if they have any, otherwise show next 2 available
@@ -731,21 +745,31 @@ CRITICAL - Response Formatting:
         if not message:
             return False
         
-        message_lower = message.lower()
-        all_badges_patterns = [
-            r'\ball\s+badges',
-            r'\bevery\s+badge',
-            r'\bavailable\s+badges',
-            r'\bwhat\s+badges\s+(are\s+there|exist|can\s+I\s+earn|can\s+I\s+get)',
-            r'\bshow\s+(all|every)\s+badges',
-            r'\blist\s+(all|every)\s+badges',
-            r'\bbadges\s+I\s+can\s+(earn|get)',
+        message_lower = message.lower().strip()
+        
+        # Use simple keyword-based detection (more reliable than regex)
+        # Keywords that indicate asking about available badges
+        available_keywords = [
+            'can', 'could', 'earn', 'get', 'obtain', 'unlock', 
+            'available', 'other', 'more', 'additional', 'what badges',
+            'which badges', 'don\'t have', 'haven\'t', 'missing'
         ]
         
-        for pattern in all_badges_patterns:
-            if re.search(pattern, message_lower):
-                return True
+        # Keywords that explicitly indicate asking about owned badges
+        my_badges_keywords = ['my badges', 'have', 'earned', 'got', 'own', 'show my']
         
+        # Check if it explicitly asks about owned badges first
+        if any(keyword in message_lower for keyword in my_badges_keywords):
+            # But exclude if it also has "can earn" type phrases
+            if not any(word in message_lower for word in ['can', 'could', 'earn', 'get']):
+                return False
+        
+        # Check if query contains available keywords
+        if any(keyword in message_lower for keyword in available_keywords):
+            print(f"DEBUG: Detected as 'all badges' query: '{message_lower}'")
+            return True
+        
+        print(f"DEBUG: Not detected as 'all badges' query: '{message_lower}'")
         return False
     
     def _handle_impact_category(self, user_message, user_email=None):
