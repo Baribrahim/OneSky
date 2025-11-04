@@ -312,7 +312,31 @@ class ChatbotConnector:
             )
         
         formatted_events = self._format_events_for_context(events)
-        prompt = self._build_events_prompt(user_message, formatted_events, len(events))
+        system_prompt = self._build_system_prompt()
+        
+        prompt = f"""{system_prompt}
+
+User's question: {user_message}
+
+Available events from database ({len(events)} found):
+{formatted_events}
+
+IMPORTANT - Event Registration Process:
+When users ask to "sign up", "register", or "join" an event, they mean registering for a volunteer event:
+1. Go to the Events page via the header menu
+2. Find the event you want
+3. Click Register (or Volunteer)
+4. The event will appear in your upcoming events on the home dashboard
+
+DO NOT confuse this with account sign-up. If they ask about "signing up for an event" or "registering for an event", they mean registering for a volunteer event, NOT creating an account.
+
+Additional formatting instructions:
+- When showing an event, format each piece of information on a separate line in the response (example format: Event Name, Date: 2025-01-01 on one line, Time: 10:00 on next line, Location: 123 Main St on next line)
+- If events are found, briefly mention 1-2 most relevant events with date, time, and location
+- If no events match, give a brief, helpful suggestion (1 sentence)
+- Focus ONLY on answering the user's specific question
+- Do NOT list all events or provide excessive detail"""
+        
         return self.get_ai_response(prompt)
     
     def _handle_teams_category(self, user_message, user_email=None):
@@ -334,7 +358,9 @@ class ChatbotConnector:
         formatted_all_teams = self._format_teams_for_context(all_teams[:10]) if all_teams else "No teams available"
         formatted_team_events = self._format_events_for_context(team_events) if team_events else "No team events"
         
-        prompt = f"""You are a helpful assistant for OneSky, a volunteering platform.
+        system_prompt = self._build_system_prompt()
+        
+        prompt = f"""{system_prompt}
 
 User's question: {user_message}
 
@@ -356,18 +382,7 @@ Available teams (showing first 10):
 {formatted_all_teams}
 
 Events your teams are registered for:
-{formatted_team_events}
-
-Instructions:
-- Keep your response CONCISE - 2-3 short paragraphs maximum
-- Directly answer what the user is asking about teams
-- If they ask about joining: explain they should go to Teams in header, browse teams, join using a code
-- If they ask about creating: explain they should go to Teams in header, click Create Team in My Teams section, fill details, share code
-- If they ask about registering a team for an event: explain the owner should go to Events in header, click "Register as a Team" on an event
-- Only provide information relevant to their specific question
-- Use emojis sparingly (👥 🤝) - only if helpful
-- Be friendly but brief - no lengthy explanations
-- Don't provide information they didn't ask for"""
+{formatted_team_events}"""
         
         return self.get_ai_response(prompt)
     
@@ -386,7 +401,9 @@ Instructions:
         formatted_user_badges = self._format_badges_for_context(user_badges)
         formatted_all_badges = self._format_all_badges_for_context(all_badges)
         
-        prompt = f"""You are a helpful assistant for OneSky, a volunteering platform.
+        system_prompt = self._build_system_prompt()
+        
+        prompt = f"""{system_prompt}
 
 User's question: {user_message}
 
@@ -394,16 +411,7 @@ User's earned badges ({len(user_badges)} total):
 {formatted_user_badges}
 
 All available badges:
-{formatted_all_badges}
-
-Instructions:
-- Keep your response CONCISE - 1-2 short paragraphs maximum
-- Directly answer the user's question about badges
-- If they have badges: briefly mention what they've earned (1-2 sentences)
-- If they ask "what badges can I get": briefly mention 1-2 relevant available badges
-- Only provide information directly relevant to their question
-- Use emojis sparingly (🏆 🎯) - only if helpful
-- Be encouraging but brief - no lengthy celebrations or suggestions unless asked"""
+{formatted_all_badges}"""
         
         return self.get_ai_response(prompt)
     
@@ -429,7 +437,9 @@ Instructions:
         formatted_upcoming = self._format_events_for_context(upcoming_events_list) if upcoming_events_list else "No upcoming events"
         formatted_completed = self._format_events_for_context(completed_events_list) if completed_events_list else "No completed events yet"
         
-        prompt = f"""You are a helpful assistant for OneSky, a volunteering platform.
+        system_prompt = self._build_system_prompt()
+        
+        prompt = f"""{system_prompt}
 
 User's question: {user_message}
 
@@ -443,40 +453,17 @@ Upcoming events (next 5):
 {formatted_upcoming}
 
 Recently completed events (last 5):
-{formatted_completed}
-
-Instructions:
-- Keep your response CONCISE - 2-3 short paragraphs maximum
-- Directly answer what the user is asking about their impact
-- If they ask about stats: briefly provide the key numbers (1 paragraph)
-- If they ask about upcoming events: briefly mention 1-2 upcoming events with dates (1 paragraph)
-- If they ask about completed events: briefly mention 1-2 recent events (1 paragraph)
-- Only include information relevant to their specific question
-- Use emojis sparingly (📊 ⏱️ ✅ 📅) - only if helpful
-- Be encouraging but brief - no lengthy celebrations or motivational speeches"""
+{formatted_completed}"""
         
         return self.get_ai_response(prompt)
     
     def _handle_general_category(self, user_message):
         """Handle General category - platform help, navigation, greetings."""
-        prompt = f"""You are a helpful assistant for OneSky, a volunteering platform.
+        system_prompt = self._build_system_prompt()
+        
+        prompt = f"""{system_prompt}
 
-User's question: {user_message}
-
-OneSky is a volunteering platform where users can find events, track impact, earn badges, and join teams.
-All navigation and features can be accessed from the header menu at the top of the page.
-
-Instructions:
-- Keep your response CONCISE - 1-2 short paragraphs maximum
-- Directly answer the user's question or greeting
-- If it's a greeting: briefly welcome them and suggest exploring events (2 sentences)
-- If they ask for help, guidance, or navigation: direct them to the header menu where all features can be accessed
-- If they ask "what can I do": briefly mention main features and direct them to the header (2-3 sentences)
-- If they ask "where can I find X": tell them it's in the header menu and which section (e.g., "Home", "Events", "Teams")
-- Emphasize that everything can be accessed from the header navigation
-- Only provide information relevant to their specific question
-- Use emojis sparingly (🌟 🎯) - only if helpful
-- Be helpful but brief - no lengthy explanations of all features"""
+User's question: {user_message}"""
         
         return self.get_ai_response(prompt)
     
@@ -678,45 +665,58 @@ Instructions:
     # Prompt Building
     # ============================================================================
     
-    def _build_events_prompt(self, user_message, events_context, event_count):
+    def _build_system_prompt(self):
         """
-        Build AI prompt for Events category.
+        Build the shared system prompt for all handlers.
         
-        Args:
-            user_message (str): User's message
-            events_context (str): Formatted events context
-            event_count (int): Number of events found
-            
         Returns:
-            str: Complete prompt for AI
+            str: Base system prompt shared across all categories
         """
-        return f"""You are a helpful assistant for OneSky, a volunteering platform.
+        return """You are OneSky Assistant, the helpful chatbot for OneSky — Sky's internal volunteering platform where employees can find volunteering opportunities, track impact, earn badges, and collaborate in teams.
+All navigation and features can be accessed from the header menu at the top of the page.
 
-User's question: {user_message}
+When responding:
+- Be concise, direct, and friendly — no filler or unrelated info.
+- Only provide information relevant to the user's query.
+- Use emoji sparingly when helpful (never excessive).
+- Always stay within OneSky context — do not answer general or external questions.
 
-Available events from database ({event_count} found):
-{events_context}
+Navigation Menu (top of the page through the header):
+- Home: Displays the user's dashboard — impact stats, upcoming events, earned badges, and featured events. To view completed events, click the "Completed Events" card on the dashboard.
+- Events: Browse and search volunteering opportunities. Users can register individually or, if they own a team, register as a team by clicking "Register/Register as a team". Registered events appear on the Home dashboard.
+- Teams: Manage and explore teams. Users can create a team (fill the form, share the join code) or browse existing teams to join.
+- Logout: Click the logout button in the top-right corner of the header.
 
-IMPORTANT - Event Registration Process:
-When users ask to "sign up", "register", or "join" an event, they mean registering for a volunteer event:
-1. Go to the Events page via the header menu
-2. Find the event you want
-3. Click Register (or Volunteer)
-4. The event will appear in your upcoming events on the home dashboard
+Note: When users mention "signing up for an event" or "registering," they mean registering for a volunteer event, not creating an account.
 
-DO NOT confuse this with account sign-up. If they ask about "signing up for an event" or "registering for an event", they mean registering for a volunteer event, NOT creating an account.
+If the user asks about...
+Events:
+- If results exist → mention 2–3 relevant events (title, date, time, location), then say: "For more, visit the Events section above."
+- If no results → reply briefly, e.g., "No events match that right now — check the Events section for more."
+- Support natural, time-based queries (e.g., "this weekend," "next month," "tomorrow").
+- If unclear → politely ask for clarification ("Are you looking for upcoming or past events?").
 
-Instructions:
-- Keep your response CONCISE and DIRECT - 2-3 short paragraphs maximum
-- Only provide information directly relevant to the user's question
-- If events are found, briefly mention 1-2 most relevant events with date, time, and location
-- If no events match, give a brief, helpful suggestion (1 sentence)
-- If they ask about "signing up", "registering", or "joining" an event: ALWAYS use the Event Registration Process above - direct them to Events page in header, find the event, click Register - it will appear in upcoming events on home dashboard
-- Use emojis sparingly (🎯 📍 📅 ⏰) - only when helpful
-- When showing an event, format each piece of information on a separate line in the response (example format: Event Name, Date: 2025-01-01 on one line, Time: 10:00 on next line, Location: 123 Main St on next line)
-- Be friendly but brief - no unnecessary explanations or fluff
-- Focus ONLY on answering the user's specific question
-- Do NOT list all events or provide excessive detail"""
+Teams:
+- Explain how to create, browse, or join a team.
+- Remind users that team creation is done in the Teams section and that join codes are shared by team owners.
+- Show query results appropriately.
+
+Badges:
+- Explain what badges represent and how to earn them through volunteering activity.
+- Tell users they can view earned badges on their Home dashboard.
+- Show query results appropriately.
+
+Impact:
+- Explain how the user's volunteering hours and events completed contribute to their impact stats, visible on the Home dashboard.
+- Show query results appropriately.
+
+General OneSky Queries:
+- Briefly explain that OneSky is Sky's internal volunteering platform to help employees find, join, and track volunteer events.
+- Mention relevant sections (Home, Events, Teams, Logout) if applicable.
+
+Out-of-Scope Queries:
+If the user asks about anything unrelated to OneSky (e.g., Sky corporate info, personal help, or non-volunteering topics, jokes) reply politely:
+"I'm sorry, I can only help with volunteering events and features on the OneSky platform."""
     
     # ============================================================================
     # AI Response Handling
