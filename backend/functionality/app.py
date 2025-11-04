@@ -10,6 +10,7 @@ from events.routes import bp as events_bp
 from dashboard.routes import bp as dashboard_bp
 from teams.routes import bp as teams_bp
 from badges.routes import bp as badges_bp
+from landing.routes import bp as landing_bp
 # from search.routes import bp as search_bp           # (later)
 # from eventregistration.routes import bp as er_bp     # (later)
 
@@ -26,7 +27,7 @@ def create_app():
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(teams_bp)
     app.register_blueprint(badges_bp)
-    # app.register_blueprint(search_bp)
+    app.register_blueprint(landing_bp)
     # app.register_blueprint(er_bp)
 
     @app.route("/")

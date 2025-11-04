@@ -13,6 +13,7 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Teams from "./pages/Teams.jsx";
 import CreateTeam from "./pages/CreateTeam.jsx";
+import Landing from "./pages/Landing.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -33,6 +34,7 @@ createRoot(document.getElementById("root")).render(
           {/* ✅ Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Routes path="/" element={<Landing />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
