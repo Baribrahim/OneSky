@@ -29,7 +29,7 @@ def chat():
 
     try:
         connector = ChatbotConnector()
-        response, category, events_list, teams_list, badges_list = connector.process_message(message, user_email)
+        response, category, events_list, teams_list, badges_list, team_events = connector.process_message(message, user_email)
 
         response_data = {
             "response": response,

@@ -132,17 +132,19 @@ class ChatbotConnector:
         # For events, pass the embedding to reuse it (saves one API call)
         if category == "events":
             response, events_list = self._handle_events_category(user_message, user_email, message_embedding)
-            return response, category, events_list, None, None
+            return response, category, events_list, None, None, None
         elif category == "teams":
-            response, teams_list = self._handle_teams_category(user_message, user_email)
-            return response, category, None, teams_list, None
+            response, teams_list, team_events = self._handle_teams_category(user_message, user_email)
+            return response, category, None, teams_list, None, team_events
         elif category == "badges":
             response, badges_list = self._handle_badges_category(user_message, user_email)
-            return response, category, None, None, badges_list
+            return response, category, None, None, badges_list, None
         elif category == "impact":
             response = self._handle_impact_category(user_message, user_email)
+            return response, category, None, None, None, None
         else:  # general
             response = self._handle_general_category(user_message)
+            return response, category, None, None, None, None
         
         return response, category, None, None, None
     
@@ -196,6 +198,24 @@ class ChatbotConnector:
         """
         if not message or not message.strip():
             return ("general", None)
+        
+        msg = message.lower()
+        
+        personal_words = ("my", "i ", "i'm", "i am", "me ", "me?")
+        is_personal = any(w in msg for w in personal_words)
+
+        # "what teams am I in", "show my teams", "teams I belong to"
+        if "team" in msg and (is_personal or "am i in" in msg or "i'm in" in msg or "belong" in msg):
+            return ("teams", None)
+
+        # "what badges have I earned", "my badges"
+        if "badge" in msg or "achievement" in msg:
+            if is_personal or "have i earned" in msg or "i earned" in msg or "i've earned" in msg:
+                return ("badges", None)
+
+        # "my upcoming events", "what events do i have coming up", "events i'm attending"
+        if ("event" in msg or "upcoming" in msg or "coming up" in msg or "attending" in msg) and is_personal:
+            return ("events", None)
         
         # If category embeddings weren't initialized, fall back to keyword classification
         if not self.category_embeddings:
@@ -290,24 +310,110 @@ class ChatbotConnector:
     def _handle_events_category(self, user_message, user_email=None, query_embedding=None):
         """
         Handle Events category - find and search volunteer events.
-        
-        Args:
-            user_message (str): User's message
-            user_email (str, optional): User's email
-            query_embedding (list, optional): Pre-generated embedding to reuse (saves API call)
-            
-        Returns:
-            tuple: (response_text, events_list) - AI response text and list of event dictionaries
+        Now also handles "my upcoming / registered events" as a fast path.
         """
+        msg_lower = user_message.lower() if user_message else ""
+
+        # =========================================================
+        # 1) FAST PATH: user is asking about *their* own events
+        # =========================================================
+        user_is_asking_for_their_events = (
+            user_email
+            and (
+                "my" in msg_lower
+                or "i'm" in msg_lower
+                or "i am" in msg_lower
+                or "events i have" in msg_lower
+                or "attending" in msg_lower
+            )
+            and (
+                "upcoming" in msg_lower
+                or "coming up" in msg_lower
+                or "signed up" in msg_lower
+                or "registered" in msg_lower
+                or "attending" in msg_lower
+            )
+        )
+
+        if user_is_asking_for_their_events:
+            user_events = []  # make sure it's always defined
+            user_id = self.dao.get_user_id_by_email(user_email)
+
+            # 1) try proper upcoming events
+            if user_id:
+                try:
+                    user_events = self.dao.get_upcoming_events(user_id, limit=5) or []
+                except Exception as e:
+                    print(f"Error getting upcoming events for user {user_id}: {e}")
+                    user_events = []
+
+            # 2) fallback: some setups only store "user events" (often as IDs/tuples)
+            if not user_events and user_email:
+                try:
+                    registered = self.dao.get_user_events(user_email) or []
+                    full_events = []
+                    for item in registered:
+                        # item could be (id,) or just id
+                        event_id = item[0] if isinstance(item, tuple) else item
+                        if not event_id:
+                            continue
+                        # only try this if DAO has such a method
+                        if hasattr(self.dao, "get_event_by_id"):
+                            ev = self.dao.get_event_by_id(event_id)
+                            if ev:
+                                full_events.append(ev)
+                    if full_events:
+                        user_events = full_events
+                except Exception as e:
+                    print(f"Error falling back to user_events for {user_email}: {e}")
+
+            system_prompt = self._build_system_prompt()
+            formatted_user_events = self._format_events_for_context(user_events) if user_events else "No upcoming events"
+
+            prompt = f"""{system_prompt}
+
+    User's question: {user_message}
+
+    User's upcoming/registered events:
+    {formatted_user_events}
+
+    CRITICAL - Response Formatting:
+    - Events will be displayed as interactive cards below your message, so DO NOT mention specific event details (title, date, time, location) in your text response
+    - Keep it to 1–2 sentences, friendly.
+    """
+            response_text = self.get_ai_response(prompt)
+
+            # normalize for frontend cards
+            events_list = []
+            for event in user_events:
+                event_dict = dict(event) if not isinstance(event, dict) else event
+
+                # normalize common fields for the frontend
+                if 'ID' in event_dict and 'id' not in event_dict:
+                    event_dict['id'] = event_dict['ID']
+                if 'Title' in event_dict and 'title' not in event_dict:
+                    event_dict['title'] = event_dict['Title']
+                if 'LocationCity' in event_dict and 'location' not in event_dict:
+                    event_dict['location'] = event_dict['LocationCity']
+                if 'Capacity' in event_dict and 'capacity' not in event_dict:
+                    event_dict['capacity'] = event_dict['Capacity']
+
+                events_list.append(event_dict)
+
+            return response_text, events_list
+
+        # =========================================================
+        # 2) ORIGINAL SEARCH / RECOMMENDATION LOGIC
+        # =========================================================
         location = self._extract_location(user_message)
-        
+
         # Detect if user wants a single event
         wants_single_event = self._detect_single_event_request(user_message)
-        
+
         # Reuse embedding if provided, otherwise generate new one
         if not query_embedding:
             query_embedding = self.embedding_helper.generate_embedding(user_message)
-        
+
         if not query_embedding:
             # Fallback to keyword search
             message_for_keywords = self._remove_location_from_message(user_message, location) if location else user_message
@@ -321,21 +427,18 @@ class ChatbotConnector:
                 limit=10,
                 similarity_threshold=0.3
             )
-        
-        # Filter out events user is already registered for
+
+        # Filter out events user is already registered for (for recommendations)
         if user_email and events:
             try:
-                # Get user's registered event IDs
                 user_registered_events = self.dao.get_user_events(user_email)
-                # Convert to set of integers for comparison
                 registered_event_ids = set()
                 if user_registered_events:
                     for event_tuple in user_registered_events:
                         event_id = event_tuple[0] if isinstance(event_tuple, tuple) else event_tuple
                         if event_id:
                             registered_event_ids.add(int(event_id))
-                
-                # Filter out events user is already registered for
+
                 filtered_events = []
                 for event in events:
                     event_id = event.get('ID') or event.get('id')
@@ -344,60 +447,59 @@ class ChatbotConnector:
                         if event_id_int not in registered_event_ids:
                             filtered_events.append(event)
                     else:
-                        # If event doesn't have ID, include it (shouldn't happen, but safe)
                         filtered_events.append(event)
-                
+
                 events = filtered_events
             except Exception as e:
                 print(f"Error filtering user's registered events: {e}")
                 import traceback
                 traceback.print_exc()
-        
+
         formatted_events = self._format_events_for_context(events)
         system_prompt = self._build_system_prompt()
-        
-        # Determine event count for display
-        limit = 1 if wants_single_event else 3
-        event_count_display = min(len(events), limit)
-        
+
         prompt = f"""{system_prompt}
 
-User's question: {user_message}
+    User's question: {user_message}
 
-Available events from database ({len(events)} found):
-{formatted_events}
+    Available events from database ({len(events)} found):
+    {formatted_events}
 
-IMPORTANT - Event Registration Process:
-When users ask to "sign up", "register", or "join" an event, they mean registering for a volunteer event:
-1. Go to the Events page via the header menu
-2. Find the event you want
-3. Click Register (or Volunteer)
-4. The event will appear in your upcoming events on the home dashboard
+    IMPORTANT - Event Registration Process:
+    When users ask to "sign up", "register", or "join" an event, they mean registering for a volunteer event:
+    1. Go to the Events page via the header menu
+    2. Find the event you want
+    3. Click Register (or Volunteer)
+    4. The event will appear in your upcoming events on the home dashboard
 
-DO NOT confuse this with account sign-up. If they ask about "signing up for an event" or "registering for an event", they mean registering for a volunteer event, NOT creating an account.
-
-CRITICAL - Response Formatting:
-- Events will be displayed as interactive cards below your message, so DO NOT mention specific event details (title, date, time, location) in your text response
-- Instead, provide a brief introductory message such as:
-  * If showing events: "Here are some events matching what you asked for:" or "Here are events that match your criteria:" or similar
-  * If showing one event: "Here's an event matching what you asked for:" or "Here's an event that might interest you:" or similar
-  * If no events found: Briefly suggest checking the Events section or trying different search terms
-- Keep your response CONCISE - just 1-2 sentences maximum
-- Do NOT list event details, dates, times, or locations in your text - those will be shown in the event cards
-- Be friendly and brief"""
-        
+    CRITICAL - Response Formatting:
+    - Events will be displayed as interactive cards below your message, so DO NOT mention specific event details
+    - Keep your response CONCISE - just 1-2 sentences maximum
+    - Be friendly and brief
+    """
         response_text = self.get_ai_response(prompt)
-        
+
         # Return events list - limit based on user request
-        # Default: 2-3 events, but if user asks for "one", "a", or "an" event, show only 1
         events_list = []
         if events:
-            limit = 1 if wants_single_event else 3  # Show 1 if single requested, otherwise up to 3
+            limit = 1 if wants_single_event else 3
             for event in events[:limit]:
                 event_dict = dict(event) if not isinstance(event, dict) else event
+                # normalize for frontend
+                if 'ID' in event_dict and 'id' not in event_dict:
+                    event_dict['id'] = event_dict['ID']
+                if 'Title' in event_dict and 'title' not in event_dict:
+                    event_dict['title'] = event_dict['Title']
+                if 'LocationCity' in event_dict and 'location' not in event_dict:
+                    event_dict['location'] = event_dict['LocationCity']
+                if 'Capacity' in event_dict and 'capacity' not in event_dict:
+                    event_dict['capacity'] = event_dict['Capacity']
                 events_list.append(event_dict)
-        
+
         return response_text, events_list
+
+
+
     
     def _detect_single_event_request(self, message):
         """
@@ -447,7 +549,61 @@ CRITICAL - Response Formatting:
                 team_events = self.dao.get_team_events(user_email)
             except Exception as e:
                 print(f"Error fetching team data: {e}")
-        
+
+        # =========================================================
+        # 1) FAST PATH: user is clearly asking about *their* teams
+        # =========================================================
+        if self._is_asking_about_my_teams(user_message):
+            system_prompt = self._build_system_prompt()
+            formatted_user_teams = self._format_teams_for_context(user_teams)
+
+            prompt = f"""{system_prompt}
+
+    User's question: {user_message}
+
+    User's teams ({len(user_teams)}):
+    {formatted_user_teams}
+
+    CRITICAL - Response Formatting:
+    - Teams will be displayed as interactive cards below your message, so DO NOT mention specific team details (name, description, department) in your text response
+    - Keep it to 1–2 sentences, e.g. "Here are your teams:" or "These are the teams you're part of."
+    """
+            response_text = self.get_ai_response(prompt)
+
+            # Return just the user's teams as cards
+            teams_list = []
+            user_id = None
+            if user_email:
+                try:
+                    user_id = self.dao.get_user_id_by_email(user_email)
+                except Exception as e:
+                    print(f"Error getting user ID: {e}")
+
+            for team in user_teams:
+                team_dict = dict(team) if not isinstance(team, dict) else team
+                if 'ID' in team_dict:
+                    team_dict['id'] = team_dict['ID']
+                if 'Name' in team_dict:
+                    team_dict['name'] = team_dict['Name']
+                if 'JoinCode' in team_dict:
+                    team_dict['join_code'] = team_dict['JoinCode']
+                # owner flag
+                if 'IsOwner' not in team_dict or team_dict['IsOwner'] is None:
+                    if user_id and 'OwnerUserID' in team_dict:
+                        team_dict['is_owner'] = (team_dict['OwnerUserID'] == user_id)
+                    elif 'IsOwner' in team_dict:
+                        team_dict['is_owner'] = team_dict['IsOwner']
+                    else:
+                        team_dict['is_owner'] = False
+                else:
+                    team_dict['is_owner'] = team_dict['IsOwner']
+                teams_list.append(team_dict)
+
+            return response_text, teams_list, team_events
+
+        # =========================================================
+        # 2) ORIGINAL LOGIC FOR GENERIC TEAM QUERIES
+        # =========================================================
         # Detect if user wants all teams or a specific team
         wants_all_teams = self._detect_all_teams_request(user_message)
         wants_single_team = self._detect_single_team_request(user_message)
@@ -484,15 +640,11 @@ CRITICAL - Response Formatting:
             # User wants a single team but no specific name matched - return first team
             teams_to_return = all_teams[:1] if all_teams else []
         else:
-            # Default: show user's teams if asking about "my teams", otherwise show all
-            if self._is_asking_about_my_teams(user_message):
-                teams_to_return = user_teams[:5] if user_teams else []
-            else:
-                # Show a few teams as suggestions
-                teams_to_return = all_teams[:3] if all_teams else []
+            # Default: show a few teams as suggestions
+            teams_to_return = all_teams[:3] if all_teams else []
         
-        # Filter out teams user is already a member of (unless asking about "my teams")
-        if user_email and not self._is_asking_about_my_teams(user_message) and teams_to_return:
+        # Filter out teams user is already a member of (since this is NOT the "my teams" path)
+        if user_email and teams_to_return:
             try:
                 # Get user's joined team IDs (convert to integers for comparison)
                 user_team_ids = set()
@@ -527,37 +679,37 @@ CRITICAL - Response Formatting:
         
         prompt = f"""{system_prompt}
 
-User's question: {user_message}
+    User's question: {user_message}
 
-IMPORTANT - Team Instructions:
+    IMPORTANT - Team Instructions:
 
-**Joining a Team:**
-Go to Teams in the header menu, browse available teams, and join using a join code.
+    **Joining a Team:**
+    Go to Teams in the header menu, browse available teams, and join using a join code.
 
-**Creating a Team:**
-Go to Teams in the header menu, click on "Create Team" in the My Teams section, fill in the details (name, description, department, capacity), click Create, and share the join code with others so they can join.
+    **Creating a Team:**
+    Go to Teams in the header menu, click on "Create Team" in the My Teams section, fill in the details (name, description, department, capacity), click Create, and share the join code with others so they can join.
 
-**Registering as a Team for an Event:**
-The team owner can go to Events in the header menu, find an event, click on "Register as a Team" to register the team to that event.
+    **Registering as a Team for an Event:**
+    The team owner can go to Events in the header menu, find an event, click on "Register as a Team" to register the team to that event.
 
-User's teams ({len(user_teams)}):
-{formatted_user_teams}
+    User's teams ({len(user_teams)}):
+    {formatted_user_teams}
 
-Available teams (showing first 10):
-{formatted_all_teams}
+    Available teams (showing first 10):
+    {formatted_all_teams}
 
-Events your teams are registered for:
-{formatted_team_events}
+    Events your teams are registered for:
+    {formatted_team_events}
 
-CRITICAL - Response Formatting:
-- Teams will be displayed as interactive cards below your message, so DO NOT mention specific team details (name, description, department) in your text response
-- Instead, provide a brief introductory message such as:
-  * If showing teams: "Here are some teams matching what you asked for:" or "Here are teams that match your criteria:" or similar
-  * If showing one team: "Here's a team matching what you asked for:" or "Here's a team that might interest you:" or similar
-  * If no teams match: Briefly suggest checking the Teams section
-- Keep your response CONCISE - just 1-2 sentences maximum
-- Do NOT list team details in your text - those will be shown in the team cards
-- Be friendly and brief"""
+    CRITICAL - Response Formatting:
+    - Teams will be displayed as interactive cards below your message, so DO NOT mention specific team details (name, description, department) in your text response
+    - Instead, provide a brief introductory message such as:
+    * If showing teams: "Here are some teams matching what you asked for:" or "Here are teams that match your criteria:" or similar
+    * If showing one team: "Here's a team matching what you asked for:" or "Here's a team that might interest you:" or similar
+    * If no teams match: Briefly suggest checking the Teams section
+    - Keep your response CONCISE - just 1-2 sentences maximum
+    - Do NOT list team details in your text - those will be shown in the team cards
+    - Be friendly and brief"""
         
         response_text = self.get_ai_response(prompt)
         
@@ -592,7 +744,8 @@ CRITICAL - Response Formatting:
                 team_dict['is_owner'] = team_dict['IsOwner']
             teams_list.append(team_dict)
         
-        return response_text, teams_list
+        return response_text, teams_list, team_events
+
     
     def _detect_all_teams_request(self, message):
         """Detect if user is asking for all teams."""
@@ -724,8 +877,8 @@ CRITICAL - Response Formatting:
         
         # Detect if user is asking about their badges or all available badges
         is_asking_about_my_badges = self._is_asking_about_my_badges(user_message)
-        is_asking_about_all_badges = self._is_asking_about_all_badges(user_message)
-        
+        is_asking_about_all_badges = (not is_asking_about_my_badges) and self._is_asking_about_all_badges(user_message)
+
         # Determine which badges to return
         badges_to_return = []
         if is_asking_about_my_badges:
@@ -817,36 +970,31 @@ CRITICAL - Response Formatting:
         return False
     
     def _is_asking_about_all_badges(self, message):
-        """Detect if user is asking about all available badges."""
         if not message:
             return False
-        
-        message_lower = message.lower().strip()
-        
-        # Use simple keyword-based detection (more reliable than regex)
-        # Keywords that indicate asking about available badges
-        available_keywords = [
-            'can', 'could', 'earn', 'get', 'obtain', 'unlock', 
-            'available', 'other', 'more', 'additional', 'what badges',
-            'which badges', 'don\'t have', 'haven\'t', 'missing'
+        msg = message.lower()
+
+        # only treat as "all badges" if they clearly want what's possible to earn
+        earn_words = [
+            "available", 
+            "can earn", 
+            "to earn", 
+            "work towards", 
+            "other badges", 
+            "what badges can i",
+            "missing",
+            "haven't earned",
+            "havent earned",
+            "haven’t got",
+            "can i earn",
+            "can i still earn",
+            "available badges",
+            "what can i still unlock",
+            "badges i don’t have",
+            "badges i dont have"
         ]
-        
-        # Keywords that explicitly indicate asking about owned badges
-        my_badges_keywords = ['my badges', 'have', 'earned', 'got', 'own', 'show my']
-        
-        # Check if it explicitly asks about owned badges first
-        if any(keyword in message_lower for keyword in my_badges_keywords):
-            # But exclude if it also has "can earn" type phrases
-            if not any(word in message_lower for word in ['can', 'could', 'earn', 'get']):
-                return False
-        
-        # Check if query contains available keywords
-        if any(keyword in message_lower for keyword in available_keywords):
-            print(f"DEBUG: Detected as 'all badges' query: '{message_lower}'")
-            return True
-        
-        print(f"DEBUG: Not detected as 'all badges' query: '{message_lower}'")
-        return False
+        return any(w in msg for w in earn_words)
+
     
     def _handle_impact_category(self, user_message, user_email=None):
         """Handle Impact category - user statistics and progress."""
@@ -1116,6 +1264,7 @@ When responding:
 - Only provide information relevant to the user's query.
 - Use emoji sparingly when helpful (never excessive).
 - Always stay within OneSky context — do not answer general or external questions.
+- Do not end your responses with questions.
 
 Navigation Menu (top of the page through the header):
 - Home: Displays the user's dashboard — impact stats, upcoming events, earned badges, and featured events. To view completed events, click the "Completed Events" card on the dashboard.
