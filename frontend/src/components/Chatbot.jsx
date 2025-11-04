@@ -4,6 +4,13 @@ import "../styles/chatbot.css";
 import logo from "../assets/OneSky-logo.png";
 import EventCard from "./EventCard";
 import TeamCard from "./TeamCard";
+// Import badge icons
+import firstStep from "../assets/badges/firstStep.png";
+import eduEnthusiast from "../assets/badges/eduEnthusiast.png";
+import volunteerVetran from "../assets/badges/volunteerVetran.png";
+import marathonVolunteer from "../assets/badges/marathonVolunteer.png";
+import weekendWarrior from "../assets/badges/weekendWarrior.png";
+import helpingHand from "../assets/badges/helpingHand.png";
 
 /**
  * Chatbot Component
@@ -119,6 +126,7 @@ export default function Chatbot() {
         content: data?.response || "Sorry, I couldn't process that request.",
         events: data?.events || null, // Include events array if present
         teams: data?.teams || null, // Include teams array if present
+        badges: data?.badges || null, // Include badges array if present
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
@@ -200,6 +208,52 @@ export default function Chatbot() {
                             isOwner={isOwner}
                             browseEvents={true}
                           />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Render badge cards if badges are present */}
+                {message.badges && message.badges.length > 0 && (
+                  <div className="chatbot-badges-container">
+                    {message.badges.map((badge) => {
+                      const badgeId = badge.id || badge.ID;
+                      const badgeName = badge.Name || badge.name;
+                      const badgeDescription = badge.Description || badge.description;
+                      
+                      // Get badge icon path
+                      const getBadgeIconPath = (name) => {
+                        const badgeIconMap = {
+                          'Event Starter': firstStep,
+                          'Event Enthusiast': eduEnthusiast,
+                          'First Step': firstStep,
+                          'Volunteer Veteran': volunteerVetran,
+                          'Marathon Helper': marathonVolunteer,
+                          'Weekend Warrior': weekendWarrior,
+                          'Marathon Volunteer': marathonVolunteer,
+                        };
+                        return badgeIconMap[name] || helpingHand;
+                      };
+                      
+                      return (
+                        <div key={badgeId} className="chatbot-badge-card-wrapper">
+                          <div className="chatbot-badge-card">
+                            <div className="chatbot-badge-icon">
+                              <img 
+                                src={getBadgeIconPath(badgeName)}
+                                alt={badgeName}
+                                onError={(e) => {
+                                  e.target.src = helpingHand;
+                                }}
+                              />
+                            </div>
+                            <div className="chatbot-badge-info">
+                              <h4 className="chatbot-badge-name">{badgeName}</h4>
+                              {badgeDescription && (
+                                <p className="chatbot-badge-description">{badgeDescription}</p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       );
                     })}

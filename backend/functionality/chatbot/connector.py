@@ -122,8 +122,8 @@ class ChatbotConnector:
             user_email (str, optional): User's email for personalized responses
             
         Returns:
-            tuple: (response_text, category, events_list, teams_list) - AI response, detected category, events list (if events category), teams list (if teams category)
-                   For non-events/teams categories, events_list and teams_list will be None
+            tuple: (response_text, category, events_list, teams_list, badges_list) - AI response, detected category, and lists for events/teams/badges
+                   For non-matching categories, the respective list will be None
         """
         category, message_embedding = self._classify_intent_with_ai(user_message)
         
@@ -131,18 +131,19 @@ class ChatbotConnector:
         # For events, pass the embedding to reuse it (saves one API call)
         if category == "events":
             response, events_list = self._handle_events_category(user_message, user_email, message_embedding)
-            return response, category, events_list, None
+            return response, category, events_list, None, None
         elif category == "teams":
             response, teams_list = self._handle_teams_category(user_message, user_email)
-            return response, category, None, teams_list
+            return response, category, None, teams_list, None
         elif category == "badges":
-            response = self._handle_badges_category(user_message, user_email)
+            response, badges_list = self._handle_badges_category(user_message, user_email)
+            return response, category, None, None, badges_list
         elif category == "impact":
             response = self._handle_impact_category(user_message, user_email)
         else:  # general
             response = self._handle_general_category(user_message)
         
-        return response, category, None, None
+        return response, category, None, None, None
     
     # ============================================================================
     # Intent Classification
@@ -635,14 +636,36 @@ CRITICAL - Response Formatting:
     def _handle_badges_category(self, user_message, user_email=None):
         """Handle Badges category - user badges and achievements."""
         if not user_email:
-            return "Please log in to view your badges and achievements."
+            return "Please log in to view your badges and achievements.", None
         
         user_id = self.dao.get_user_id_by_email(user_email)
         if not user_id:
-            return "Unable to retrieve your account information. Please try again."
+            return "Unable to retrieve your account information. Please try again.", None
         
         user_badges = self.dao.get_badges(user_id)
         all_badges = self.dao.get_all_badges()
+        
+        # Detect if user is asking about their badges or all available badges
+        is_asking_about_my_badges = self._is_asking_about_my_badges(user_message)
+        is_asking_about_all_badges = self._is_asking_about_all_badges(user_message)
+        
+        # Determine which badges to return
+        badges_to_return = []
+        if is_asking_about_my_badges:
+            # User wants their earned badges
+            badges_to_return = user_badges[:5] if user_badges else []  # Limit to 5 for display
+        elif is_asking_about_all_badges:
+            # User wants to see next badges they could earn (not already earned)
+            user_badge_ids = {badge.get('ID') or badge.get('id') for badge in user_badges}
+            available_badges = [b for b in all_badges if (b.get('ID') or b.get('id')) not in user_badge_ids]
+            badges_to_return = available_badges[:2] if available_badges else []  # Next 2 badges
+        else:
+            # Default: show user's badges if they have any, otherwise show next 2 available
+            if user_badges:
+                badges_to_return = user_badges[:3] if len(user_badges) > 3 else user_badges
+            else:
+                # Show next 2 badges they could earn
+                badges_to_return = all_badges[:2] if all_badges else []
         
         formatted_user_badges = self._format_badges_for_context(user_badges)
         formatted_all_badges = self._format_all_badges_for_context(all_badges)
@@ -657,9 +680,72 @@ User's earned badges ({len(user_badges)} total):
 {formatted_user_badges}
 
 All available badges:
-{formatted_all_badges}"""
+{formatted_all_badges}
+
+CRITICAL - Response Formatting:
+- Badges will be displayed as interactive cards below your message, so DO NOT mention specific badge details (name, description) in your text response
+- Instead, provide a brief introductory message such as:
+  * If showing user's badges: "Here are your earned badges:" or "Here are the badges you've earned:" or similar
+  * If showing available badges: "Here are some badges you could earn:" or "Here are badges you can work towards:" or similar
+  * If no badges: Briefly suggest volunteering to earn badges
+- Keep your response CONCISE - just 1-2 sentences maximum
+- Do NOT list badge details in your text - those will be shown in the badge cards
+- Be friendly and brief"""
         
-        return self.get_ai_response(prompt)
+        response_text = self.get_ai_response(prompt)
+        
+        # Return badges list (convert to dict format for frontend)
+        badges_list = []
+        for badge in badges_to_return:
+            badge_dict = dict(badge) if not isinstance(badge, dict) else badge
+            # Ensure proper field names (ID should already be correct, but ensure consistency)
+            if 'ID' in badge_dict and 'id' not in badge_dict:
+                badge_dict['id'] = badge_dict['ID']
+            badges_list.append(badge_dict)
+        
+        return response_text, badges_list
+    
+    def _is_asking_about_my_badges(self, message):
+        """Detect if user is asking about their own badges."""
+        if not message:
+            return False
+        
+        message_lower = message.lower()
+        my_badges_patterns = [
+            r'\bmy\s+badges',
+            r'\bbadges\s+I\s+(have|earned|got|own)',
+            r'\bbadges\s+I\'ve\s+(earned|got)',
+            r'\bwhat\s+badges\s+(do\s+I\s+have|have\s+I\s+earned|am\s+I\s+part\s+of)',
+            r'\bshow\s+my\s+badges',
+        ]
+        
+        for pattern in my_badges_patterns:
+            if re.search(pattern, message_lower):
+                return True
+        
+        return False
+    
+    def _is_asking_about_all_badges(self, message):
+        """Detect if user is asking about all available badges."""
+        if not message:
+            return False
+        
+        message_lower = message.lower()
+        all_badges_patterns = [
+            r'\ball\s+badges',
+            r'\bevery\s+badge',
+            r'\bavailable\s+badges',
+            r'\bwhat\s+badges\s+(are\s+there|exist|can\s+I\s+earn|can\s+I\s+get)',
+            r'\bshow\s+(all|every)\s+badges',
+            r'\blist\s+(all|every)\s+badges',
+            r'\bbadges\s+I\s+can\s+(earn|get)',
+        ]
+        
+        for pattern in all_badges_patterns:
+            if re.search(pattern, message_lower):
+                return True
+        
+        return False
     
     def _handle_impact_category(self, user_message, user_email=None):
         """Handle Impact category - user statistics and progress."""

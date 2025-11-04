@@ -474,3 +474,79 @@
 .chatbot-message--bot:has(.chatbot-teams-container) {
   max-width: 100%;
 }
+
+/* Badge Cards in Chatbot */
+.chatbot-badges-container {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.chatbot-badge-card-wrapper {
+  width: 100%;
+  max-width: 100%;
+}
+
+.chatbot-badge-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  min-height: 70px;
+}
+
+.chatbot-badge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.chatbot-badge-icon {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chatbot-badge-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.chatbot-badge-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.chatbot-badge-name {
+  font-size: 0.95rem;
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.chatbot-badge-description {
+  font-size: 0.85rem;
+  margin: 0;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+/* Adjust message width when badges are present */
+.chatbot-message--bot:has(.chatbot-badges-container) {
+  max-width: 100%;
+}
