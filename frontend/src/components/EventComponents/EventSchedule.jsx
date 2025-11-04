@@ -39,7 +39,10 @@ function EventSchedule({ event }) {
 
     return (
        <div className="event-schedule">
-            <h3>🕒 Event Schedule</h3>
+            <h2>
+                <span className="icon">🕒</span>
+                <span className="gradient-text">Event Schedule</span>
+            </h2>
             <div className="event-timeline-container">
                 <div className="event-timeline"></div>
                 <div className="schedule-list">

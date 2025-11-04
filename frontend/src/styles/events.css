@@ -402,14 +402,23 @@
   font-family: 'Poppins', sans-serif;
 }
 
-.event-schedule h3 {
-  font-size: 1.4rem;
-  font-weight: 700;
-  margin-bottom: 24px;
+.event-schedule h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 15px;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #333;
+}
+
+.icon {
+  color: #333; /* Keep the emoji visible */
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #ff416c, #ff4b2b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Timeline container */
@@ -508,7 +517,6 @@
   }
 }
 
-
 .countdown-card {
   background: var(--card-bg);
   border-radius: 12px;
@@ -525,7 +533,6 @@
   box-shadow: var(--hover-shadow);
 }
 
-
 .countdown-card h4 {
   font-size: 1.2rem;
   font-weight: 600;
@@ -537,4 +544,3 @@
   font-weight: 700;
   color: #ff0080;
 }
-
