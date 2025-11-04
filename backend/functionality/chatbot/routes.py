@@ -36,9 +36,12 @@ def chat():
             "category": category
         }
         
-        # Include events array if events category
-        if category == "events" and events_list:
+        # Include events array if events are present (could be from events, impact, or teams category)
+        if events_list:
             response_data["events"] = events_list
+            # If events were returned, update category to "events" for frontend consistency
+            if category != "events":
+                response_data["category"] = "events"
         
         # Include teams array if teams category
         if category == "teams" and teams_list:

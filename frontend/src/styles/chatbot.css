@@ -179,7 +179,17 @@
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   word-wrap: break-word;
+  overflow-wrap: break-word;
   line-height: 1.5;
+}
+
+.chatbot-message-content .chatbot-paragraph {
+  margin: 0 0 var(--space-3) 0;
+  line-height: 1.6;
+}
+
+.chatbot-message-content .chatbot-paragraph:last-child {
+  margin-bottom: 0;
 }
 
 .chatbot-message--user .chatbot-message-content {

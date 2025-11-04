@@ -46,7 +46,8 @@ class ChatbotConnector:
             "group volunteering",
             "how do teams work",
             "join team for volunteering",
-            "create volunteer team"
+            "create volunteer team",
+            "what are the upcoming events for my teams"
         ],
         "badges": [
             "what badges do I have",
@@ -785,7 +786,10 @@ Upcoming events (next 5):
 {formatted_upcoming}
 
 Recently completed events (last 5):
-{formatted_completed}"""
+{formatted_completed}
+
+NOTE: Only show stats, no events, teams or anything else.
+"""
         
         return self.get_ai_response(prompt)
     

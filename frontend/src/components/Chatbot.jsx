@@ -64,6 +64,35 @@ export default function Chatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Format message content to preserve paragraphs and line breaks
+  const formatMessageContent = (content) => {
+    if (!content) return '';
+    
+    // Split by double newlines (paragraph breaks)
+    const paragraphs = content.split(/\n\n+/).filter(p => p.trim());
+    
+    // If no double newlines, try splitting by single newlines
+    if (paragraphs.length === 1 && content.includes('\n')) {
+      const lines = content.split('\n').filter(l => l.trim());
+      return lines.map((line, index) => (
+        <p key={index} className="chatbot-paragraph">
+          {line.trim()}
+        </p>
+      ));
+    }
+    
+    return paragraphs.map((paragraph, index) => (
+      <p key={index} className="chatbot-paragraph">
+        {paragraph.split('\n').map((line, lineIndex, lines) => (
+          <React.Fragment key={lineIndex}>
+            {line.trim()}
+            {lineIndex < lines.length - 1 && <br />}
+          </React.Fragment>
+        ))}
+      </p>
+    ));
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -181,7 +210,7 @@ export default function Chatbot() {
                 className={`chatbot-message chatbot-message--${message.role}`}
               >
                 <div className="chatbot-message-content">
-                  {message.content}
+                  {formatMessageContent(message.content)}
                 </div>
                 {/* Render event cards if events are present */}
                 {message.events && message.events.length > 0 && (
