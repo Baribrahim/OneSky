@@ -6,7 +6,7 @@ When new events are added, you can run this again or integrate embedding
 generation into the event creation process.
 
 Usage:
-    python -m chatbot.generate_event_embeddings
+    python3 -m chatbot.generate_event_embeddings
 """
 import os
 import sys
