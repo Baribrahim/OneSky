@@ -572,10 +572,6 @@ CRITICAL - Response Formatting:
         date_range = self._extract_date_range(user_message)
         start_date, end_date = date_range
         
-        # Debug: Print extracted dates (remove in production)
-        if start_date or end_date:
-            print(f"DEBUG: Extracted date range - start: {start_date}, end: {end_date}")
-        
         wants_single_event = self._detect_single_event_request(user_message)
 
         # Generate embedding if not provided (reuses embedding from classification when possible)
@@ -598,8 +594,6 @@ CRITICAL - Response Formatting:
             GENERIC_KEYWORDS = {"happening", "going", "going on", "upcoming", "events"}
             if (start_date or end_date) and keyword and keyword.lower() in GENERIC_KEYWORDS:
                 keyword = None
-            # Debug: Print how many events found
-            print(f"DEBUG: Keyword search found {len(events)} events (keyword={keyword}, location={location}, start_date={start_date}, end_date={end_date})")
         else:
             # Try embedding search first, but fall back to keyword search if no results
             similarity = 0.3
@@ -614,11 +608,9 @@ CRITICAL - Response Formatting:
                 start_date=start_date,
                 end_date=end_date,
             )
-            print(f"DEBUG: Embedding search found {len(events)} events (with date filtering: {start_date} to {end_date})")
             
             # If embedding search found no events but we have date filtering, try keyword search as fallback
             if len(events) == 0 and (start_date or end_date):
-                print(f"DEBUG: Embedding search found 0 events, falling back to keyword search")
                 message_for_keywords = (
                     self._remove_location_from_message(user_message, location)
                     if location
@@ -629,12 +621,9 @@ CRITICAL - Response Formatting:
                 # If keyword is empty after removing date patterns, use a generic search
                 if not keyword or keyword.strip() == "":
                     keyword = None  # Search all events within date range
-                    print(f"DEBUG: Keyword empty after removing date patterns, using None to search all events")
                 events = self.dao.get_filtered_events(keyword, location, start_date, end_date)
-                print(f"DEBUG: Keyword search fallback found {len(events)} events (keyword={keyword}, start_date={start_date}, end_date={end_date})")
             
             events = events[:10]  # Limit to 10
-            print(f"DEBUG: Using first {len(events)} events")
 
         # Filter out events user is already registered for (for recommendations)
         if user_email and events:
@@ -1029,7 +1018,6 @@ User's question: {user_message}"""
         if re.search(r'\btomorrow\b', message_lower):
             start_date = today + timedelta(days=1)
             end_date = start_date
-            print(f"DEBUG: 'tomorrow' detected - today is {today}, tomorrow is {start_date}")
         
         # "today"
         elif re.search(r'\btoday\b', message_lower):
@@ -1075,7 +1063,6 @@ User's question: {user_message}"""
             else:
                 start_date = today  # Start from today, not Monday
                 end_date = today + timedelta(days=days_until_sunday)
-            print(f"DEBUG: 'this week' detected - today is {today}, weekday={today.weekday()}, days_until_sunday={days_until_sunday}, range={start_date} to {end_date}")
         
         # "next week"
         elif re.search(r'\bnext week\b', message_lower):

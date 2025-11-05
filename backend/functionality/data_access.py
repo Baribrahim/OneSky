@@ -501,15 +501,12 @@ class DataAccess:
                     if start_date and end_date:
                         query += " AND e.Date BETWEEN %s AND %s"
                         params.extend([start_date, end_date])
-                        print(f"DEBUG SQL: Using BETWEEN {start_date} AND {end_date}")
                     elif start_date is not None:
                         query += " AND e.Date >= %s"
                         params.append(start_date)
-                        print(f"DEBUG SQL: Using >= {start_date}")
                     elif end_date is not None:
                         query += " AND e.Date <= %s"
                         params.append(end_date)
-                        print(f"DEBUG SQL: Using <= {end_date}")
                     
 
                     query += """
@@ -517,11 +514,8 @@ class DataAccess:
                     ORDER BY e.Date ASC;
                     """
 
-                    print(f"DEBUG SQL: Executing query with params: {params}")
                     cursor.execute(query, params)
                     result_set = cursor.fetchall()
-                    print(f"DEBUG SQL: Query returned {len(result_set)} events")
-
                     
                     for item in result_set:
                         events.append({
@@ -779,12 +773,9 @@ class DataAccess:
         
         sql += " ORDER BY e.Date ASC LIMIT 50"
         
-        print(f"DEBUG SQL: {sql[:200]}... with params: {params}")
-        
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, params)
             events = cursor.fetchall()
-            print(f"DEBUG: get_events_with_embeddings SQL returned {len(events)} events")
             
             # Get tags separately for each event to avoid GROUP BY issues
             event_ids = [event['ID'] for event in events]
