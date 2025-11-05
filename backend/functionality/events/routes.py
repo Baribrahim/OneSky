@@ -66,43 +66,76 @@ def unregister_from_event():
     return jsonify({"message": "Successfully unregistered for event"}), 200
 
 
-# Reanna's addition for search and filter functionality #
+###################################
+# Search and Filter Functionality #
+###################################
 
 data_access = DataAccess()
 
+# Populated the dropdown location filter.
 @bp.route('/filter_events', methods=['GET', 'POST'])
 def filter_events():
     locations = data_access.get_location()
     return jsonify([{"city": loc} for loc in locations])
 
-
+# Get events based on filter selection
 @bp.route('/events', methods=['GET'])
 def get_filtered_events_route():
-    keyword = request.args.get('keyword') or None
-    location = request.args.get('location') or None
-    start_date = request.args.get('startDate') or None
-    end_date = request.args.get('endDate') or None
-    events = data_access.get_filtered_events(keyword, location, start_date, end_date)
+    try:
+        keyword = request.args.get('keyword') or None
+        location = request.args.get('location') or None
+        start_date = request.args.get('startDate') or None
+        end_date = request.args.get('endDate') or None
+        events = data_access.get_filtered_events(keyword, location, start_date, end_date)
+
+        for event in events:
+            path = event.get('Image_path') or event.get('image_path')
+            event['Image_url'] = f"{request.host_url}static/{path}" if path else None
+
+        return jsonify(events), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
-  # Add full image URL for each event
-    
-    for event in events:
-        path = event.get('Image_path') or event.get('image_path')
-        event['Image_url'] = f"{request.host_url}static/{path}" if path else None
-
-
-    return jsonify(events)
-
-
+# Search bar
 @bp.route('/search', methods=['GET'])
 def search_events():
     keyword = request.args.get('keyword', '')
     location = request.args.get('location', '')
     date = request.args.get('date', '')
 
-    events = data_access.search_events(keyword, location, date)
+    events = data_access.get_filtered_events(keyword, location, date)
     return jsonify(events)
+
+
+
+############################
+# Single Event Page Routes #
+############################
+
+@bp.route('/events/<int:id>', methods=['GET'])
+def get_event(id):
+    try:
+        event = data_access.get_event_by_id(id)
+        if not event:
+            return jsonify({"error": "Event not found"}), 404
+        return jsonify(event), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@bp.route('/events/<int:event_id>/schedule', methods=['GET'])
+def get_schedule(event_id):
+    try:
+        schedule = data_access.get_event_schedule(event_id)
+        return jsonify(schedule)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+############################
+# Team Sign up Routes #
+############################
 
 @bp.route("/signup-team", methods=["POST"])
 @token_required  
