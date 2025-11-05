@@ -102,36 +102,44 @@ class DataAccess:
         combining individual and team registrations. Multiple teams per event are joined into a single row.
         """
         sql = """
-            SELECT 
-                e.ID,
-                e.Title,
-                e.About,
-                e.Address,
-                e.LocationPostcode,
-                e.Capacity,
-                DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
-                DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
-                DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
-                e.LocationCity,
-                e.Image_path,
-                IFNULL(
-                    GROUP_CONCAT(DISTINCT t.Name ORDER BY t.Name SEPARATOR ', '),
-                    'Individual'
-                ) AS RegistrationType
-            FROM Event e
-            LEFT JOIN TeamMembership tm ON tm.UserID = %s
-            LEFT JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
-            LEFT JOIN Team t ON t.ID = tm.TeamID
-            LEFT JOIN EventRegistration er ON er.UserID = %s AND er.EventID = e.ID
-            WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
-            AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
-            GROUP BY e.ID, e.Title, e.About, e.Address, e.LocationPostcode, e.Capacity, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Image_path
-            ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
-            LIMIT %s
+                SELECT 
+                    e.ID,
+                    e.Title,
+                    e.About,
+                    e.Address,
+                    e.LocationPostcode,
+                    e.Capacity,
+                    DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
+                    DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
+                    DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                    e.LocationCity,
+                    e.Image_path,
+                    IFNULL(
+                        GROUP_CONCAT(DISTINCT t.Name ORDER BY t.Name SEPARATOR ', '),
+                        'Individual'
+                    ) AS RegistrationType
+                FROM Event e
+                LEFT JOIN EventRegistration er 
+                    ON er.UserID = %s AND er.EventID = e.ID
+                LEFT JOIN TeamMembership tm 
+                    ON tm.UserID = %s
+                LEFT JOIN TeamEventRegistration ter 
+                    ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
+                LEFT JOIN Team t 
+                    ON t.ID = ter.TeamID
+                WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
+                AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
+                GROUP BY e.ID, e.Title, e.About, e.Address, e.LocationPostcode, 
+                        e.Capacity, e.Date, e.StartTime, e.EndTime, 
+                        e.LocationCity, e.Image_path
+                ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
+                LIMIT %s
         """
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id, user_id, int(limit)))
-            return cursor.fetchall()
+            result = cursor.fetchall()
+            print(result)
+            return result
 
 
     def get_upcoming_events_paged(self, user_id: int, limit: int = 5, offset: int = 0):
@@ -140,32 +148,38 @@ class DataAccess:
         Multiple teams per event are joined into a single row.
         """
         sql = """
-            SELECT 
-                e.ID,
-                e.Title,
-                e.About,
-                e.Address,
-                e.LocationPostcode,
-                e.Capacity,
-                DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
-                DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
-                DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
-                e.LocationCity,
-                e.Image_path,
-                IFNULL(
-                    GROUP_CONCAT(DISTINCT t.Name ORDER BY t.Name SEPARATOR ', '),
-                    'Individual'
-                ) AS RegistrationType
-            FROM Event e
-            LEFT JOIN TeamMembership tm ON tm.UserID = %s
-            LEFT JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
-            LEFT JOIN Team t ON t.ID = tm.TeamID
-            LEFT JOIN EventRegistration er ON er.UserID = %s AND er.EventID = e.ID
-            WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
-            AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
-            GROUP BY e.ID, e.Title, e.About, e.Address, e.LocationPostcode, e.Capacity, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Image_path
-            ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
-            LIMIT %s OFFSET %s
+                SELECT 
+                    e.ID,
+                    e.Title,
+                    e.About,
+                    e.Address,
+                    e.LocationPostcode,
+                    e.Capacity,
+                    DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
+                    DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
+                    DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                    e.LocationCity,
+                    e.Image_path,
+                    IFNULL(
+                        GROUP_CONCAT(DISTINCT t.Name ORDER BY t.Name SEPARATOR ', '),
+                        'Individual'
+                    ) AS RegistrationType
+                FROM Event e
+                LEFT JOIN EventRegistration er 
+                    ON er.UserID = %s AND er.EventID = e.ID
+                LEFT JOIN TeamMembership tm 
+                    ON tm.UserID = %s
+                LEFT JOIN TeamEventRegistration ter 
+                    ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
+                LEFT JOIN Team t 
+                    ON t.ID = ter.TeamID 
+                WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
+                AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
+                GROUP BY e.ID, e.Title, e.About, e.Address, e.LocationPostcode, 
+                        e.Capacity, e.Date, e.StartTime, e.EndTime, 
+                        e.LocationCity, e.Image_path
+                ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
+                LIMIT %s OFFSET %s
         """
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id, user_id, int(limit), int(offset)))
