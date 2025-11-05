@@ -4,6 +4,7 @@ import ImpactContainer from "../components/ImpactComponent/ImpactContainer";
 import UpcomingEvents from "../components/UpcomingEvents";
 import BadgesDisplay from "../components/BadgesDisplay";
 import Welcome from "../components/Welcome"
+import Leaderboard from "../components/Leaderboard";
 
 export default function Home() {
   const { user, logout } = useAuth();
@@ -11,6 +12,7 @@ export default function Home() {
   return (
     <>
       <Welcome user={user}/>
+      <Leaderboard/>
       {/* Impact section stays full-width and handles its own layout */}
       <ImpactContainer />
       
@@ -21,6 +23,7 @@ export default function Home() {
             <div className="home-card">
               <UpcomingEvents />
             </div>
+
           </div>
           <div className="home-right">
             <div className="home-card">

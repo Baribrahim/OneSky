@@ -711,8 +711,9 @@ class DataAccess:
             print(f"Error in get_all_joined_teams: {e}")
             raise
 
-    #Team Event registration methods
-    """Read all team information for teams a user owns and team is not registered for event"""
+    # ------------------------
+    # Team Event Registration Methods
+    # ------------------------
     def read_user_teams_with_registration_status(self, event_id, user_email):
         """Read all teams a user owns (and is a member of) with a column indicating registration status for an event."""
         try:
@@ -755,3 +756,81 @@ class DataAccess:
             raise
 
 
+    # ------------------------
+    # Leaderboard  Methods
+    # ------------------------
+
+    def read_user_by_ordered_rank_score(self):
+        """Read user FirstName LastName by ordered RankScore"""
+        sql = "SELECT ID, FirstName, LastName, RankScore FROM User ORDER BY RankScore DESC LIMIT 15"
+        try:
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql)
+                result = cursor.fetchall()
+                return result
+        except Exception as e:
+            print(f"Error in read_user_by_ordered_rank_score: {e}")
+            raise
+
+    def read_user_rank(self, user_email):
+        """Get the current rank of a user based on RankScore"""
+        user_id = self.get_id_by_email(user_email)
+        sql = """
+        SELECT currRank FROM (
+            SELECT 
+                ID,
+                RANK() OVER (ORDER BY RankScore DESC) AS currRank
+            FROM User
+        ) ranked_users
+        WHERE ID = %s
+        """
+        try:
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (user_id,))
+                row = cursor.fetchone()
+                return row["currRank"] if row else None
+        except Exception as e:
+            print(f"Error in get_user_rank: {e}")
+            raise
+
+    def read_user_stats(self, user_email):
+        """Read user stats by id"""
+        user_id = self.get_id_by_email(user_email)
+        completed_event_count = self.get_completed_events_count(user_id)
+        total_hours = self.get_total_hours(user_id)
+        badges_count = len(self.get_badges(user_id))
+
+        result = {
+            "CompletedEvents": completed_event_count,
+            "TotalHours": total_hours,
+            "BadgesCount": badges_count
+        }
+
+        return result
+
+        
+    def update_rank_score(self, user_email):
+        """Update user rank score"""
+        user_id = self.get_id_by_email(user_email)
+        completed_event_count = self.get_completed_events_count(user_id)
+        total_hours = self.get_total_hours(user_id)
+        badges_count = len(self.get_badges(user_id))
+
+        rank_score = round(
+            (
+                0.5 * min(completed_event_count / 5, 1) +
+                0.3 * min(total_hours / 20, 1) +
+                0.2 * min(badges_count / 4, 1)
+            ) * 100
+        )
+        print(rank_score)
+        sql = "UPDATE User SET RankScore = %s WHERE ID = %s"
+        try:
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (rank_score, user_id))
+        except Exception as e:
+            print(f"Error in update_rank_score: {e}")
+            raise
+        
+
+        
