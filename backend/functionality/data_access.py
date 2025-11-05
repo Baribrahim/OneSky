@@ -762,7 +762,7 @@ class DataAccess:
 
     def read_user_by_ordered_rank_score(self):
         """Read user FirstName LastName by ordered RankScore"""
-        sql = "SELECT ID, FirstName, LastName, RankScore FROM User ORDER BY RankScore DESC LIMIT 15"
+        sql = "SELECT Email, FirstName, LastName, RankScore FROM User ORDER BY RankScore DESC LIMIT 15"
         try:
             with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute(sql)

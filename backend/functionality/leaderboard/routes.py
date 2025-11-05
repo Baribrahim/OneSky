@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, g
+from flask import Blueprint, jsonify, g, request
 from leaderboard.connector import LeaderboardConnector
 from auth.routes import token_required
 
@@ -27,4 +27,21 @@ def my_rank():
         return jsonify({"currentRank": rank}), 200
     except Exception as e:
         print(f"Error in my_rank: {e}")
+        return jsonify({"error": "Something went wrong"}), 500
+
+@bp.post("/stats")
+@token_required
+def get_user_stats():
+    """Returns the completed events, total hours and number of badges for a user"""
+    try:
+        data = request.get_json(silent=True) or {}
+        email = data.get("email")
+        if not email:
+                return jsonify({"error": "Missing email"}), 400
+        
+        stats = lc.get_user_stats(email)
+        return jsonify({"stats": stats}), 200
+    
+    except Exception as e:
+        print(f"Error in get_user_stats: {e}")
         return jsonify({"error": "Something went wrong"}), 500
