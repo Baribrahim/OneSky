@@ -39,6 +39,7 @@ create table Event
     LocationPostcode varchar(10) not null,
     Address varchar(255) not null,
     Capacity int not null,
+    Embedding text,
     Image_path varchar(255),
     Latitude DECIMAL(9,6) NOT NULL,
     Longitude DECIMAL(9,6) NOT NULL
