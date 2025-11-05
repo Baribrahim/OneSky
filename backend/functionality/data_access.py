@@ -105,6 +105,10 @@ class DataAccess:
             SELECT 
                 e.ID,
                 e.Title,
+                e.About,
+                e.Address,
+                e.LocationPostcode,
+                e.Capacity,
                 DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
                 DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
                 DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
@@ -121,7 +125,7 @@ class DataAccess:
             LEFT JOIN EventRegistration er ON er.UserID = %s AND er.EventID = e.ID
             WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
             AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
-            GROUP BY e.ID
+            GROUP BY e.ID, e.Title, e.About, e.Address, e.LocationPostcode, e.Capacity, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Image_path
             ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
             LIMIT %s
         """
@@ -139,6 +143,10 @@ class DataAccess:
             SELECT 
                 e.ID,
                 e.Title,
+                e.About,
+                e.Address,
+                e.LocationPostcode,
+                e.Capacity,
                 DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
                 DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
                 DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
@@ -155,7 +163,7 @@ class DataAccess:
             LEFT JOIN EventRegistration er ON er.UserID = %s AND er.EventID = e.ID
             WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
             AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
-            GROUP BY e.ID
+            GROUP BY e.ID, e.Title, e.About, e.Address, e.LocationPostcode, e.Capacity, e.Date, e.StartTime, e.EndTime, e.LocationCity, e.Image_path
             ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
             LIMIT %s OFFSET %s
         """
