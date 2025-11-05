@@ -7,6 +7,7 @@ Supports Events, Teams, Badges, Impact, and General categories.
 import os
 import re
 import numpy as np
+from datetime import date, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
@@ -17,11 +18,11 @@ from .embedding_helper import EmbeddingHelper
 
 load_dotenv()
 
-# Module-level cache for category embeddings (shared across all instances)
+# Module-level cache for category embeddings
 _category_embeddings_cache: Dict[str, List[float]] = {}
 _category_embeddings_initialized = False
 
-# Module-level memory storage (shared across all instances)
+# Module-level memory storage
 # Short-term memory: stores recent conversation history per user
 _short_term_memory: Dict[str, List[Dict[str, str]]] = {}
 # Long-term memory: stores user's first name per email
@@ -559,6 +560,13 @@ CRITICAL - Response Formatting:
         Filters out events the user is already registered for.
         """
         location = self._extract_location(user_message)
+        date_range = self._extract_date_range(user_message)
+        start_date, end_date = date_range
+        
+        # Debug: Print extracted dates (remove in production)
+        if start_date or end_date:
+            print(f"DEBUG: Extracted date range - start: {start_date}, end: {end_date}")
+        
         wants_single_event = self._detect_single_event_request(user_message)
 
         # Generate embedding if not provided (reuses embedding from classification when possible)
@@ -572,16 +580,52 @@ CRITICAL - Response Formatting:
                 if location
                 else user_message
             )
+            message_for_keywords = self._remove_date_patterns_from_message(message_for_keywords)
             keyword = self._extract_keyword(message_for_keywords)
-            events = self.dao.get_filtered_events(keyword, location, None, None)
+
+            # Use date filtering directly in database query
+            # If dates were extracted, use them; otherwise let get_filtered_events use its default (today onwards)
+            events = self.dao.get_filtered_events(keyword, location, start_date, end_date)
+            GENERIC_KEYWORDS = {"happening", "going", "going on", "upcoming", "events"}
+            if (start_date or end_date) and keyword and keyword.lower() in GENERIC_KEYWORDS:
+                keyword = None
+            # Debug: Print how many events found
+            print(f"DEBUG: Keyword search found {len(events)} events (keyword={keyword}, location={location}, start_date={start_date}, end_date={end_date})")
         else:
-            # Semantic search using embeddings (better for understanding intent)
+            # Try embedding search first, but fall back to keyword search if no results
+            similarity = 0.3
+            if start_date or end_date:
+                similarity = 0.05  # or even 0.0
+
             events = self.dao.search_events_with_embeddings(
                 query_embedding=query_embedding,
                 location=location,
-                limit=10,
-                similarity_threshold=0.3,
+                limit=100,
+                similarity_threshold=similarity,
+                start_date=start_date,
+                end_date=end_date,
             )
+            print(f"DEBUG: Embedding search found {len(events)} events (with date filtering: {start_date} to {end_date})")
+            
+            # If embedding search found no events but we have date filtering, try keyword search as fallback
+            if len(events) == 0 and (start_date or end_date):
+                print(f"DEBUG: Embedding search found 0 events, falling back to keyword search")
+                message_for_keywords = (
+                    self._remove_location_from_message(user_message, location)
+                    if location
+                    else user_message
+                )
+                message_for_keywords = self._remove_date_patterns_from_message(message_for_keywords)
+                keyword = self._extract_keyword(message_for_keywords)
+                # If keyword is empty after removing date patterns, use a generic search
+                if not keyword or keyword.strip() == "":
+                    keyword = None  # Search all events within date range
+                    print(f"DEBUG: Keyword empty after removing date patterns, using None to search all events")
+                events = self.dao.get_filtered_events(keyword, location, start_date, end_date)
+                print(f"DEBUG: Keyword search fallback found {len(events)} events (keyword={keyword}, start_date={start_date}, end_date={end_date})")
+            
+            events = events[:10]  # Limit to 10
+            print(f"DEBUG: Using first {len(events)} events")
 
         # Filter out events user is already registered for (for recommendations)
         if user_email and events:
@@ -956,6 +1000,185 @@ User's question: {user_message}"""
             if city.lower().strip() in message_lower:
                 return city
         return None
+    
+    def _extract_date_range(self, message: str) -> Tuple[Optional[date], Optional[date]]:
+        """
+        Extract date range from user message (e.g., "this week", "next month", "December").
+        Returns (start_date, end_date) tuple. If only one date is specified, returns (date, None) or (None, date).
+        """
+        if not message:
+            return (None, None)
+        
+        message_lower = message.lower()
+        today = date.today()
+        start_date = None
+        end_date = None
+        
+        # Common time-based patterns - check in order of specificity
+        
+        # "tomorrow" - must be before "this week" to avoid conflicts
+        if re.search(r'\btomorrow\b', message_lower):
+            start_date = today + timedelta(days=1)
+            end_date = start_date
+            print(f"DEBUG: 'tomorrow' detected - today is {today}, tomorrow is {start_date}")
+        
+        # "today"
+        elif re.search(r'\btoday\b', message_lower):
+            start_date = today
+            end_date = today
+        
+        # "this weekend" - check before "this week"
+        elif re.search(r'\bthis weekend\b', message_lower):
+            # Next Saturday and Sunday (including today if it's Saturday/Sunday)
+            days_until_saturday = (5 - today.weekday()) % 7
+            if days_until_saturday == 0:
+                # Today is Saturday, include today and tomorrow
+                start_date = today
+                end_date = today + timedelta(days=1)
+            elif days_until_saturday == 6:
+                # Today is Sunday, include today only
+                start_date = today
+                end_date = today
+            else:
+                # Future weekend
+                saturday = today + timedelta(days=days_until_saturday)
+                start_date = saturday
+                end_date = saturday + timedelta(days=1)
+        
+        # "next weekend"
+        elif re.search(r'\bnext weekend\b', message_lower):
+            # Saturday and Sunday of next week
+            days_until_saturday = (5 - today.weekday()) % 7
+            if days_until_saturday == 0:
+                days_until_saturday = 7  # If today is Saturday, go to next Saturday
+            saturday = today + timedelta(days=days_until_saturday + 7)
+            start_date = saturday
+            end_date = saturday + timedelta(days=1)
+        
+        # "this week" - from today to end of current week (Sunday)
+        elif re.search(r'\bthis week\b', message_lower):
+            # Start from today, end on Sunday of current week
+            days_until_sunday = (6 - today.weekday()) % 7
+            if days_until_sunday == 0:
+                # Today is Sunday
+                start_date = today
+                end_date = today
+            else:
+                start_date = today  # Start from today, not Monday
+                end_date = today + timedelta(days=days_until_sunday)
+            print(f"DEBUG: 'this week' detected - today is {today}, weekday={today.weekday()}, days_until_sunday={days_until_sunday}, range={start_date} to {end_date}")
+        
+        # "next week"
+        elif re.search(r'\bnext week\b', message_lower):
+            days_since_monday = today.weekday()
+            next_monday = today + timedelta(days=(7 - days_since_monday))
+            start_date = next_monday
+            end_date = start_date + timedelta(days=6)
+        
+        # "this month" - from today to end of current month
+        elif re.search(r'\bthis month\b', message_lower):
+            start_date = today  # Start from today, not first of month
+            # Last day of current month
+            if today.month == 12:
+                end_date = today.replace(day=31)
+            else:
+                next_month = today.replace(month=today.month + 1, day=1)
+                end_date = next_month - timedelta(days=1)
+        
+        # "next month"
+        elif re.search(r'\bnext month\b', message_lower):
+            if today.month == 12:
+                start_date = today.replace(year=today.year + 1, month=1, day=1)
+            else:
+                start_date = today.replace(month=today.month + 1, day=1)
+            # Last day of next month
+            if start_date.month == 12:
+                end_date = start_date.replace(day=31)
+            else:
+                next_month = start_date.replace(month=start_date.month + 1, day=1)
+                end_date = next_month - timedelta(days=1)
+        
+        # Specific month names - check before generic patterns
+        month_patterns = {
+            'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6,
+            'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12
+        }
+        for month_name, month_num in month_patterns.items():
+            # Use word boundary to avoid partial matches
+            if re.search(r'\b' + month_name + r'\b', message_lower):
+                current_year = today.year
+                # If month is in the past this year, assume next year
+                if month_num < today.month:
+                    current_year += 1
+                elif month_num == today.month:
+                    # If asking about current month, start from today
+                    start_date = today
+                else:
+                    # Future month this year
+                    start_date = date(current_year, month_num, 1)
+                
+                # Set end date if not already set (current month case)
+                if start_date == today:
+                    # Last day of current month
+                    if today.month == 12:
+                        end_date = today.replace(day=31)
+                    else:
+                        next_month = today.replace(month=today.month + 1, day=1)
+                        end_date = next_month - timedelta(days=1)
+                else:
+                    # Last day of that month
+                    if month_num == 12:
+                        end_date = date(current_year, 12, 31)
+                    else:
+                        next_month = date(current_year, month_num + 1, 1)
+                        end_date = next_month - timedelta(days=1)
+                break
+        
+        # "In X days" pattern
+        days_match = re.search(r'\bin (\d+) days?\b', message_lower)
+        if days_match:
+            days = int(days_match.group(1))
+            target_date = today + timedelta(days=days)
+            start_date = target_date
+            end_date = target_date
+        
+        # "X days from now" pattern
+        days_match = re.search(r'(\d+) days? from now', message_lower)
+        if days_match:
+            days = int(days_match.group(1))
+            target_date = today + timedelta(days=days)
+            start_date = target_date
+            end_date = target_date
+        
+        return (start_date, end_date)
+    
+    def _remove_date_patterns_from_message(self, message: str) -> str:
+        """
+        Remove date-related patterns from message to clean up keyword extraction.
+        """
+        if not message:
+            return message
+        
+        # Patterns to remove
+        date_patterns = [
+            r'\bthis week\b',
+            r'\bnext week\b',
+            r'\bthis month\b',
+            r'\bnext month\b',
+            r'\btoday\b',
+            r'\btomorrow\b',
+            r'\bthis weekend\b',
+            r'\bnext weekend\b',
+            r'\bin \d+ days?\b',
+            r'\d+ days? from now\b',
+            r'\b(january|february|march|april|may|june|july|august|september|october|november|december)\b',
+        ]
+        
+        result = message
+        for pattern in date_patterns:
+            result = re.sub(pattern, "", result, flags=re.IGNORECASE)
+        
+        return " ".join(result.split())
 
     def _remove_location_from_message(self, message: str, location: str) -> str:
         if not location:

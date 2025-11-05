@@ -469,7 +469,9 @@ class DataAccess:
     def get_filtered_events(self, keyword=None, location=None, start_date=None, end_date=None):
         events = []
         try:
-            if not start_date and not end_date:
+            # Only default to today if NO date parameters are provided at all
+            # If start_date or end_date are explicitly None (from user query), don't default
+            if start_date is None and end_date is None:
                 start_date = date.today()
                 # If we want to filter by default 30 days then uncomment below
                 # end_date = start_date + timedelta(days=30)
@@ -481,8 +483,8 @@ class DataAccess:
                         GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
                     FROM Event e
                     JOIN Cause c ON e.CauseID = c.ID
-                    JOIN CauseTag ct ON c.ID = ct.CauseID
-                    JOIN Tag t ON ct.TagID = t.ID
+                    LEFT JOIN CauseTag ct ON c.ID = ct.CauseID
+                    LEFT JOIN Tag t ON ct.TagID = t.ID
                     WHERE 1=1
                     """
                     params = []
@@ -499,12 +501,15 @@ class DataAccess:
                     if start_date and end_date:
                         query += " AND e.Date BETWEEN %s AND %s"
                         params.extend([start_date, end_date])
-                    elif start_date:
+                        print(f"DEBUG SQL: Using BETWEEN {start_date} AND {end_date}")
+                    elif start_date is not None:
                         query += " AND e.Date >= %s"
                         params.append(start_date)
-                    elif end_date:
+                        print(f"DEBUG SQL: Using >= {start_date}")
+                    elif end_date is not None:
                         query += " AND e.Date <= %s"
                         params.append(end_date)
+                        print(f"DEBUG SQL: Using <= {end_date}")
                     
 
                     query += """
@@ -512,8 +517,10 @@ class DataAccess:
                     ORDER BY e.Date ASC;
                     """
 
+                    print(f"DEBUG SQL: Executing query with params: {params}")
                     cursor.execute(query, params)
                     result_set = cursor.fetchall()
+                    print(f"DEBUG SQL: Query returned {len(result_set)} events")
 
                     
                     for item in result_set:
@@ -726,14 +733,16 @@ class DataAccess:
             
             return result
 
-    def get_events_with_embeddings(self, location=None):
+    def get_events_with_embeddings(self, location=None, start_date=None, end_date=None):
         """
-        Get all events with their embeddings, optionally filtered by location.
+        Get all events with their embeddings, optionally filtered by location and date range.
         Optimized to avoid GROUP BY on large TEXT columns.
         Only returns future events for better performance.
         
         Args:
             location (str, optional): Filter by location city
+            start_date (date, optional): Filter events from this date onwards
+            end_date (date, optional): Filter events up to this date
             
         Returns:
             list: List of dicts with event ID, embedding, and basic info
@@ -747,9 +756,22 @@ class DataAccess:
             FROM Event e
             JOIN Cause c ON e.CauseID = c.ID
             WHERE e.Embedding IS NOT NULL
-              AND TIMESTAMP(e.Date, e.StartTime) >= NOW()
         """
         params = []
+        
+        # Add date filtering if provided (this takes precedence over NOW() check)
+        if start_date and end_date:
+            sql += " AND e.Date BETWEEN %s AND %s"
+            params.extend([start_date, end_date])
+        elif start_date:
+            sql += " AND e.Date >= %s"
+            params.append(start_date)
+        elif end_date:
+            sql += " AND e.Date <= %s"
+            params.append(end_date)
+        else:
+            # Only filter by NOW() if no specific date range is provided
+            sql += " AND TIMESTAMP(e.Date, e.StartTime) >= NOW()"
         
         if location:
             sql += " AND LOWER(TRIM(e.LocationCity)) = %s"
@@ -757,9 +779,12 @@ class DataAccess:
         
         sql += " ORDER BY e.Date ASC LIMIT 50"
         
+        print(f"DEBUG SQL: {sql[:200]}... with params: {params}")
+        
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, params)
             events = cursor.fetchall()
+            print(f"DEBUG: get_events_with_embeddings SQL returned {len(events)} events")
             
             # Get tags separately for each event to avoid GROUP BY issues
             event_ids = [event['ID'] for event in events]
@@ -809,7 +834,7 @@ class DataAccess:
             
             return result
 
-    def search_events_with_embeddings(self, query_embedding, location=None, limit=10, similarity_threshold=0.3):
+    def search_events_with_embeddings(self, query_embedding, location=None, limit=10, similarity_threshold=0.3, start_date=None, end_date=None):
         """
         Search events using embedding similarity.
         Optimized for performance with vectorized operations.
@@ -819,6 +844,8 @@ class DataAccess:
             location (str, optional): Filter by location city
             limit (int): Maximum number of results
             similarity_threshold (float): Minimum similarity score (0-1)
+            start_date (date, optional): Filter events from this date onwards
+            end_date (date, optional): Filter events up to this date
             
         Returns:
             list: List of events sorted by similarity score (highest first)
@@ -826,8 +853,8 @@ class DataAccess:
         if not query_embedding:
             return []
         
-        # Get events with embeddings (limit to future events for better performance)
-        events = self.get_events_with_embeddings(location)
+        # Get events with embeddings (filtered by date range if provided)
+        events = self.get_events_with_embeddings(location, start_date, end_date)
         
         if not events:
             return []
