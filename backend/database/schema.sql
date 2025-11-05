@@ -10,8 +10,10 @@ create table User
 	Email varchar(100) not null,
 	Password varchar(100) not null,
 	FirstName varchar(100) not null,
-	LastName varchar(100) not null
-	);
+	LastName varchar(100) not null,
+  ProfileImgPath VARCHAR(255) DEFAULT 'default.png',
+	DateCreated DATETIME DEFAULT CURRENT_TIMESTAMP;
+  );
 
 create table Cause
 	(

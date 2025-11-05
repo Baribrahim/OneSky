@@ -7,7 +7,7 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentRank, setCurrentRank] = useState("");
-  const [expandedUsers, setExpandedUsers] = useState([]); // track multiple expanded users
+  const [expandedUsers, setExpandedUsers] = useState([]);
   const [userStats, setUserStats] = useState({});
 
   const fetchRankedUsers = async () => {
@@ -64,6 +64,15 @@ const Leaderboard = () => {
             <div>
           <div key={index} className="leaderboard-user">
             <span className="rank">{index + 1}.</span>{" "}
+            <img
+              src={
+                user.ProfileImgURL
+                  ? `http://localhost:5000/${user.ProfileImgURL}`
+                  : "src/assets/profileImgs/default.png"
+              }
+              alt="Profile"
+              className="profile-img"
+            />
             <span className="name">{user.FirstName} {user.LastName}</span>{" "}
             <span className="score">{user.RankScore}</span>{" "}
 

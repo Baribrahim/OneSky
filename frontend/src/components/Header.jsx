@@ -27,6 +27,7 @@ export default function Header() {
         <Link to="/">Home</Link>
         <Link to="/events">Events</Link>
         <Link to="/teams">Teams</Link>
+        <Link to="/profile">Profile</Link>
       </nav>
 
       {/* Right: Logout */}

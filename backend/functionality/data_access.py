@@ -762,7 +762,7 @@ class DataAccess:
 
     def read_user_by_ordered_rank_score(self):
         """Read user FirstName LastName by ordered RankScore"""
-        sql = "SELECT Email, FirstName, LastName, RankScore FROM User ORDER BY RankScore DESC LIMIT 15"
+        sql = "SELECT Email, FirstName, LastName, RankScore, ProfileImgPath FROM User ORDER BY RankScore DESC LIMIT 15"
         try:
             with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute(sql)
@@ -832,5 +832,47 @@ class DataAccess:
             print(f"Error in update_rank_score: {e}")
             raise
         
+    # ------------------------
+    # Profile  Methods
+    # ------------------------
+    def read_user_info(self, user_email):
+        """Read information on user"""
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = """
+                SELECT FirstName, LastName, Email, ProfileImgPath, DATE_FORMAT(DateCreated, '%%Y-%%m') AS DateJoined FROM USER WHERE ID = %s
+            """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (user_id, ))
+                return cursor.fetchone() 
+        except Exception as e:
+            print(f"read_user_info: {e}")
+            raise
 
-        
+    def update_profile_image(self, user_email, image_path):
+        """
+        Update the profile image path for a user.
+
+        :param user_email: str - user's email
+        :param image_path: str - path to the new profile image
+        :return: bool - True if update succeeded, False otherwise
+        """
+        try:
+            user_id = self.get_id_by_email(user_email)
+            if not user_id:
+                print(f"update_profile_image: User not found for email {user_email}")
+                return False
+
+            sql = """
+                UPDATE USER
+                SET ProfileImgPath = %s
+                WHERE ID = %s
+            """
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (image_path, user_id))
+                conn.commit()
+                return cursor.rowcount > 0
+
+        except Exception as e:
+            print(f"update_profile_image: {e}")
+            raise

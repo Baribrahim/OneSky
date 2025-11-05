@@ -12,7 +12,6 @@ export default function Home() {
   return (
     <>
       <Welcome user={user}/>
-      <Leaderboard/>
       {/* Impact section stays full-width and handles its own layout */}
       <ImpactContainer />
       
@@ -21,13 +20,16 @@ export default function Home() {
         <div className="home-content__inner">
           <div className="home-left">
             <div className="home-card">
-              <UpcomingEvents />
+              <Leaderboard />
             </div>
-
           </div>
           <div className="home-right">
             <div className="home-card">
               <BadgesDisplay />
+            </div>
+
+            <div className="home-card">
+              <UpcomingEvents />
             </div>
           </div>
         </div>

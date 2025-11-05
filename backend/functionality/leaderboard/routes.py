@@ -12,7 +12,15 @@ def ranked_users():
     try:
         email = g.current_user.get("sub")
         users = lc.get_ordered_users(email)
+        for user in users:
+            profile_img = user.get("ProfileImgPath")
+            if profile_img:
+                user["ProfileImgURL"] = f"/api/profile/images/{profile_img}"
+            else:
+                user["ProfileImgURL"] = "/api/profile/images/default.png"
+
         return jsonify({"users": users}), 200
+
     except Exception as e:
         print(f"Error in ranked_users: {e}")
         return jsonify({"error": "Something went wrong"}), 500
