@@ -103,9 +103,11 @@ export default function Register() {
               setError("");
             }
           }} minLength={8} required style={{ marginTop: 8 }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-            <input id="show_password" type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
-            <label htmlFor="show_password">Show password</label>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+            <label htmlFor="show_password" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input id="show_password" type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
+              Show password
+            </label>
           </div>
           <label htmlFor="confirm_password" style={{ marginTop: 16 }}>Confirm password</label>
           <input id="confirm_password" className="input" type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" value={confirmPassword} onChange={(e) => {
@@ -124,9 +126,11 @@ export default function Register() {
               setError("");
             }
           }} minLength={8} required style={{ marginTop: 8 }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-            <input id="show_confirm_password" type="checkbox" checked={showConfirmPassword} onChange={(e) => setShowConfirmPassword(e.target.checked)} />
-            <label htmlFor="show_confirm_password">Show confirm password</label>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+            <label htmlFor="show_confirm_password" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input id="show_confirm_password" type="checkbox" checked={showConfirmPassword} onChange={(e) => setShowConfirmPassword(e.target.checked)} />
+              Show confirm password
+            </label>
           </div>
           {error && <div className="error" role="alert">{error}</div>}
           <button className="button" disabled={submitting} style={{ marginTop: 16 }}>
