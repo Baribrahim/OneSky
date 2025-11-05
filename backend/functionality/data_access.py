@@ -683,7 +683,7 @@ class DataAccess:
             list: List of dicts with ID and text for embedding
         """
         sql = """
-            SELECT e.ID, e.Title, e.About, e.Activities, e.Requirements, 
+            SELECT e.ID, e.Title, e.About, e.Activities, e.RequirementsProvided, e.RequirementsBring,
                    e.ExpectedImpact, c.Name AS CauseName
             FROM Event e
             JOIN Cause c ON e.CauseID = c.ID
@@ -701,8 +701,10 @@ class DataAccess:
                     text_parts.append(event['About'])
                 if event.get('Activities'):
                     text_parts.append(event['Activities'])
-                if event.get('Requirements'):
-                    text_parts.append(event['Requirements'])
+                if event.get('RequirementsProvided'):
+                    text_parts.append(event['RequirementsProvided'])
+                if event.get('RequirementsBring'):
+                    text_parts.append(event['RequirementsBring'])
                 if event.get('ExpectedImpact'):
                     text_parts.append(event['ExpectedImpact'])
                 if event.get('CauseName'):
