@@ -47,7 +47,7 @@ function EventCard({ event}) {
     }
   };
   // takes the first sentance from the about section from db.
-  const firstSentence = event.About.match(/.*?[.!?]/)?.[0] || event.About;
+  const firstSentence = event.About?.match(/.*?[.!?]/)?.[0] || event.About || '';
 
   return (
     <div className="card event-card">
@@ -72,13 +72,17 @@ function EventCard({ event}) {
               <p>{firstSentence}</p>
               <div className="event-info">
                 <p>
-                  📍{event.Address}, {event.LocationCity}
-                  <br />
-                  {event.LocationPostcode}
+                  📍{event.Address || ''}{event.Address && event.LocationCity ? ', ' : ''}{event.LocationCity || ''}
+                  {event.LocationPostcode && (
+                    <>
+                      <br />
+                      {event.LocationPostcode}
+                    </>
+                  )}
                 </p>
-                <p>📅 {formatDate(event.Date)}</p>
-                <p>{timeUnicode(event.StartTime)} {formatTime(event.StartTime)} - {formatTime(event.EndTime)}</p>
-                <p>👥 {event.Capacity}</p>
+                <p>📅 {event.Date ? formatDate(event.Date) : ''}</p>
+                <p>{event.StartTime && event.EndTime ? `${timeUnicode(event.StartTime)} ${formatTime(event.StartTime)} - ${formatTime(event.EndTime)}` : ''}</p>
+                <p>👥 {event.Capacity || ''}</p>
               </div>
             </div>
         </Link>
