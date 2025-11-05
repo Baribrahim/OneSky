@@ -71,7 +71,7 @@ def test_add_user_to_team_calls_insert():
 def test_successful_team_join(client):
     #Arrange
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "password123!")
+    token, _ = _login_get_token(client, email, "Password123!")
    
     with patch.object(routes.connector, 'verify_team_code', return_value=True), \
          patch.object(routes.connector, 'add_user_to_team', return_value=None):
@@ -91,7 +91,7 @@ def test_successful_team_join(client):
 def test_invalid_join_code(client):
     #Arrange
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "password123!")
+    token, _ = _login_get_token(client, email, "Password123!")
 
     with patch.object(routes.connector, 'verify_team_code', return_value=False), \
          patch.object(routes.connector, 'add_user_to_team', return_value=None):
@@ -108,7 +108,7 @@ def test_missing_join_code(client):
     #Arrange
 
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "password123!")
+    token, _ = _login_get_token(client, email, "Password123!")
 
     #Act
     response = client.post('/api/teams/join',

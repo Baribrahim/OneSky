@@ -97,7 +97,7 @@ def test_successful_team_signup(client):
     """POST /api/events/signup-team returns 200 on success"""
     # Arrange
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "password123!")
+    token, _ = _login_get_token(client, email, "Password123!")
 
     with patch.object(routes.con, "register_team_for_event", return_value=None) as mock_register:
         # Act
@@ -117,7 +117,7 @@ def test_successful_team_signup(client):
 def test_signup_team_missing_event_id_returns_400(client):
     """Should return 400 if event_id missing"""
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "password123!")
+    token, _ = _login_get_token(client, email, "Password123!")
 
     response = client.post(
         "/api/events/signup-team",
@@ -132,7 +132,7 @@ def test_signup_team_missing_event_id_returns_400(client):
 def test_signup_team_missing_team_id_returns_400(client):
     """Should return 400 if team_id missing"""
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "password123!")
+    token, _ = _login_get_token(client, email, "Password123!")
 
     response = client.post(
         "/api/events/signup-team",
@@ -151,7 +151,7 @@ def test_signup_team_missing_team_id_returns_400(client):
 def test_get_available_teams_success(client):
     """GET /api/events/<id>/available-teams returns available teams"""
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "password123!")
+    token, _ = _login_get_token(client, email, "Password123!")
 
     mock_teams = [
         {"ID": 1, "Name": "Team Alpha", "isRegistered": 1},
