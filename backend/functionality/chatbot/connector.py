@@ -21,6 +21,12 @@ load_dotenv()
 _category_embeddings_cache: Dict[str, List[float]] = {}
 _category_embeddings_initialized = False
 
+# Module-level memory storage (shared across all instances)
+# Short-term memory: stores recent conversation history per user
+_short_term_memory: Dict[str, List[Dict[str, str]]] = {}
+# Long-term memory: stores user's first name per email
+_long_term_memory: Dict[str, str] = {}
+
 # ---------------------------------------------------------------------
 # Shared system prompt (moved out of the method for readability)
 # ---------------------------------------------------------------------
@@ -164,6 +170,11 @@ class ChatbotConnector:
 
         # Use the shared cache
         self.category_embeddings = _category_embeddings_cache
+        
+        # Reference to shared memory storage
+        global _short_term_memory, _long_term_memory
+        self.short_term_memory = _short_term_memory
+        self.long_term_memory = _long_term_memory
 
     # ======================================================================
     # Main Entry Point
@@ -177,36 +188,132 @@ class ChatbotConnector:
         Returns 6 values consistently:
         (response_text, category, events, teams, badges, team_events)
         """
+        # Store user message in short-term memory
+        if user_email:
+            self._add_to_conversation_history(user_email, "user", user_message)
+        
+        # Get user's first name for personalization (long-term memory)
+        user_first_name = None
+        if user_email:
+            user_first_name = self._get_user_first_name(user_email)
+        
         # Classify the user's intent into a category (events, teams, badges, impact, general)
         category, message_embedding = self._classify_intent_with_ai(user_message)
 
         # Route to the appropriate handler based on category
         if category == "events":
             response, events_list = self._handle_events_category(
-                user_message, user_email, message_embedding
+                user_message, user_email, message_embedding, user_first_name
             )
+            # Store assistant response in memory
+            if user_email:
+                self._add_to_conversation_history(user_email, "assistant", response)
             return response, category, events_list, None, None, None
 
         if category == "teams":
             response, teams_list, team_events = self._handle_teams_category(
-                user_message, user_email
+                user_message, user_email, user_first_name
             )
+            # Store assistant response in memory
+            if user_email:
+                self._add_to_conversation_history(user_email, "assistant", response)
             return response, category, None, teams_list, None, team_events
 
         if category == "badges":
             response, badges_list = self._handle_badges_category(
-                user_message, user_email
+                user_message, user_email, user_first_name
             )
+            # Store assistant response in memory
+            if user_email:
+                self._add_to_conversation_history(user_email, "assistant", response)
             return response, category, None, None, badges_list, None
 
         if category == "impact":
-            response = self._handle_impact_category(user_message, user_email)
+            response = self._handle_impact_category(user_message, user_email, user_first_name)
+            # Store assistant response in memory
+            if user_email:
+                self._add_to_conversation_history(user_email, "assistant", response)
             return response, category, None, None, None, None
 
         # general
-        response = self._handle_general_category(user_message)
+        response = self._handle_general_category(user_message, user_email, user_first_name)
+        # Store assistant response in memory
+        if user_email:
+            self._add_to_conversation_history(user_email, "assistant", response)
         return response, category, None, None, None, None
 
+    # ======================================================================
+    # Memory Management
+    # ======================================================================
+    
+    def _get_user_first_name(self, user_email: str) -> Optional[str]:
+        """
+        Retrieve user's first name from long-term memory (cache or database).
+        """
+        # Check cache first
+        if user_email in self.long_term_memory:
+            return self.long_term_memory[user_email]
+        
+        # Fetch from database if not in cache
+        try:
+            user = self.dao.get_user_by_email(user_email)
+            if user and user.get("FirstName"):
+                first_name = user["FirstName"]
+                # Store in cache for future use
+                self.long_term_memory[user_email] = first_name
+                return first_name
+        except Exception as e:
+            print(f"Error fetching user first name: {e}")
+        
+        return None
+    
+    def _add_to_conversation_history(self, user_email: str, role: str, message: str):
+        """
+        Add a message to the user's conversation history (short-term memory).
+        Keeps only the last 10 messages per user.
+        """
+        if user_email not in self.short_term_memory:
+            self.short_term_memory[user_email] = []
+        
+        # Add the new message
+        self.short_term_memory[user_email].append({
+            "role": role,
+            "content": message
+        })
+        
+        # Keep only last 10 messages (5 user + 5 assistant = 10 total)
+        if len(self.short_term_memory[user_email]) > 10:
+            self.short_term_memory[user_email] = self.short_term_memory[user_email][-10:]
+    
+    def _get_conversation_history(self, user_email: str) -> List[Dict[str, str]]:
+        """
+        Get recent conversation history for context (last 10 messages).
+        """
+        if user_email not in self.short_term_memory:
+            return []
+        return self.short_term_memory[user_email][-10:]
+    
+    def _format_conversation_context(self, user_email: str) -> str:
+        """
+        Format recent conversation history as context string for prompts.
+        Excludes the last message (current user message) since it's already included separately.
+        """
+        history = self._get_conversation_history(user_email)
+        if not history or len(history) < 2:
+            return ""
+        
+        # Exclude the last message (current user message) since it's already included as "User's question"
+        previous_history = history[:-1]
+        
+        # Format as: "Previous conversation:\nUser: ...\nAssistant: ..."
+        context_lines = ["Previous conversation:"]
+        for msg in previous_history:
+            role = msg["role"].capitalize()
+            content = msg["content"][:200]  # Truncate long messages
+            context_lines.append(f"{role}: {content}")
+        
+        return "\n".join(context_lines)
+    
     # ======================================================================
     # Intent Classification
     # ======================================================================
@@ -345,7 +452,7 @@ class ChatbotConnector:
     # ---------- EVENTS ----------
 
     def _handle_events_category(
-        self, user_message: str, user_email: Optional[str] = None, query_embedding: Optional[List[float]] = None
+        self, user_message: str, user_email: Optional[str] = None, query_embedding: Optional[List[float]] = None, user_first_name: Optional[str] = None
     ) -> Tuple[str, List[dict]]:
         """
         Entry for events: decide between personal events vs event search.
@@ -373,12 +480,12 @@ class ChatbotConnector:
         )
 
         if is_personal_events:
-            return self._handle_personal_events(user_message, user_email)
+            return self._handle_personal_events(user_message, user_email, user_first_name)
 
-        return self._handle_event_search(user_message, user_email, query_embedding)
+        return self._handle_event_search(user_message, user_email, query_embedding, user_first_name)
 
     def _handle_personal_events(
-        self, user_message: str, user_email: str
+        self, user_message: str, user_email: str, user_first_name: Optional[str] = None
     ) -> Tuple[str, List[dict]]:
         """
         Handle 'my upcoming events', 'what events do I have coming up', etc.
@@ -417,7 +524,13 @@ class ChatbotConnector:
         formatted_user_events = (
             self._format_events_for_context(user_events) if user_events else "No upcoming events"
         )
-        prompt = f"""{self._build_system_prompt()}
+        conversation_context = self._format_conversation_context(user_email)
+        personalization = f"User's name: {user_first_name}" if user_first_name else ""
+        
+        prompt = f"""{self._build_system_prompt(user_first_name)}
+
+{personalization}
+{conversation_context}
 
 User's question: {user_message}
 
@@ -438,6 +551,7 @@ CRITICAL - Response Formatting:
         user_message: str,
         user_email: Optional[str],
         query_embedding: Optional[List[float]],
+        user_first_name: Optional[str] = None,
     ) -> Tuple[str, List[dict]]:
         """
         Handle normal event search / recommendations.
@@ -491,7 +605,13 @@ CRITICAL - Response Formatting:
                 print(f"Error filtering user's registered events: {e}")
 
         formatted_events = self._format_events_for_context(events)
-        prompt = f"""{self._build_system_prompt()}
+        conversation_context = self._format_conversation_context(user_email) if user_email else ""
+        personalization = f"User's name: {user_first_name}" if user_first_name else ""
+        
+        prompt = f"""{self._build_system_prompt(user_first_name)}
+
+{personalization}
+{conversation_context}
 
 User's question: {user_message}
 
@@ -523,7 +643,7 @@ CRITICAL - Response Formatting:
     # ---------- TEAMS ----------
 
     def _handle_teams_category(
-        self, user_message: str, user_email: Optional[str] = None
+        self, user_message: str, user_email: Optional[str] = None, user_first_name: Optional[str] = None
     ) -> Tuple[str, List[dict], List[dict]]:
         """
         Handle Teams category - team-related queries.
@@ -544,7 +664,13 @@ CRITICAL - Response Formatting:
 
         # Fast path: if user is asking about "my teams", return their teams directly
         if self._is_asking_about_my_teams(user_message):
-            prompt = f"""{self._build_system_prompt()}
+            conversation_context = self._format_conversation_context(user_email) if user_email else ""
+            personalization = f"User's name: {user_first_name}" if user_first_name else ""
+            
+            prompt = f"""{self._build_system_prompt(user_first_name)}
+
+{personalization}
+{conversation_context}
 
 User's question: {user_message}
 
@@ -593,7 +719,13 @@ CRITICAL - Response Formatting:
             except Exception as e:
                 print(f"Error filtering user's joined teams: {e}")
 
-        prompt = f"""{self._build_system_prompt()}
+        conversation_context = self._format_conversation_context(user_email) if user_email else ""
+        personalization = f"User's name: {user_first_name}" if user_first_name else ""
+        
+        prompt = f"""{self._build_system_prompt(user_first_name)}
+
+{personalization}
+{conversation_context}
 
 User's question: {user_message}
 
@@ -631,7 +763,7 @@ CRITICAL - Response Formatting:
     # ---------- BADGES ----------
 
     def _handle_badges_category(
-        self, user_message: str, user_email: Optional[str] = None
+        self, user_message: str, user_email: Optional[str] = None, user_first_name: Optional[str] = None
     ) -> Tuple[str, List[dict]]:
         """Handle Badges category - user badges and achievements."""
         if not user_email:
@@ -659,7 +791,13 @@ CRITICAL - Response Formatting:
         else:
             badges_to_return = user_badges[:3] if user_badges else all_badges[:2]
 
-        prompt = f"""{self._build_system_prompt()}
+        conversation_context = self._format_conversation_context(user_email) if user_email else ""
+        personalization = f"User's name: {user_first_name}" if user_first_name else ""
+        
+        prompt = f"""{self._build_system_prompt(user_first_name)}
+
+{personalization}
+{conversation_context}
 
 User's question: {user_message}
 
@@ -686,7 +824,7 @@ CRITICAL - Response Formatting:
 
     # ---------- IMPACT ----------
 
-    def _handle_impact_category(self, user_message: str, user_email: Optional[str] = None) -> str:
+    def _handle_impact_category(self, user_message: str, user_email: Optional[str] = None, user_first_name: Optional[str] = None) -> str:
         """Handle Impact category - user statistics and progress."""
         if not user_email:
             return "Please log in to view your volunteering impact."
@@ -703,7 +841,13 @@ CRITICAL - Response Formatting:
         upcoming_events_list = self.dao.get_upcoming_events(user_id, limit=5)
         completed_events_list = self.dao.get_completed_events(user_id, limit=5)
 
-        prompt = f"""{self._build_system_prompt()}
+        conversation_context = self._format_conversation_context(user_email) if user_email else ""
+        personalization = f"User's name: {user_first_name}" if user_first_name else ""
+        
+        prompt = f"""{self._build_system_prompt(user_first_name)}
+
+{personalization}
+{conversation_context}
 
 User's question: {user_message}
 
@@ -725,8 +869,15 @@ NOTE: Only show stats, no events, teams or anything else.
 
     # ---------- GENERAL ----------
 
-    def _handle_general_category(self, user_message: str) -> str:
-        prompt = f"""{self._build_system_prompt()}
+    def _handle_general_category(self, user_message: str, user_email: Optional[str] = None, user_first_name: Optional[str] = None) -> str:
+        # Get conversation context if user_email is available
+        conversation_context = self._format_conversation_context(user_email) if user_email else ""
+        personalization = f"User's name: {user_first_name}" if user_first_name else ""
+        
+        prompt = f"""{self._build_system_prompt(user_first_name)}
+
+{personalization}
+{conversation_context}
 
 User's question: {user_message}"""
         return self.get_ai_response(prompt)
@@ -1058,8 +1209,17 @@ User's question: {user_message}"""
     # Prompt builder / AI
     # ======================================================================
 
-    def _build_system_prompt(self) -> str:
-        return SYSTEM_PROMPT
+    def _build_system_prompt(self, user_first_name: Optional[str] = None) -> str:
+        """
+        Build system prompt with optional personalization.
+        If user_first_name is provided, the assistant will address the user by name.
+        """
+        base_prompt = SYSTEM_PROMPT
+        if user_first_name:
+            # Add personalization instruction at the beginning
+            personalization_note = f"IMPORTANT: The user's name is {user_first_name}. Address them by their first name when appropriate to create a more friendly and personalized experience. Use their name naturally in your responses, but don't overuse it."
+            return f"{personalization_note}\n\n{base_prompt}"
+        return base_prompt
 
     def get_ai_response(self, prompt: str) -> str:
         """
