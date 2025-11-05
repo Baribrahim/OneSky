@@ -47,7 +47,7 @@ const EventTeamsPopup = ({ eventID }) => {
 
   return (
     <Popup
-      trigger={<button className="button">Register Team</button>}
+      trigger={<button className="button"> 👥 Register Team</button>}
       modal
       onOpen={fetchTeams}
       className="team-popup"

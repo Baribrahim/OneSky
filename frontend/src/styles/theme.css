@@ -160,28 +160,31 @@ a:hover { color: var(--brand-primary-600); }
   }
 }
 
-
-/* Brand gradient text (for big headings if desired) */
-/* .brand-gradient {
-  background: linear-gradient(90deg, var(--brand-start), var(--brand-mid), var(--brand-end));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-} */
-
 /* allows more colour gradiant to come through and by specifying specific colours they more closely align with our logo */
+/* .brand-gradient {
+  background: linear-gradient(
+    /* 90deg,
+    #ff6a00,  /* orange */
+    /* #ff2d55,  pink */
+    /* #a100ff,  purple */
+    /* #007aff   blue */
+  /* -webkit-background-clip: text; */
+  /* background-clip: text;
+  color: transparent; */
+  /* display: inline-block;   */
+
 .brand-gradient {
+  font-size: 1.8rem;
+  font-weight: bold;
+  text-align: center;
   background: linear-gradient(
     90deg,
-    #ff6a00,  /* orange */
-    #ff2d55,  /* pink */
-    #a100ff,  /* purple */
-    #007aff   /* blue */
+    #ff6a00 0%,   /* orange */
+    #ff2d55 25%,  /* pink */
+    #a100ff 50%,  /* purple */
+    #007aff 75%,  /* blue */
+    #00c6ff 100%  /* light blue for smooth end */
   );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  display: inline-block;
 }
 
 
@@ -412,16 +415,8 @@ a:hover { color: var(--brand-primary-600); }
   background: #fff;
 }
 
-.brand-gradient {
-  font-size: 1.8rem;
-  font-weight: bold;
-  text-align: center;
-  background: linear-gradient(90deg, #ff0080, #7928ca);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 8px;
-}
+
+
 
 .filter-tagline {
   text-align: center;
