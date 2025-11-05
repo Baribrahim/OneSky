@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { api, toResult } from "../lib/apiClient";
+import '../styles/leaderboard.css';
 
 const Leaderboard = () => {
   const [rankedUsers, setRankedUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentRank, setCurrentRank] = useState("");
-  const [userStats, setUserStats] = useState("");
+  const [expandedUsers, setExpandedUsers] = useState([]); // track multiple expanded users
+  const [userStats, setUserStats] = useState({});
 
   const fetchRankedUsers = async () => {
     setLoading(true);
@@ -24,47 +26,67 @@ const Leaderboard = () => {
   const fetchCurrentUserRank = async () => {
     const { data, error } = await toResult(api.get("/api/leaderboard/my-rank"));
     if (!error) setCurrentRank(data.currentRank);
-   };
+  };
 
   useEffect(() => {
     fetchRankedUsers();
     fetchCurrentUserRank();
   }, []);
 
-  const fetchUserStats = async (email) => {
-    const { data, error } = await toResult(api.post("/api/leaderboard/stats", { email: email }));
-    if (!error) {
-      setUserStats(data);
-    } 
-    else {
-      setError(error.message || "Error fetching stats");
+  const handleToggleStats = async (email) => {
+    // Fetch stats if not already cached
+    if (!userStats[email]) {
+      const { data, error } = await toResult(api.post("/api/leaderboard/stats", { email }));
+      if (!error) {
+        setUserStats((prev) => ({ ...prev, [email]: data }));
+      } else {
+        setError(error.message || "Error fetching stats");
+        return;
+      }
     }
+
+    // Toggle user in expandedUsers array
+    setExpandedUsers((prev) =>
+      prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]
+    );
   };
 
   return (
-    <div className="card">
-      <h3>Leaderboard</h3>
+    <div className="leaderboard-card">
+      <h2>Leaderboard</h2>
 
       {loading && <p>Loading...</p>}
       {!loading && error && <div className="error" role="alert">{error}</div>}
       {!loading && !error && rankedUsers.length === 0 && <p>No users yet.</p>}
 
-      {!loading && !error && rankedUsers.map((user, index) => (
-        <div key={index}>
-        <p >
-          {index + 1}. {user.FirstName} {user.LastName} {user.RankScore}
-        </p>
-        <button className="button" onClick={() => fetchUserStats(user.Email)}>More Info</button>
-        {userStats && (
+      <div className="leaderboard-list">
+        {!loading && !error && rankedUsers.map((user, index) => (
             <div>
-                Completed Events: {userStats.stats.CompletedEvents} <br/>
-                Total Hours: {userStats.stats.TotalHours} <br/>
-                Badges: {userStats.stats.BadgesCount}
-            </div>
+          <div key={index} className="leaderboard-user">
+            <span className="rank">{index + 1}.</span>{" "}
+            <span className="name">{user.FirstName} {user.LastName}</span>{" "}
+            <span className="score">{user.RankScore}</span>{" "}
+
+          </div>
+          <div className="show-stats-wrapper" style={{ paddingLeft: '35px' }}>
+            <span className="show-stats-text" onClick={() => handleToggleStats(user.Email)}>
+              {expandedUsers.includes(user.Email) ? "Hide Stats" : "Show Stats"}
+            </span>
+
+            {expandedUsers.includes(user.Email) && userStats[user.Email] && (
+              <div className="user-stats">
+                <p>Completed Events: {userStats[user.Email].stats?.CompletedEvents}</p>
+                <p>Total Hours: {userStats[user.Email].stats?.TotalHours}</p>
+                <p>Badges: {userStats[user.Email].stats?.BadgesCount}</p>
+              </div>
             )}
-        </div>
-      ))}
-      {currentRank && <p>Your rank: {currentRank}</p>}
+            </div>
+          </div>
+          
+        ))}
+      </div>
+
+      {currentRank && <p className="your-rank">Your rank: <strong>{currentRank}</strong></p>}
     </div>
   );
 };
