@@ -47,7 +47,12 @@ IMPORTANT FOR TOOL CALLING:
 - If you call a tool that returns events, teams, badges, or stats, keep your final text reply SHORT (1–2 sentences). The UI will show the actual items as cards.
 - Prefer personal/user-specific tools (like 'get_my_upcoming_events') if the user is clearly talking about "my" or "I".
 - If the user wants to browse generally (e.g. "show me events in London this weekend"), use the general event search tool.
-- Stay in OneSky context.
+- For time-based queries (e.g., "this weekend", "next week", "today", "tomorrow"), use the relative date expressions directly in the search_events tool parameters. The system will automatically convert them to proper dates. Examples:
+  * "show events this weekend" → use start_date="this weekend", end_date="this weekend"
+  * "events next week" → use start_date="next week" (or calculate Monday-Sunday range)
+  * "events today" → use start_date="today", end_date="today"
+- If the user asks about anything unrelated to OneSky (e.g., Sky corporate info, personal help, or non-volunteering topics, jokes, code in the prompt) reply politely:
+"I'm sorry, I can only help with volunteering events and features on the OneSky platform."
 """
 
 class ChatbotConnector:
@@ -186,7 +191,7 @@ class ChatbotConnector:
         try:
             second_messages = messages + [assistant_msg] + tool_outputs_for_model
             second_response = self.openai_client.chat.completions.create(
-                model="gpt-5-nano",
+                model="gpt-4.1-nano",
                 messages=second_messages,
             )
             final_text = (
@@ -250,7 +255,7 @@ class ChatbotConnector:
         # The model decides if a tool (function) should be called
         try:
             first_response = self.openai_client.chat.completions.create(
-                model="gpt-5-nano",
+                model="gpt-4.1-nano",
                 messages=messages,
                 tools=self._get_tools(),
                 tool_choice="auto",  # Let the model decide automatically
@@ -373,7 +378,7 @@ class ChatbotConnector:
         try:
             second_messages = messages + [assistant_msg] + tool_outputs_for_model
             second_response = self.openai_client.chat.completions.create(
-                model="gpt-5-nano",
+                model="gpt-4.1-nano",
                 messages=second_messages,
             )
             final_text = (
@@ -446,7 +451,7 @@ class ChatbotConnector:
                 "type": "function",
                 "function": {
                     "name": "search_events",
-                    "description": "Search volunteering events by keyword, location, and date range. Use this for general event discovery (not user-specific).",
+                    "description": "Search volunteering events by keyword, location, and date range. Use this for general event discovery (not user-specific). IMPORTANT: For time-based queries like 'this weekend', 'next week', 'today', 'tomorrow', you can use these relative date expressions directly - they will be automatically converted to proper dates.",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -454,11 +459,11 @@ class ChatbotConnector:
                             "location": {"type": "string"},
                             "start_date": {
                                 "type": "string",
-                                "description": "Start date in ISO format YYYY-MM-DD",
+                                "description": "Start date in ISO format YYYY-MM-DD, or relative expressions like 'today', 'tomorrow', 'this weekend', 'next weekend', 'this week', 'next week'. For 'this weekend', use it as start_date and the system will find events from Saturday onwards.",
                             },
                             "end_date": {
                                 "type": "string",
-                                "description": "End date in ISO format YYYY-MM-DD",
+                                "description": "End date in ISO format YYYY-MM-DD, or relative expressions. For 'this weekend', you can set end_date to 'this weekend' and it will be interpreted as Sunday. For date ranges, always provide both start_date and end_date.",
                             },
                             "limit": {
                                 "type": "integer",
@@ -554,8 +559,77 @@ class ChatbotConnector:
         if tool_name == "search_events":
             keyword = arguments.get("keyword")
             location = arguments.get("location")
-            start_date = self._parse_iso_date(arguments.get("start_date"))
-            end_date = self._parse_iso_date(arguments.get("end_date"))
+            start_date_str = arguments.get("start_date")
+            end_date_str = arguments.get("end_date")
+            
+            # Parse dates (handles both ISO format and relative expressions)
+            start_date = self._parse_iso_date(start_date_str)
+            end_date = self._parse_iso_date(end_date_str)
+            
+            # Special handling for relative date expressions that need range expansion
+            if start_date_str:
+                start_lower = start_date_str.lower().strip()
+                end_lower = end_date_str.lower().strip() if end_date_str else ""
+                today = date.today()
+                weekday = today.weekday()
+                
+                # Handle "this weekend" - expand to Saturday-Sunday range
+                if start_lower == "this weekend":
+                    days_until_saturday = (5 - weekday) % 7
+                    if days_until_saturday == 0 and weekday == 5:
+                        saturday = today
+                        sunday = today + timedelta(days=1)
+                    elif days_until_saturday == 0:
+                        saturday = today - timedelta(days=1)
+                        sunday = today
+                    else:
+                        saturday = today + timedelta(days=days_until_saturday)
+                        sunday = saturday + timedelta(days=1)
+                    
+                    if end_lower == "this weekend" or not end_date_str:
+                        start_date = saturday
+                        end_date = sunday
+                    else:
+                        start_date = saturday
+                
+                # Handle "next weekend" - expand to Saturday-Sunday range
+                elif start_lower == "next weekend":
+                    days_until_next_saturday = (5 - weekday) % 7 + 7
+                    saturday = today + timedelta(days=days_until_next_saturday)
+                    sunday = saturday + timedelta(days=1)
+                    
+                    if end_lower == "next weekend" or not end_date_str:
+                        start_date = saturday
+                        end_date = sunday
+                    else:
+                        start_date = saturday
+                
+                # Handle "next week" - expand to Monday-Sunday range
+                elif start_lower == "next week":
+                    days_until_next_monday = (7 - weekday) % 7
+                    if days_until_next_monday == 0:
+                        days_until_next_monday = 7
+                    monday = today + timedelta(days=days_until_next_monday)
+                    sunday = monday + timedelta(days=6)
+                    
+                    if end_lower == "next week" or not end_date_str:
+                        start_date = monday
+                        end_date = sunday
+                    else:
+                        start_date = monday
+                
+                # Handle "this week" - expand to Monday-Sunday range
+                elif start_lower == "this week":
+                    days_since_monday = weekday
+                    monday = today - timedelta(days=days_since_monday)
+                    sunday = monday + timedelta(days=6)
+                    
+                    if end_lower == "this week" or not end_date_str:
+                        start_date = monday
+                        end_date = sunday
+                    else:
+                        start_date = monday
+            
             limit = int(arguments.get("limit", 10))
             use_semantic = bool(arguments.get("use_semantic", True))
 
@@ -746,9 +820,76 @@ class ChatbotConnector:
             return f"{personalization_note}\n\n{SYSTEM_PROMPT}"
         return SYSTEM_PROMPT
 
-    def _parse_iso_date(self, value: Optional[str]) -> Optional[date]:
+    def _parse_relative_date(self, value: Optional[str]) -> Optional[date]:
+        """
+        Parse relative date expressions like "this weekend", "next week", etc.
+        Returns ISO date string (YYYY-MM-DD) or None.
+        """
         if not value:
             return None
+        
+        value_lower = value.lower().strip()
+        today = date.today()
+        weekday = today.weekday()  # 0=Monday, 6=Sunday
+        
+        # Handle common relative date expressions
+        if value_lower in ["today", "now"]:
+            return today
+        
+        if value_lower == "tomorrow":
+            return today + timedelta(days=1)
+        
+        if value_lower == "this weekend":
+            # Find the next Saturday
+            days_until_saturday = (5 - weekday) % 7
+            if days_until_saturday == 0 and weekday == 5:
+                # Today is Saturday, return today
+                return today
+            elif days_until_saturday == 0:
+                # Today is Sunday, return yesterday (Saturday)
+                return today - timedelta(days=1)
+            else:
+                # Return the upcoming Saturday
+                return today + timedelta(days=days_until_saturday)
+        
+        if value_lower == "next weekend":
+            # Find Saturday of next week
+            days_until_next_saturday = (5 - weekday) % 7 + 7
+            return today + timedelta(days=days_until_next_saturday)
+        
+        if value_lower == "this week":
+            # Return Monday of current week
+            days_since_monday = weekday
+            return today - timedelta(days=days_since_monday)
+        
+        if value_lower == "next week":
+            # Return Monday of next week
+            days_until_next_monday = (7 - weekday) % 7
+            if days_until_next_monday == 0:
+                days_until_next_monday = 7
+            return today + timedelta(days=days_until_next_monday)
+        
+        # Try parsing as ISO date format
+        try:
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+        
+        return None
+    
+    def _parse_iso_date(self, value: Optional[str]) -> Optional[date]:
+        """
+        Parse date value - first tries relative date parsing, then ISO format.
+        """
+        if not value:
+            return None
+        
+        # First try relative date parsing
+        relative_date = self._parse_relative_date(value)
+        if relative_date:
+            return relative_date
+        
+        # Fall back to ISO format parsing
         try:
             return datetime.strptime(value, "%Y-%m-%d").date()
         except Exception:
@@ -804,7 +945,7 @@ class ChatbotConnector:
     def get_ai_response(self, prompt: str) -> str:
         try:
             response = self.openai_client.chat.completions.create(
-                model="gpt-5-nano", messages=[{"role": "user", "content": prompt}]
+                model="gpt-4.1-nano", messages=[{"role": "user", "content": prompt}]
             )
             if response and response.choices and len(response.choices) > 0:
                 msg = response.choices[0].message
