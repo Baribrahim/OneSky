@@ -131,7 +131,7 @@ export default function CompletedEventsPopup({ isOpen, onClose }) {
               {events.map((event) => (
                 <div key={event.ID} className="event-item">
                   <div className="event-header">
-                    <h3 className="event-title">{event.Title}</h3>
+                    <h2>{event.Title}</h2>
                     <span className="event-duration">{formatDuration(event.DurationHours)}</span>
                   </div>
                   
