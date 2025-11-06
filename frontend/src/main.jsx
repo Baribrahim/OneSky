@@ -5,7 +5,6 @@ import { BrowserRouter, Routes, Route } from "react-router";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider.jsx";
 import Layout from "./components/Layout.jsx";
-
 import Home from "./pages/Home.jsx";
 import Events from "./pages/Events.jsx";
 import EventPage from "./pages/EventPage.jsx";
@@ -34,7 +33,7 @@ createRoot(document.getElementById("root")).render(
           {/* ✅ Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/" element={<Landing />} />
+          <Route path="/landing" element={<Landing />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
