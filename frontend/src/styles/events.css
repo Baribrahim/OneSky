@@ -38,6 +38,27 @@
   gap: 20px;
 }
 
+/* Mobile Responsive Styles */
+@media (max-width: 640px) {
+  .events-wrapper {
+    padding: 10px 16px 40px;
+  }
+
+  .card.large-card {
+    padding: 16px;
+  }
+
+  .event-list {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .filter-panel {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+}
+
 /* ===== Event Card ===== */
 .card {
   display: flex;
@@ -221,7 +242,7 @@
 }
 
 .info-item {
-  background: #f9f9f9;q
+  background: #f9f9f9;
   padding: 16px;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
