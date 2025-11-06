@@ -71,7 +71,7 @@ const Leaderboard = () => {
                   : "src/assets/profileImgs/default.png"
               }
               alt="Profile"
-              className="profile-img"
+              className="leaderboard-img"
             />
             <span className="name">{user.FirstName} {user.LastName}</span>{" "}
             <span className="score">{user.RankScore}</span>{" "}

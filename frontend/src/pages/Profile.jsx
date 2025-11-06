@@ -71,11 +71,15 @@ const Profile = () => {
   if (loading) return <p>Loading profile...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
-  return (
-      <div className="card">
-        <h2 className="profile-title">
-          Your details
-        </h2>
+return (
+  <div>
+    {/* Hero Banner */}
+    <div className="hero-banner"/>
+
+    {/* Profile Card */}
+    <div className="profile-container">
+      <div className="profile-card">
+      <div className="profile-content">
         <img
           src={
             userInfo.info?.ProfileImgURL
@@ -85,7 +89,6 @@ const Profile = () => {
           alt="Profile"
           className="profile-img"
         />
-
         <div className="upload-section">
           <label className={`button-sky ${uploading ? "disabled" : ""}`}>
             {uploading ? "Uploading..." : "Upload Profile Picture"}
@@ -98,13 +101,31 @@ const Profile = () => {
             />
           </label>
         </div>
-        
-        <p className="profile-email">First Name: {userInfo.info?.FirstName || "User"}{" "}</p>
-        <p className="profile-joined">Surname: {userInfo.info?.LastName || ""}</p>
-        <p className="profile-email">Email: {userInfo.info?.Email || "Not provided"}</p>
-        <p className="profile-joined">Member since: {formatMonthYear(userInfo.info?.DateJoined)}</p>
+
+        <div className="profile-details">
+          <div className="detail-row">
+            <span className="detail-label">First Name:</span>
+            <span className="detail-value">{userInfo.info?.FirstName || "User"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Surname:</span>
+            <span className="detail-value">{userInfo.info?.LastName || ""}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Email:</span>
+            <span className="detail-value">{userInfo.info?.Email || "Not provided"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Member since:</span>
+            <span className="detail-value">{formatMonthYear(userInfo.info?.DateJoined)}</span>
+          </div>
+        </div>
       </div>
-  );
+      </div>
+    </div>
+  </div>
+);
+
 };
 
 export default Profile;
