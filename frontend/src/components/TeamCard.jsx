@@ -21,7 +21,7 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
     setError("");
   }
 
-  const handleJoin = async (team_id, join_code) => {
+  const handleJoin = async (team_id, join_code, close) => {
     if(!join_code){
       setError("Join code is required.");
       return;
@@ -33,7 +33,9 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
         setError(error.message);
       }
       else{
+        resetStates();
         if (onJoin) onJoin(team);
+        if (close) close();
       }
     } 
     catch (err) {
@@ -79,24 +81,32 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
               resetStates()
           }}>
     {close => (
-      <div className="card">
-        <div className="content">
-            <p>Enter Code </p>
-            {error && <div className="error" role="alert">{error}</div>}
-            <input
-              className='form-input'
-              type="text"
-              placeholder="Code"
-              onChange={e => setJoinCode(e.target.value)}
-            />
-        
-        <div className="actions">
-            <button className="button" onClick={ async () => { await handleJoin(team.id, joinCode);
-            }}>
+      <div className="popup-card">
+        <h3 className="popup-title">Enter Code</h3>
+        {error && <div className="error" role="alert">{error}</div>}
+        <input
+          className='form-input'
+          type="text"
+          placeholder="Code"
+          value={joinCode}
+          onChange={e => setJoinCode(e.target.value)}
+          onKeyPress={e => {
+            if (e.key === 'Enter') {
+              handleJoin(team.id, joinCode, close);
+            }
+          }}
+        />
+        <div className="popup-actions">
+          <button 
+            className="button popup-button-primary" 
+            onClick={async () => { 
+              await handleJoin(team.id, joinCode, close);
+            }}
+          >
             Submit
-            </button>
+          </button>
           <button
-            className="button"
+            className="button popup-button-secondary"
             onClick={() => {
               resetStates()
               close();
@@ -104,7 +114,6 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
           >
             Close
           </button>
-        </div>
         </div>
       </div>
     )}
