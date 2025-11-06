@@ -9,6 +9,7 @@
   margin: 0 auto;
   padding: 24px;
   border-radius: 12px;
+  margin-bottom: 24px;
 }
 
 .teams-grid {
@@ -20,4 +21,22 @@
 
 .my-toast {
   font-family: var(----font-family-base);
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 640px) {
+  .teams-section {
+    padding: 16px 8px;
+  }
+
+  .teams-inner {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .teams-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
 }

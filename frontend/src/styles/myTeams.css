@@ -127,3 +127,55 @@
     font-size: 1.5rem;
   }
 }
+
+@media (max-width: 640px) {
+  .my-teams-section {
+    padding: 16px 8px 0;
+  }
+
+  .my-teams-inner {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .my-teams-stats {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-item {
+    padding: 8px 0;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+  }
+
+  .my-teams-content {
+    margin-top: 16px;
+  }
+
+  .my-teams-content-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .my-teams-content-header h3 {
+    margin-bottom: 0;
+  }
+
+  .my-teams-content-header .button {
+    align-self: stretch;
+    max-width: none;
+    width: 100%;
+  }
+
+  .my-teams-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
