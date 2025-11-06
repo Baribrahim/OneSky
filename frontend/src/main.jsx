@@ -34,7 +34,7 @@ createRoot(document.getElementById("root")).render(
           {/* ✅ Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Routes path="/" element={<Landing />} />
+          <Route path="/" element={<Landing />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -30,7 +30,7 @@ def create_app():
     app.register_blueprint(badges_bp)
     app.register_blueprint(chatbot_bp)
     app.register_blueprint(landing_bp)
-    # app.register_blueprint(er_bp)
+
 
     @app.route("/")
     def root():
