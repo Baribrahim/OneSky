@@ -112,7 +112,7 @@ export default function Chatbot() {
         }
 
         // 2) streaming text chunk
-        if (payload?.stream && typeof payload.response === "string") {
+        if (payload?.stream && typeof payload.response === "string" && !payload?.done) {
           const currentId = streamingMessageIdRef.current;
           if (!currentId) {
             // no active streaming message, create one quickly
@@ -127,15 +127,21 @@ export default function Chatbot() {
             return newMessages;
           }
 
-          newMessages = newMessages.map((msg) => {
-            if (msg._id === currentId) {
-              return {
-                ...msg,
-                content: (msg.content || "") + payload.response,
-              };
-            }
-            return msg;
-          });
+          // Update existing streaming message
+          const messageFound = newMessages.some(msg => msg._id === currentId);
+          if (messageFound) {
+            newMessages = newMessages.map((msg) => {
+              if (msg._id === currentId) {
+                return {
+                  ...msg,
+                  content: (msg.content || "") + payload.response,
+                };
+              }
+              return msg;
+            });
+          }
+          // If message not found but currentId exists, don't create a new one
+          // (wait for the message to be created by partial handler)
 
           return newMessages;
         }
@@ -145,15 +151,33 @@ export default function Chatbot() {
           setIsLoading(false);
           const currentId = streamingMessageIdRef.current;
 
-          if (payload.final_text && currentId) {
-            newMessages = newMessages.map((msg) => {
-              if (msg._id === currentId) {
-                return {
+          if (currentId) {
+            // We have an active streaming message - update it
+            const messageFound = newMessages.some(msg => msg._id === currentId);
+            if (messageFound) {
+              // Update existing streaming message
+              newMessages = newMessages.map((msg) => {
+                if (msg._id === currentId) {
+                  return {
                     ...msg,
-                    content: payload.final_text,
-                };
-              }
-              return msg;
+                    content: payload.final_text || msg.content || "",
+                  };
+                }
+                return msg;
+              });
+            }
+            // If message not found but currentId exists, don't create a new one
+            // (message might have been removed or there's a state issue)
+          } else if ((payload.final_text || payload.response) && !currentId) {
+            // No streaming message exists, create a new one (for general questions only)
+            const finalText = payload.final_text || payload.response || "";
+            newMessages.push({
+              role: "bot",
+              content: finalText,
+              events: payload.events || null,
+              teams: payload.teams || null,
+              badges: payload.badges || null,
+              timestamp: new Date(),
             });
           }
 

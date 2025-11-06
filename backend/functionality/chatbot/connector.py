@@ -216,100 +216,114 @@ class ChatbotConnector:
     # SOCKET-FRIENDLY STREAMING ENTRY POINT
     # ======================================================================
     def process_message_stream(
-        self,
-        user_message: str,
-        user_email: Optional[str],
-        emit_fn: Callable[[str, dict], None],
-        room: Optional[str] = None,
-    ) -> None:
+    self,
+    user_message: str,
+    user_email: str | None,
+    emit_fn,
+    room: str | None = None,
+    ):
         """
-        Same logic as process_message, but:
-        - emits structured data (events/teams/badges/category) as soon as tools are done
-        - streams the final model text response token-by-token over the socket
-        This does NOT return anything; it pushes over the socket instead.
+        Streaming version for socket use.
+        - Lets the model decide whether to call a tool (like get_my_events)
+        - If a tool is called → execute it, show results fast
+        - If no tool is called → respond directly
+        - Streams text progressively to improve UX
         """
-        # 1) store user msg
+
+        # Save user message in short-term memory (for conversational context)
         if user_email:
             self._add_to_conversation_history(user_email, "user", user_message)
 
         user_first_name = self._get_user_first_name(user_email) if user_email else None
 
+        # Construct message list with system prompt and chat history
         messages = [
             {"role": "system", "content": self._build_system_prompt(user_first_name)}
         ]
         if user_email:
-            history = self._get_conversation_history(user_email)
-            messages.extend(history)
+            messages.extend(self._get_conversation_history(user_email))
         messages.append({"role": "user", "content": user_message})
 
-        # first model call (decide tools)
+        detected_category = "general"
+
+        # ---------------- First model call ----------------
+        # The model decides if a tool (function) should be called
         try:
             first_response = self.openai_client.chat.completions.create(
                 model="gpt-5-nano",
                 messages=messages,
                 tools=self._get_tools(),
-                tool_choice="auto",
+                tool_choice="auto",  # Let the model decide automatically
             )
-        except Exception as e:
-            print(f"OpenAI API error (stream first): {e}")
-            emit_payload = {
-                "response": "Sorry, I'm having trouble processing your request right now.",
+        except Exception:
+            # Handle API or connection errors gracefully
+            err_payload = {
+                "response": "Sorry, I couldn't process that right now.",
                 "category": "general",
+                "done": True,
+                "stream": True,
             }
             if room:
-                emit_fn("chatbot_response", emit_payload | {"done": True, "stream": False, "final": True})
+                emit_fn("chatbot_response", err_payload, room=room)
             else:
-                emit_fn("chatbot_response", emit_payload)
+                emit_fn("chatbot_response", err_payload)
             return
 
+        # Handle empty/invalid responses
         if not first_response or not first_response.choices:
-            emit_payload = {
-                "response": "Sorry, I received an unexpected response from the AI.",
+            done_payload = {
+                "response": "Sorry, I received an empty response.",
                 "category": "general",
+                "done": True,
+                "stream": True,
             }
             if room:
-                emit_fn("chatbot_response", emit_payload | {"done": True, "stream": False, "final": True})
+                emit_fn("chatbot_response", done_payload, room=room)
             else:
-                emit_fn("chatbot_response", emit_payload)
+                emit_fn("chatbot_response", done_payload)
             return
 
         assistant_msg = first_response.choices[0].message
 
-        # if no tools: we can stream a simple reply
+        # ---------------- CASE 1: No tool called ----------------
+        # For general chat or conceptual platform questions
         if not getattr(assistant_msg, "tool_calls", None):
-            # stream a single message (no tools)
-            final_text = assistant_msg.content.strip() if assistant_msg.content else "Done."
-            # here we can just emit in one go
+            final_text = (assistant_msg.content or "").strip() or "Okay."
             payload = {
                 "response": final_text,
                 "category": "general",
+                "done": True,
+                "stream": True,
+                "final_text": final_text,
             }
             if room:
-                emit_fn("chatbot_response", payload | {"done": True, "stream": False, "final": True})
+                emit_fn("chatbot_response", payload, room=room)
             else:
                 emit_fn("chatbot_response", payload)
+
+            # Save assistant reply in memory
             if user_email:
                 self._add_to_conversation_history(user_email, "assistant", final_text)
             return
 
-        # if there ARE tool calls:
+        # ---------------- CASE 2: Tool(s) called ----------------
+        # The model wants to retrieve or search data via one of our defined tools
         tool_calls = assistant_msg.tool_calls
         tool_outputs_for_model = []
-        events_result: List[dict] = []
-        teams_result: List[dict] = []
-        badges_result: List[dict] = []
-        team_events_result: List[dict] = []
-        detected_category = "general"
+        events_result, teams_result, badges_result, team_events_result = [], [], [], []
 
         for tool_call in tool_calls:
             tool_name = tool_call.function.name
             try:
+                import json
                 tool_args = json.loads(tool_call.function.arguments or "{}")
-            except json.JSONDecodeError:
+            except Exception:
                 tool_args = {}
 
+            # Execute the corresponding DataAccess method
             exec_result = self._execute_tool_call(tool_name, tool_args, user_email)
 
+            # Pass tool results back to model (for second round)
             tool_outputs_for_model.append(
                 {
                     "role": "tool",
@@ -318,6 +332,7 @@ class ChatbotConnector:
                 }
             )
 
+            # Categorize results for frontend rendering
             result_type = exec_result.get("type")
             if result_type == "events":
                 events_result = exec_result.get("data", [])
@@ -333,87 +348,57 @@ class ChatbotConnector:
             elif result_type == "impact":
                 detected_category = "impact"
 
-        # 🔴 emit structured data right away so frontend can render cards
-        early_payload = {
-            "response": None,  # text will stream next
+        # Send partial results (cards) to frontend right away
+        partial_payload = {
+            "partial": True,
+            "stream": True,
             "category": detected_category,
         }
         if events_result:
-            early_payload["events"] = events_result
+            partial_payload["events"] = events_result
         if teams_result:
-            early_payload["teams"] = teams_result
+            partial_payload["teams"] = teams_result
         if badges_result:
-            early_payload["badges"] = badges_result
+            partial_payload["badges"] = badges_result
         if team_events_result:
-            early_payload["team_events"] = team_events_result
+            partial_payload["team_events"] = team_events_result
 
         if room:
-            emit_fn("chatbot_response", early_payload | {"partial": True, "stream": True})
+            emit_fn("chatbot_response", partial_payload, room=room)
         else:
-            emit_fn("chatbot_response", early_payload)
+            emit_fn("chatbot_response", partial_payload)
 
-        # now do second model call, but stream it
+        # ---------------- Second model call ----------------
+        # Now the model writes the natural-language summary based on tool results
         try:
             second_messages = messages + [assistant_msg] + tool_outputs_for_model
-            # ask OpenAI for the answer (non-stream or stream — we'll normalize)
-            stream_response = self.openai_client.chat.completions.create(
-                model="gpt-5-nano",
-                messages=second_messages,
-                stream=True,
-            )
-
-            collected_text_parts: List[str] = []
-
-            for chunk in stream_response:
-                delta = chunk.choices[0].delta
-                if not delta or not delta.content:
-                    continue
-                text_piece = delta.content
-                collected_text_parts.append(text_piece)
-
-                # emit piece immediately
-                piece_payload = {
-                    "response": text_piece,
-                    "category": detected_category,
-                    "stream": True,
-                }
-                if room:
-                    emit_fn("chatbot_response", piece_payload, room=room)
-                else:
-                    emit_fn("chatbot_response", piece_payload)
-
-            final_text = "".join(collected_text_parts).strip() if collected_text_parts else "Done."
-
-        except Exception as e:
-            # if streaming above failed or model didn't stream fine-grained,
-            # we can fall back to a single call and then DRIP it out
-            print(f"OpenAI API error (stream second): {e}")
-            # do a normal non-stream call
             second_response = self.openai_client.chat.completions.create(
                 model="gpt-5-nano",
-                messages=messages + [assistant_msg] + tool_outputs_for_model,
+                messages=second_messages,
             )
             final_text = (
                 second_response.choices[0].message.content.strip()
                 if second_response and second_response.choices
                 else "Here are the details you asked for."
             )
+        except Exception:
+            final_text = "Here are the details you asked for."
 
-            # 👇 manual drip: send small pieces so frontend sees typing
-            chunk_size = 25
-            for i in range(0, len(final_text), chunk_size):
-                piece = final_text[i : i + chunk_size]
-                piece_payload = {
-                    "response": piece,
-                    "category": detected_category,
-                    "stream": True,
-                }
-                if room:
-                    emit_fn("chatbot_response", piece_payload, room=room)
-                else:
-                    emit_fn("chatbot_response", piece_payload)
+        # Stream the text back in small chunks for a typing effect
+        chunk_size = 30
+        for i in range(0, len(final_text), chunk_size):
+            piece = final_text[i : i + chunk_size]
+            piece_payload = {
+                "response": piece,
+                "category": detected_category,
+                "stream": True,
+            }
+            if room:
+                emit_fn("chatbot_response", piece_payload, room=room)
+            else:
+                emit_fn("chatbot_response", piece_payload)
 
-        # emit done
+        # Send a final "done" signal so frontend stops loading
         done_payload = {
             "response": None,
             "category": detected_category,
@@ -426,10 +411,10 @@ class ChatbotConnector:
         else:
             emit_fn("chatbot_response", done_payload)
 
-
-        # store in memory
+        # Save assistant message to memory for context continuity
         if user_email:
             self._add_to_conversation_history(user_email, "assistant", final_text)
+
 
     # ======================================================================
     # TOOL DEFINITIONS
