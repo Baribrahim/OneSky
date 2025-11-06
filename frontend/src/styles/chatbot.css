@@ -181,6 +181,7 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
   line-height: 1.5;
+  margin-top: 0.75rem;
 }
 
 .chatbot-message-content .chatbot-paragraph {

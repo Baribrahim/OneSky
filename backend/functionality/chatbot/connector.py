@@ -1,13 +1,14 @@
 """
 Chatbot Connector
-Now supports OpenAI tool/function calling to decide which data-access method to run.
-Keeps the same output shape expected by the frontend.
+- Supports OpenAI tool/function calling to decide which data-access method to run.
+- Keeps the same output shape expected by the frontend (for HTTP).
+- NOW also supports a socket-friendly streaming method to increase perceived speed.
 """
 
 import os
 import json
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Callable
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -52,6 +53,9 @@ IMPORTANT FOR TOOL CALLING:
 class ChatbotConnector:
     """
     Chatbot connector using OpenAI tool calling.
+    Now has:
+      - process_message(...)  -> for HTTP (existing)
+      - process_message_stream(...) -> for sockets (new)
     """
 
     def __init__(self):
@@ -68,7 +72,7 @@ class ChatbotConnector:
         self.long_term_memory: Dict[str, str] = {}
 
     # ======================================================================
-    # MAIN ENTRY POINT
+    # MAIN ENTRY POINT (HTTP)
     # ======================================================================
     def process_message(
         self,
@@ -77,6 +81,7 @@ class ChatbotConnector:
     ) -> Tuple[str, str, Optional[List[dict]], Optional[List[dict]], Optional[List[dict]], Optional[List[dict]]]:
         """
         Processes the user message using tool calling.
+        This is the non-streaming version (for your current /api/chatbot/chat).
         Returns 6 values:
         (response_text, category, events, teams, badges, team_events)
         """
@@ -174,7 +179,6 @@ class ChatbotConnector:
                 detected_category = "badges"
             elif result_type == "team_events":
                 team_events_result = exec_result.get("data", [])
-                # don't override if already set to events/teams
             elif result_type == "impact":
                 detected_category = "impact"
 
@@ -207,6 +211,225 @@ class ChatbotConnector:
             badges_result if badges_result else None,
             team_events_result if team_events_result else None,
         )
+
+    # ======================================================================
+    # SOCKET-FRIENDLY STREAMING ENTRY POINT
+    # ======================================================================
+    def process_message_stream(
+        self,
+        user_message: str,
+        user_email: Optional[str],
+        emit_fn: Callable[[str, dict], None],
+        room: Optional[str] = None,
+    ) -> None:
+        """
+        Same logic as process_message, but:
+        - emits structured data (events/teams/badges/category) as soon as tools are done
+        - streams the final model text response token-by-token over the socket
+        This does NOT return anything; it pushes over the socket instead.
+        """
+        # 1) store user msg
+        if user_email:
+            self._add_to_conversation_history(user_email, "user", user_message)
+
+        user_first_name = self._get_user_first_name(user_email) if user_email else None
+
+        messages = [
+            {"role": "system", "content": self._build_system_prompt(user_first_name)}
+        ]
+        if user_email:
+            history = self._get_conversation_history(user_email)
+            messages.extend(history)
+        messages.append({"role": "user", "content": user_message})
+
+        # first model call (decide tools)
+        try:
+            first_response = self.openai_client.chat.completions.create(
+                model="gpt-5-nano",
+                messages=messages,
+                tools=self._get_tools(),
+                tool_choice="auto",
+            )
+        except Exception as e:
+            print(f"OpenAI API error (stream first): {e}")
+            emit_payload = {
+                "response": "Sorry, I'm having trouble processing your request right now.",
+                "category": "general",
+            }
+            if room:
+                emit_fn("chatbot_response", emit_payload | {"done": True, "stream": False, "final": True})
+            else:
+                emit_fn("chatbot_response", emit_payload)
+            return
+
+        if not first_response or not first_response.choices:
+            emit_payload = {
+                "response": "Sorry, I received an unexpected response from the AI.",
+                "category": "general",
+            }
+            if room:
+                emit_fn("chatbot_response", emit_payload | {"done": True, "stream": False, "final": True})
+            else:
+                emit_fn("chatbot_response", emit_payload)
+            return
+
+        assistant_msg = first_response.choices[0].message
+
+        # if no tools: we can stream a simple reply
+        if not getattr(assistant_msg, "tool_calls", None):
+            # stream a single message (no tools)
+            final_text = assistant_msg.content.strip() if assistant_msg.content else "Done."
+            # here we can just emit in one go
+            payload = {
+                "response": final_text,
+                "category": "general",
+            }
+            if room:
+                emit_fn("chatbot_response", payload | {"done": True, "stream": False, "final": True})
+            else:
+                emit_fn("chatbot_response", payload)
+            if user_email:
+                self._add_to_conversation_history(user_email, "assistant", final_text)
+            return
+
+        # if there ARE tool calls:
+        tool_calls = assistant_msg.tool_calls
+        tool_outputs_for_model = []
+        events_result: List[dict] = []
+        teams_result: List[dict] = []
+        badges_result: List[dict] = []
+        team_events_result: List[dict] = []
+        detected_category = "general"
+
+        for tool_call in tool_calls:
+            tool_name = tool_call.function.name
+            try:
+                tool_args = json.loads(tool_call.function.arguments or "{}")
+            except json.JSONDecodeError:
+                tool_args = {}
+
+            exec_result = self._execute_tool_call(tool_name, tool_args, user_email)
+
+            tool_outputs_for_model.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": json.dumps(exec_result.get("data", []), default=str),
+                }
+            )
+
+            result_type = exec_result.get("type")
+            if result_type == "events":
+                events_result = exec_result.get("data", [])
+                detected_category = "events"
+            elif result_type == "teams":
+                teams_result = exec_result.get("data", [])
+                detected_category = "teams"
+            elif result_type == "badges":
+                badges_result = exec_result.get("data", [])
+                detected_category = "badges"
+            elif result_type == "team_events":
+                team_events_result = exec_result.get("data", [])
+            elif result_type == "impact":
+                detected_category = "impact"
+
+        # 🔴 emit structured data right away so frontend can render cards
+        early_payload = {
+            "response": None,  # text will stream next
+            "category": detected_category,
+        }
+        if events_result:
+            early_payload["events"] = events_result
+        if teams_result:
+            early_payload["teams"] = teams_result
+        if badges_result:
+            early_payload["badges"] = badges_result
+        if team_events_result:
+            early_payload["team_events"] = team_events_result
+
+        if room:
+            emit_fn("chatbot_response", early_payload | {"partial": True, "stream": True})
+        else:
+            emit_fn("chatbot_response", early_payload)
+
+        # now do second model call, but stream it
+        try:
+            second_messages = messages + [assistant_msg] + tool_outputs_for_model
+            # ask OpenAI for the answer (non-stream or stream — we'll normalize)
+            stream_response = self.openai_client.chat.completions.create(
+                model="gpt-5-nano",
+                messages=second_messages,
+                stream=True,
+            )
+
+            collected_text_parts: List[str] = []
+
+            for chunk in stream_response:
+                delta = chunk.choices[0].delta
+                if not delta or not delta.content:
+                    continue
+                text_piece = delta.content
+                collected_text_parts.append(text_piece)
+
+                # emit piece immediately
+                piece_payload = {
+                    "response": text_piece,
+                    "category": detected_category,
+                    "stream": True,
+                }
+                if room:
+                    emit_fn("chatbot_response", piece_payload, room=room)
+                else:
+                    emit_fn("chatbot_response", piece_payload)
+
+            final_text = "".join(collected_text_parts).strip() if collected_text_parts else "Done."
+
+        except Exception as e:
+            # if streaming above failed or model didn't stream fine-grained,
+            # we can fall back to a single call and then DRIP it out
+            print(f"OpenAI API error (stream second): {e}")
+            # do a normal non-stream call
+            second_response = self.openai_client.chat.completions.create(
+                model="gpt-5-nano",
+                messages=messages + [assistant_msg] + tool_outputs_for_model,
+            )
+            final_text = (
+                second_response.choices[0].message.content.strip()
+                if second_response and second_response.choices
+                else "Here are the details you asked for."
+            )
+
+            # 👇 manual drip: send small pieces so frontend sees typing
+            chunk_size = 25
+            for i in range(0, len(final_text), chunk_size):
+                piece = final_text[i : i + chunk_size]
+                piece_payload = {
+                    "response": piece,
+                    "category": detected_category,
+                    "stream": True,
+                }
+                if room:
+                    emit_fn("chatbot_response", piece_payload, room=room)
+                else:
+                    emit_fn("chatbot_response", piece_payload)
+
+        # emit done
+        done_payload = {
+            "response": None,
+            "category": detected_category,
+            "done": True,
+            "stream": True,
+            "final_text": final_text,
+        }
+        if room:
+            emit_fn("chatbot_response", done_payload, room=room)
+        else:
+            emit_fn("chatbot_response", done_payload)
+
+
+        # store in memory
+        if user_email:
+            self._add_to_conversation_history(user_email, "assistant", final_text)
 
     # ======================================================================
     # TOOL DEFINITIONS
@@ -412,7 +635,6 @@ class ChatbotConnector:
         # 4) list_teams
         if tool_name == "list_teams":
             teams = self.dao.get_all_teams() or []
-            # if we know the user, filter out the ones they already joined
             if user_email:
                 try:
                     joined = self.dao.get_all_joined_teams(user_email) or []
