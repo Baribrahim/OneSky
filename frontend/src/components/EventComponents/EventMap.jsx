@@ -12,15 +12,15 @@ function EventMap({ latitude, longitude }) {
   const mapSrc = `https://www.google.com/maps?q=${latitude},${longitude}&z=14&output=embed`;
 
   return (
-    <div className="event-section">
+    <div className="event-section map-section">
         <h2>Map</h2>
-        <div style={{ marginTop: "20px" }}>
+        <div className="map-container">
           <iframe
             title="Event Location"
             src={mapSrc}
             width="100%"
-            height="400"
-            style={{ borderRadius: "10px", border: "none" }}
+            height="100%"
+            style={{ borderRadius: "10px", border: "none", minHeight: "400px" }}
             allowFullScreen
             loading="lazy"
           ></iframe>
