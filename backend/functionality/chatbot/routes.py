@@ -54,7 +54,7 @@ def chat():
         # If events are present, include them
         if events_list:
             response_data["events"] = events_list
-            # keep your original behavior: if we have events, tell the frontend it's "events"
+            # if we have events, tell the frontend it's "events"
             if category != "events":
                 response_data["category"] = "events"
 
@@ -72,8 +72,6 @@ def chat():
                 response_data["category"] = "badges"
 
         # If team events are present, include them
-        # (your frontend currently displays event cards if "events" is present,
-        # but we can still pass this so you can use it later)
         if team_events_list:
             response_data["team_events"] = team_events_list
             # don't force category change here — it's additional info

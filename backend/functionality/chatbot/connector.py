@@ -23,7 +23,7 @@ _short_term_memory: Dict[str, List[Dict[str, str]]] = {}
 _long_term_memory: Dict[str, str] = {}
 
 # ---------------------------------------------------------------------
-# Shared system prompt (kept from your original version)
+# Shared system prompt
 # ---------------------------------------------------------------------
 SYSTEM_PROMPT = """You are OneSky Assistant, the helpful chatbot for OneSky — Sky's internal volunteering platform where employees can find volunteering opportunities, track impact, earn badges, and collaborate in teams.
 All navigation and features can be accessed from the header menu at the top of the page.

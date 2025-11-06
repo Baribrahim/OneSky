@@ -4,7 +4,7 @@ WebSocket / Socket.IO bridge for the OneSky chatbot.
 
 - Listens for: "chatbot_message"
 - Streams back: "chatbot_response"
-- NOW: extracts user_email from the same JWT cookie ("access_token") you use in Flask routes
+- NOW: extracts user_email from the same JWT cookie ("access_token") in Flask routes
 """
 
 import os
@@ -23,7 +23,7 @@ chatbot = ChatbotConnector()
 
 def _get_user_email_from_cookie() -> str | None:
     """
-    Try to read the JWT from the 'access_token' cookie (same as your app.py),
+    Try to read the JWT from the 'access_token' cookie,
     decode it with the Flask SECRET_KEY, and return the 'sub' (email).
     """
     token = request.cookies.get("access_token")
@@ -33,7 +33,7 @@ def _get_user_email_from_cookie() -> str | None:
     secret = current_app.config.get("SECRET_KEY", "supersecret")
     try:
         payload = jwt.decode(token, secret, algorithms=["HS256"])
-        # your auth uses "sub" as the user email
+        # auth uses "sub" as the user email
         return payload.get("sub")
     except jwt.ExpiredSignatureError:
         return None
