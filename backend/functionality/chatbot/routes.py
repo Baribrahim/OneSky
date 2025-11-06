@@ -17,7 +17,14 @@ def chat():
     """
     POST /api/chatbot/chat
     Body: {"message": "user message here"}
-    Returns: {"response": "bot response", "category": "events|teams|badges|impact|general", "events": [...], "teams": [...], "badges": [...]}
+    Returns: {
+        "response": "...",
+        "category": "events|teams|badges|impact|general",
+        "events": [...],
+        "teams": [...],
+        "badges": [...],
+        "team_events": [...]
+    }
     """
     data = request.get_json()
     message = data.get("message", "").strip()
@@ -25,44 +32,74 @@ def chat():
     if not message:
         return jsonify({"error": "No message provided"}), 400
 
+    # from JWT (set by token_required)
     user_email = g.current_user.get("sub")
 
     try:
         connector = ChatbotConnector()
-        response, category, events_list, teams_list, badges_list, team_events = connector.process_message(message, user_email)
+        (
+            response_text,
+            category,
+            events_list,
+            teams_list,
+            badges_list,
+            team_events_list,
+        ) = connector.process_message(message, user_email)
 
         response_data = {
-            "response": response,
-            "category": category
+            "response": response_text,
+            "category": category,
         }
-        
-        # Include events array if events are present (could be from events, impact, or teams category)
+
+        # If events are present, include them
         if events_list:
             response_data["events"] = events_list
-            # If events were returned, update category to "events" for frontend consistency
+            # keep your original behavior: if we have events, tell the frontend it's "events"
             if category != "events":
                 response_data["category"] = "events"
-        
-        # Include teams array if teams category
-        if category == "teams" and teams_list:
+
+        # If teams are present, include them
+        if teams_list:
             response_data["teams"] = teams_list
-        
-        # Include badges array if badges category
-        if category == "badges" and badges_list:
+            # only override category if the connector didn't already set it
+            if category != "teams" and "events" not in response_data:
+                response_data["category"] = "teams"
+
+        # If badges are present, include them
+        if badges_list:
             response_data["badges"] = badges_list
+            if category != "badges" and "events" not in response_data and "teams" not in response_data:
+                response_data["category"] = "badges"
+
+        # If team events are present, include them
+        # (your frontend currently displays event cards if "events" is present,
+        # but we can still pass this so you can use it later)
+        if team_events_list:
+            response_data["team_events"] = team_events_list
+            # don't force category change here — it's additional info
 
         return jsonify(response_data), 200
 
     except ValueError as ve:
         print(f"Chatbot configuration error: {ve}")
-        return jsonify({
-            "error": "Chatbot configuration error. Please check OPENAI_API_KEY is set.",
-            "details": str(ve)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "error": "Chatbot configuration error. Please check OPENAI_API_KEY is set.",
+                    "details": str(ve),
+                }
+            ),
+            500,
+        )
     except Exception as e:
         print(f"Chatbot error: {e}")
         print(f"Error type: {type(e).__name__}")
-        return jsonify({
-            "error": "Sorry, I encountered an error. Please try again.",
-            "details": str(e)[:200]
-        }), 500
+        return (
+            jsonify(
+                {
+                    "error": "Sorry, I encountered an error. Please try again.",
+                    "details": str(e)[:200],
+                }
+            ),
+            500,
+        )
