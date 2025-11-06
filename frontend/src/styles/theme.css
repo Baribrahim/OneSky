@@ -88,7 +88,15 @@ a:hover { color: var(--brand-primary-600); }
 }
 
 @media (max-width: 640px) {
-  .container { padding: var(--space-6) var(--space-3); }
+  .container { 
+    width: 100%;
+    padding: var(--space-6) var(--space-3); 
+  }
+
+  .card {
+    max-width: 100%;
+    padding: var(--space-6);
+  }
 }
 
 /* New utility: a narrower wrapper ONLY for sections that should be slim */
@@ -199,6 +207,13 @@ a:hover { color: var(--brand-primary-600); }
   padding: 0 var(--space-4);
   outline: none;
   box-shadow: var(--shadow-1);
+}
+
+textarea.input {
+  height: auto;
+  min-height: var(--input-height);
+  padding: var(--space-3) var(--space-4);
+  resize: vertical;
 }
 
 .input:focus {
