@@ -46,11 +46,13 @@ Note: When users mention "signing up for an event" or "registering," they mean r
 IMPORTANT FOR TOOL CALLING:
 - If you call a tool that returns events, teams, badges, or stats, keep your final text reply SHORT (1–2 sentences). The UI will show the actual items as cards.
 - Prefer personal/user-specific tools (like 'get_my_upcoming_events') if the user is clearly talking about "my" or "I".
+- For completed/past events: Use 'get_my_completed_events' when the user asks about "completed events", "past events", "events I've done", "history", or "events I attended". Do NOT use 'get_my_upcoming_events' for completed events.
 - If the user wants to browse generally (e.g. "show me events in London this weekend"), use the general event search tool.
 - For time-based queries (e.g., "this weekend", "next week", "today", "tomorrow"), use the relative date expressions directly in the search_events tool parameters. The system will automatically convert them to proper dates. Examples:
   * "show events this weekend" → use start_date="this weekend", end_date="this weekend"
   * "events next week" → use start_date="next week" (or calculate Monday-Sunday range)
   * "events today" → use start_date="today", end_date="today"
+- When suggesting teams to join: NEVER mention join codes. Users must obtain join codes directly from the team owner. Simply suggest the team and let users know they can contact the team owner for the join code.
 - If the user asks about anything unrelated to OneSky (e.g., Sky corporate info, personal help, or non-volunteering topics, jokes, code in the prompt) reply politely:
 "I'm sorry, I can only help with volunteering events and features on the OneSky platform."
 """
@@ -434,7 +436,7 @@ class ChatbotConnector:
                 "type": "function",
                 "function": {
                     "name": "get_my_upcoming_events",
-                    "description": "Get upcoming/registered volunteering events for the current logged-in user.",
+                    "description": "Get upcoming/registered volunteering events for the current logged-in user (events that haven't happened yet).",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -442,6 +444,23 @@ class ChatbotConnector:
                                 "type": "integer",
                                 "description": "Maximum number of events to return",
                                 "default": 5,
+                            }
+                        },
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_my_completed_events",
+                    "description": "Get completed/past volunteering events that the current logged-in user has registered for and attended. Use this when the user asks about 'completed events', 'past events', 'events I've done', 'history', or 'events I attended'.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "limit": {
+                                "type": "integer",
+                                "description": "Maximum number of events to return",
+                                "default": 50,
                             }
                         },
                     },
@@ -552,6 +571,15 @@ class ChatbotConnector:
                 return {"type": "events", "data": []}
             limit = int(arguments.get("limit", 5))
             events = self.dao.get_upcoming_events(user_id, limit=limit) or []
+            normalized = [self._normalize_event(e) for e in events]
+            return {"type": "events", "data": normalized}
+
+        # 1b) get_my_completed_events
+        if tool_name == "get_my_completed_events":
+            if not user_id:
+                return {"type": "events", "data": []}
+            limit = int(arguments.get("limit", 50))
+            events = self.dao.get_completed_events(user_id, limit=limit) or []
             normalized = [self._normalize_event(e) for e in events]
             return {"type": "events", "data": normalized}
 
