@@ -94,19 +94,24 @@ export default function Chatbot() {
         // 1) partial result with cards first
         if (payload?.partial) {
           const botMessageId = `bot-${Date.now()}`;
-          streamingMessageIdRef.current = botMessageId;
+          
+          // Check if a message with this ID already exists (shouldn't happen, but safety check)
+          const existingIndex = newMessages.findIndex(msg => msg._id === botMessageId);
+          if (existingIndex === -1) {
+            streamingMessageIdRef.current = botMessageId;
 
-          newMessages.push({
-            role: "bot",
-            content: "", // text will stream in
-            events: payload.events || null,
-            teams: payload.teams || null,
-            badges: payload.badges || null,
-            // team_events currently not rendered separately, but we preserve:
-            team_events: payload.team_events || null,
-            timestamp: new Date(),
-            _id: botMessageId,
-          });
+            newMessages.push({
+              role: "bot",
+              content: "", // text will stream in
+              events: payload.events || null,
+              teams: payload.teams || null,
+              badges: payload.badges || null,
+              // team_events currently not rendered separately, but we preserve:
+              team_events: payload.team_events || null,
+              timestamp: new Date(),
+              _id: botMessageId,
+            });
+          }
 
           return newMessages;
         }
@@ -115,30 +120,42 @@ export default function Chatbot() {
         if (payload?.stream && typeof payload.response === "string" && !payload?.done) {
           const currentId = streamingMessageIdRef.current;
           if (!currentId) {
-            // no active streaming message, create one quickly
-            const botMessageId = `bot-${Date.now()}`;
-            streamingMessageIdRef.current = botMessageId;
-            newMessages.push({
-              role: "bot",
-              content: payload.response,
-              timestamp: new Date(),
-              _id: botMessageId,
-            });
+            // no active streaming message, check if last message is a bot message being streamed
+            const lastMessage = newMessages[newMessages.length - 1];
+            const lastIsStreamingBot = lastMessage && 
+              lastMessage.role === "bot" && 
+              lastMessage._id &&
+              !lastMessage.content; // Empty content means it's waiting for streaming
+            
+            if (!lastIsStreamingBot) {
+              // Create a new message only if the last one isn't already a streaming bot message
+              const botMessageId = `bot-${Date.now()}`;
+              streamingMessageIdRef.current = botMessageId;
+              newMessages.push({
+                role: "bot",
+                content: payload.response,
+                timestamp: new Date(),
+                _id: botMessageId,
+              });
+            } else {
+              // Update the existing streaming message
+              const lastIndex = newMessages.length - 1;
+              newMessages[lastIndex] = {
+                ...newMessages[lastIndex],
+                content: (newMessages[lastIndex].content || "") + payload.response,
+              };
+              streamingMessageIdRef.current = lastMessage._id;
+            }
             return newMessages;
           }
 
           // Update existing streaming message
-          const messageFound = newMessages.some(msg => msg._id === currentId);
-          if (messageFound) {
-            newMessages = newMessages.map((msg) => {
-              if (msg._id === currentId) {
-                return {
-                  ...msg,
-                  content: (msg.content || "") + payload.response,
-                };
-              }
-              return msg;
-            });
+          const messageIndex = newMessages.findIndex(msg => msg._id === currentId);
+          if (messageIndex !== -1) {
+            newMessages[messageIndex] = {
+              ...newMessages[messageIndex],
+              content: (newMessages[messageIndex].content || "") + payload.response,
+            };
           }
           // If message not found but currentId exists, don't create a new one
           // (wait for the message to be created by partial handler)
@@ -153,32 +170,45 @@ export default function Chatbot() {
 
           if (currentId) {
             // We have an active streaming message - update it
-            const messageFound = newMessages.some(msg => msg._id === currentId);
-            if (messageFound) {
+            const messageIndex = newMessages.findIndex(msg => msg._id === currentId);
+            if (messageIndex !== -1) {
               // Update existing streaming message
-              newMessages = newMessages.map((msg) => {
-                if (msg._id === currentId) {
-                  return {
-                    ...msg,
-                    content: payload.final_text || msg.content || "",
-                  };
-                }
-                return msg;
-              });
+              const finalText = payload.final_text || newMessages[messageIndex].content || "";
+              newMessages[messageIndex] = {
+                ...newMessages[messageIndex],
+                content: finalText,
+              };
+              // Remove _id since streaming is done (set to undefined instead of delete for React)
+              const updatedMessage = { ...newMessages[messageIndex] };
+              delete updatedMessage._id;
+              newMessages[messageIndex] = updatedMessage;
             }
             // If message not found but currentId exists, don't create a new one
             // (message might have been removed or there's a state issue)
-          } else if ((payload.final_text || payload.response) && !currentId) {
+            streamingMessageIdRef.current = null;
+            return newMessages;
+          }
+          
+          // Only create a new message if no currentId and we have content
+          if ((payload.final_text || payload.response) && !currentId) {
             // No streaming message exists, create a new one (for general questions only)
+            // But first check if the last message is already a bot message with the same content
             const finalText = payload.final_text || payload.response || "";
-            newMessages.push({
-              role: "bot",
-              content: finalText,
-              events: payload.events || null,
-              teams: payload.teams || null,
-              badges: payload.badges || null,
-              timestamp: new Date(),
-            });
+            const lastMessage = newMessages[newMessages.length - 1];
+            const isDuplicate = lastMessage && 
+              lastMessage.role === "bot" && 
+              lastMessage.content === finalText;
+            
+            if (!isDuplicate) {
+              newMessages.push({
+                role: "bot",
+                content: finalText,
+                events: payload.events || null,
+                teams: payload.teams || null,
+                badges: payload.badges || null,
+                timestamp: new Date(),
+              });
+            }
           }
 
           streamingMessageIdRef.current = null;
