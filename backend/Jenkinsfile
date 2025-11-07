@@ -1,0 +1,63 @@
+// This Jenkins pipeline adds install and test stages before static code analysis (SonarQube)
+
+pipeline {
+  agent any
+
+  stages {
+
+    stage('Checkout') {
+      steps {
+        // Get source code from a GitHub repository
+        git branch: 'main', url: 'https://github.com/Baribrahim/OneSky.git'
+      }
+    }
+
+    stage('Install') {
+      steps {
+        // Change to backend directory
+        // Create or activate virtual environment
+        // Install dependencies (example for Python)
+        dir('backend') {
+          sh '''
+            python3 -m venv venv
+            . venv/bin/activate
+            pip3 install -r requirements.txt
+          '''
+        }
+      }
+    }
+
+    stage('Test') {
+      steps {
+        // Run the Python tests using pytest inside the virtual environment
+        dir('backend') {
+          sh '''
+            . venv/bin/activate
+            pytest --maxfail=1 --disable-warnings -q
+          '''
+        }
+      }
+    }
+
+    stage('SonarQube Analysis') {
+      environment {
+        scannerHome = tool 'sonarqube'
+      }
+      steps {
+        // Run SonarQube static analysis
+        withSonarQubeEnv('sonar-qube-1') {
+          sh '''
+            cd backend
+            ${scannerHome}/bin/sonar-scanner
+          '''
+        }
+
+        // Wait for Quality Gate result (max 10 minutes)
+        timeout(time: 10, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
+      }
+    }
+
+  } // end of stages
+}
