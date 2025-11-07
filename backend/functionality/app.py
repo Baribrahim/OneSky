@@ -11,9 +11,7 @@ from teams.routes import bp as teams_bp
 from badges.routes import bp as badges_bp
 from chatbot.routes import bp as chatbot_bp
 
-# ⬇️ this is the Socket.IO instance + event handlers we wrote earlier
-# make sure the path matches your project structure:
-# chatbot/socket_chat.py  ->  from chatbot.socket_chat import socketio
+
 from chatbot.socket_chat import socketio
 
 
@@ -66,7 +64,6 @@ if __name__ == "__main__":
     app = create_app()
 
     # IMPORTANT: init socketio on the app
-    # let’s allow your same frontend origins
     socketio.init_app(
         app,
         cors_allowed_origins=[
