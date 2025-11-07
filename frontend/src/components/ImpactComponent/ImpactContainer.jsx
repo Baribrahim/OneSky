@@ -93,7 +93,7 @@ export default function ImpactContainer() {
       <div className="impact__inner">
         {/* Section heading and intro */}
         <div className="impact__header">
-          <h2 id="impact-heading" style={{ margin: 0 }}>Your Impact</h2>
+          <h2 id="impact-heading" className="event-title" style={{ margin: 0 }}>Your Impact</h2>
           <p className="helper" style={{ marginTop: 4 }}>
             {data?.first_name
               ? `Great work, ${data.first_name}! Here's your contribution so far.`

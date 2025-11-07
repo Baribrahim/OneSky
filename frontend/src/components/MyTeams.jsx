@@ -14,7 +14,7 @@ export default function MyTeams({ teams = [], loading = false, error = "" }) {
       <div className="my-teams-inner card">
         <div className="my-teams-header">
           <div className="my-teams-title-section">
-            <h2 className="brand-gradient">My Teams</h2>
+            <h2 className="event-title">My Teams</h2>
             <p className="filter-tagline">Track your team involvement and manage your memberships.</p>
           </div>
         </div>

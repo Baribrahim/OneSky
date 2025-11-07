@@ -193,6 +193,9 @@ a:hover { color: var(--brand-primary-600); }
     #007aff 75%,  /* blue */
     #00c6ff 100%  /* light blue for smooth end */
   );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 
