@@ -14,11 +14,13 @@ pipeline {
 
     stage('Install') {
       steps {
-        // Change to backend directory
-        // Create or activate virtual environment
-        // Install dependencies (example for Python)
-        dir('backend/functionality') {
+        dir('backend') {
           sh '''
+            # Install system dependencies required for mysqlclient and wheel builds
+            sudo apt-get update -y
+            sudo apt-get install -y python3-dev pkg-config default-libmysqlclient-dev build-essential
+            
+            # (Optional) virtual environment and pip install
             python3 -m venv venv
             . venv/bin/activate
             pip3 install -r requirements.txt
