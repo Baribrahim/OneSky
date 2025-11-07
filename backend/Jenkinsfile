@@ -17,7 +17,7 @@ pipeline {
         // Change to backend directory
         // Create or activate virtual environment
         // Install dependencies (example for Python)
-        dir('backend') {
+        dir('backend/functionality') {
           sh '''
             python3 -m venv venv
             . venv/bin/activate
@@ -30,7 +30,7 @@ pipeline {
     stage('Test') {
       steps {
         // Run the Python tests using pytest inside the virtual environment
-        dir('backend') {
+        dir('backend/functionality') {
           sh '''
             . venv/bin/activate
             pytest --maxfail=1 --disable-warnings -q
@@ -53,7 +53,7 @@ pipeline {
         }
 
         // Wait for Quality Gate result (max 10 minutes)
-        timeout(time: 10, unit: 'MINUTES') {
+        timeout(time: 1, unit: 'MINUTES') {
           waitForQualityGate abortPipeline: true
         }
       }
