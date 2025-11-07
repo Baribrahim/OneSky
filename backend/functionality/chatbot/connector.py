@@ -707,14 +707,24 @@ class ChatbotConnector:
                     end_date=end_date,
                 )
 
-            # filter out user's own registered events from recommendations
+            # filter out user's own registered events and team registered events from recommendations
             if user_email and events:
                 try:
+                    # Get user's individual event registrations
                     user_event_ids = self.dao.get_user_events(user_email) or []
                     registered_ids = {
                         (row[0] if isinstance(row, tuple) else row)
                         for row in user_event_ids
                     }
+                    
+                    # Get events that user's teams are registered to
+                    team_events = self.dao.get_team_events(user_email) or []
+                    for team_event in team_events:
+                        team_event_id = team_event.get("ID") or team_event.get("id")
+                        if team_event_id:
+                            registered_ids.add(int(team_event_id))
+                    
+                    # Filter out registered events
                     filtered = []
                     for ev in events:
                         ev_id = ev.get("ID") or ev.get("id")
