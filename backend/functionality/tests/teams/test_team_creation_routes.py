@@ -20,7 +20,7 @@ class FakeConnector:
     def __init__(self):
         self.created = None
 
-    def create_team(self, creator_email, name, description, department, capacity):
+    def create_team(self, creator_email, name, description, department):
         if not name:
             raise ValueError("Name is required.")
         self.created = {
@@ -28,7 +28,6 @@ class FakeConnector:
             "Name": name,
             "Description": description,
             "Department": department,
-            "Capacity": capacity,
             "OwnerUserID": 1,
             "JoinCode": "ZXCV1234",
             "IsActive": 1,
@@ -54,7 +53,6 @@ def test_post_teams_create_successfully(monkeypatch):
             "name": "New Team",
             "description": "Desc",
             "department": "Tech",
-            "capacity": 10,
         },
     )
     assert resp.status_code == 201
@@ -83,7 +81,7 @@ def test_get_teams_list(monkeypatch):
     monkeypatch.setattr(team_routes, "token_required", token_required_stub, raising=True)
     fake = FakeConnector()
     # seed one in the fake
-    fake.create_team("owner@example.com", "A", "D", "Tech", 8)
+    fake.create_team("owner@example.com", "A", "D", "Tech")
     monkeypatch.setattr(team_routes, "connector", fake, raising=True)
 
     app = make_app(team_routes.bp)

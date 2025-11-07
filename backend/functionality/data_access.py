@@ -909,17 +909,17 @@ class DataAccess:
     # -----------------------------
     # Teams: Data Access methods
     # -----------------------------
-    def create_team(self, name, description, department, capacity, owner_user_id, join_code):
+    def create_team(self, name, description, department, owner_user_id, join_code):
         """
         Insert a new team row and return the created team as a dict.
         """
         with self.get_connection() as conn, conn.cursor() as cursor:
             cursor.execute(
                 """
-                INSERT INTO Team (Name, Description, Department, Capacity, OwnerUserID, JoinCode)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO Team (Name, Description, Department, OwnerUserID, JoinCode)
+                VALUES (%s, %s, %s, %s, %s)
                 """,
-                (name, description, department, capacity, owner_user_id, join_code),
+                (name, description, department, owner_user_id, join_code),
             )
             new_id = cursor.lastrowid
         self.insert_user_in_team(owner_user_id, new_id)
@@ -941,7 +941,7 @@ class DataAccess:
         """
         user_id = self.get_id_by_email(user_email)
         sql =  """
-                SELECT ID, Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive,
+                SELECT ID, Name, Description, Department, OwnerUserID, JoinCode, IsActive,
                 CASE 
                 WHEN OwnerUserID = %s THEN TRUE 
                 ELSE FALSE 
@@ -990,7 +990,6 @@ class DataAccess:
                     t.Name,
                     t.Description,
                     t.Department,
-                    t.Capacity,
                     t.OwnerUserID,
                     t.JoinCode,
                     t.IsActive,
@@ -1061,7 +1060,7 @@ class DataAccess:
         """
         try:
             sql = """
-                SELECT ID, Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive
+                SELECT ID, Name, Description, Department, OwnerUserID, JoinCode, IsActive
                 FROM Team
                 WHERE IsActive = 1
                 ORDER BY ID DESC

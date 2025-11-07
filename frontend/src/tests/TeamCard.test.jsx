@@ -16,7 +16,6 @@ describe("TeamCard", () => {
     name: "Engineering",
     description: "Frontend team",
     department: "Tech",
-    capacity: 10,
     join_code: "ABC123",
   };
 
@@ -33,7 +32,6 @@ describe("TeamCard", () => {
     expect(screen.getByText(/engineering/i)).toBeInTheDocument();
     expect(screen.getByText(/frontend team/i)).toBeInTheDocument();
     expect(screen.getByText(/Dept: Tech/i)).toBeInTheDocument();
-    expect(screen.getByText(/Capacity: 10/i)).toBeInTheDocument();
   });
 
   it("renders buttons", () => {
