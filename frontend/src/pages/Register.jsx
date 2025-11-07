@@ -26,7 +26,7 @@ export default function Register() {
   const handleEmailBlur = (event) => {
     const value = event.target.value.trim();
     if (value && !emailPattern.test(value)) {
-      setError("Email address not in a valid format");
+      setError("Email address not in a valid format. Please make sure it ends with @sky.uk");
     } else if (emailPattern.test(value)) {
       setError("");
     }
