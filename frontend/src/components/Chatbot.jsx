@@ -51,6 +51,12 @@ export default function Chatbot() {
   // Reference to the input text box
   const inputRef = useRef(null);
 
+  // Resize state
+  const [windowSize, setWindowSize] = useState({ width: 380, height: 500 });
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef(null);
+  const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+
   // Fetch user's teams on mount
   useEffect(() => {
     const fetchMyTeams = async () => {
@@ -256,6 +262,53 @@ export default function Chatbot() {
     }
   }, [isOpen]);
 
+  // Resize handlers
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return;
+
+      const container = resizeRef.current?.closest('.chatbot-window');
+      if (!container) return;
+
+      // Calculate the difference from the start position
+      const deltaX = resizeStartRef.current.x - e.clientX;
+      const deltaY = resizeStartRef.current.y - e.clientY;
+
+      // Calculate new dimensions (dragging left/up increases size)
+      const newWidth = resizeStartRef.current.width + deltaX;
+      const newHeight = resizeStartRef.current.height + deltaY;
+
+      // Minimum size constraints
+      const minWidth = 300;
+      const minHeight = 300;
+      const maxWidth = window.innerWidth - 48;
+      const maxHeight = window.innerHeight - 100;
+
+      setWindowSize({
+        width: Math.max(minWidth, Math.min(maxWidth, newWidth)),
+        height: Math.max(minHeight, Math.min(maxHeight, newHeight)),
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'nwse-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
+
   // Format message content to preserve paragraphs and line breaks
   const formatMessageContent = (content) => {
     if (!content) return "";
@@ -372,7 +425,31 @@ export default function Chatbot() {
     <div className="chatbot-container">
       {/* Chat Window */}
       {isOpen && (
-        <div className="chatbot-window">
+        <div 
+          className="chatbot-window"
+          style={{ width: `${windowSize.width}px`, height: `${windowSize.height}px` }}
+        >
+          {/* Resize Handle */}
+          <div
+            ref={resizeRef}
+            className="chatbot-resize-handle"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const container = resizeRef.current?.closest('.chatbot-window');
+              if (container) {
+                const rect = container.getBoundingClientRect();
+                resizeStartRef.current = {
+                  x: e.clientX,
+                  y: e.clientY,
+                  width: windowSize.width,
+                  height: windowSize.height,
+                };
+              }
+              setIsResizing(true);
+            }}
+            title="Resize chat window"
+          />
+          
           {/* Header */}
           <div className="chatbot-header">
             <div className="chatbot-header-content">

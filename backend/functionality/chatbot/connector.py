@@ -7,6 +7,7 @@ Chatbot Connector
 
 import os
 import json
+import calendar
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple, Callable
 
@@ -48,9 +49,10 @@ IMPORTANT FOR TOOL CALLING:
 - Prefer personal/user-specific tools (like 'get_my_upcoming_events') if the user is clearly talking about "my" or "I".
 - For completed/past events: Use 'get_my_completed_events' when the user asks about "completed events", "past events", "events I've done", "history", or "events I attended". Do NOT use 'get_my_upcoming_events' for completed events.
 - If the user wants to browse generally (e.g. "show me events in London this weekend"), use the general event search tool.
-- For time-based queries (e.g., "this weekend", "next week", "today", "tomorrow"), use the relative date expressions directly in the search_events tool parameters. The system will automatically convert them to proper dates. Examples:
+- For time-based queries (e.g., "this weekend", "next week", "next month", "today", "tomorrow"), use the relative date expressions directly in the search_events tool parameters. The system will automatically convert them to proper dates. Examples:
   * "show events this weekend" → use start_date="this weekend", end_date="this weekend"
   * "events next week" → use start_date="next week" (or calculate Monday-Sunday range)
+  * "events next month" → use start_date="next month", end_date="next month" (expands to full month range)
   * "events today" → use start_date="today", end_date="today"
 - When suggesting teams to join: NEVER mention join codes. Users must obtain join codes directly from the team owner. Simply suggest the team and let users know they can contact the team owner for the join code.
 - If the user asks about anything unrelated to OneSky (e.g., Sky corporate info, personal help, or non-volunteering topics, jokes, code in the prompt) reply politely:
@@ -478,11 +480,11 @@ class ChatbotConnector:
                             "location": {"type": "string"},
                             "start_date": {
                                 "type": "string",
-                                "description": "Start date in ISO format YYYY-MM-DD, or relative expressions like 'today', 'tomorrow', 'this weekend', 'next weekend', 'this week', 'next week'. For 'this weekend', use it as start_date and the system will find events from Saturday onwards.",
+                                "description": "Start date in ISO format YYYY-MM-DD, or relative expressions like 'today', 'tomorrow', 'this weekend', 'next weekend', 'this week', 'next week', 'next month'. For 'this weekend', use it as start_date and the system will find events from Saturday onwards. For 'next month', it will expand to the full month range.",
                             },
                             "end_date": {
                                 "type": "string",
-                                "description": "End date in ISO format YYYY-MM-DD, or relative expressions. For 'this weekend', you can set end_date to 'this weekend' and it will be interpreted as Sunday. For date ranges, always provide both start_date and end_date.",
+                                "description": "End date in ISO format YYYY-MM-DD, or relative expressions. For 'this weekend', you can set end_date to 'this weekend' and it will be interpreted as Sunday. For 'next month', it will expand to the last day of next month. For date ranges, always provide both start_date and end_date.",
                             },
                             "limit": {
                                 "type": "integer",
@@ -657,6 +659,22 @@ class ChatbotConnector:
                         end_date = sunday
                     else:
                         start_date = monday
+                
+                # Handle "next month" - expand to full month range (first day to last day)
+                elif start_lower == "next month":
+                    if today.month == 12:
+                        # December -> January of next year
+                        first_day = date(today.year + 1, 1, 1)
+                        last_day = date(today.year + 1, 1, calendar.monthrange(today.year + 1, 1)[1])
+                    else:
+                        first_day = date(today.year, today.month + 1, 1)
+                        last_day = date(today.year, today.month + 1, calendar.monthrange(today.year, today.month + 1)[1])
+                    
+                    if end_lower == "next month" or not end_date_str:
+                        start_date = first_day
+                        end_date = last_day
+                    else:
+                        start_date = first_day
             
             limit = int(arguments.get("limit", 10))
             use_semantic = bool(arguments.get("use_semantic", True))
@@ -896,6 +914,14 @@ class ChatbotConnector:
             if days_until_next_monday == 0:
                 days_until_next_monday = 7
             return today + timedelta(days=days_until_next_monday)
+        
+        if value_lower == "next month":
+            # Return first day of next month
+            if today.month == 12:
+                # December -> January of next year
+                return date(today.year + 1, 1, 1)
+            else:
+                return date(today.year, today.month + 1, 1)
         
         # Try parsing as ISO date format
         try:
