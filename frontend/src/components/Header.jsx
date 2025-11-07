@@ -9,11 +9,11 @@ import { useAuth } from "../context/AuthProvider";
  * Full-width top bar with three sections:
  * - Left: Brand logo
  * - Center: Navigation links
- * - Right: Logout button
+ * - Right: Logout button (if logged in) or Login/Register links (if not logged in)
  * - Mobile: Hamburger menu with dropdown navigation
  */
 export default function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const headerRef = useRef(null);
 
@@ -69,15 +69,26 @@ export default function Header() {
         <Link to="/teams">Teams</Link>
       </nav>
 
-      {/* Right: Logout (desktop) */}
+      {/* Right: Auth buttons (desktop) */}
       <div className="logout-container">
-        <a
-          href="#"
-          onClick={handleLogout}
-          className="logout-btn"
-        >
-          Log out
-        </a>
+        {isAuthenticated ? (
+          <a
+            href="#"
+            onClick={handleLogout}
+            className="logout-btn"
+          >
+            Log out
+          </a>
+        ) : (
+          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+            <Link to="/login" className="logout-btn" style={{ textDecoration: "none" }}>
+              Login
+            </Link>
+            <Link to="/register" className="logout-btn" style={{ textDecoration: "none" }}>
+              Register
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Mobile: Hamburger menu button */}
@@ -111,13 +122,24 @@ export default function Header() {
         <Link to="/" onClick={closeMobileMenu}>Home</Link>
         <Link to="/events" onClick={closeMobileMenu}>Events</Link>
         <Link to="/teams" onClick={closeMobileMenu}>Teams</Link>
-        <a
-          href="#"
-          onClick={handleLogout}
-          className="mobile-logout-btn"
-        >
-          Log out
-        </a>
+        {isAuthenticated ? (
+          <a
+            href="#"
+            onClick={handleLogout}
+            className="mobile-logout-btn"
+          >
+            Log out
+          </a>
+        ) : (
+          <>
+            <Link to="/login" onClick={closeMobileMenu} className="mobile-logout-btn">
+              Login
+            </Link>
+            <Link to="/register" onClick={closeMobileMenu} className="mobile-logout-btn">
+              Register
+            </Link>
+          </>
+        )}
       </nav>
     </header>
   );
