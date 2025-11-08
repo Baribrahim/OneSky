@@ -1,0 +1,113 @@
+.welcome-page {
+  font-family: Arial, sans-serif;
+  color: #333;
+}
+
+/* Hero Section */
+.hero {
+  background: url('/images/volunteer-bg.jpg') center/cover no-repeat;
+  height: 50vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: black;
+}
+
+.hero h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* Animations */
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 2s forwards;
+}
+.fade-in.delay {
+  animation-delay: 1s;
+}
+.fade-in.delay2 {
+  animation-delay: 1s;
+}
+@keyframes fadeIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.intro-video {
+  width: 100vw; 
+  margin: 0;
+  padding: 0;  
+}
+
+.intro-video video {
+  width: 100%; 
+  height: 600px;         
+  object-fit: cover;   
+  display: block;
+}
+
+.features {
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.feature-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+}
+
+.feature-card h3 {
+  margin: 1rem 0 0.5rem;
+}
+
+.feature-card p {
+  padding: 0 1rem;
+  color: #555;
+}
+
+.feature-section {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.feature-section.reverse {
+  flex-direction: row-reverse;
+}
+
+.feature-image {
+  width: 30%;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.feature-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 60%; /* Adjust as needed */
+}
+
+.feature-text h3 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+.feature-text p {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
