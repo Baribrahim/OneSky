@@ -570,8 +570,11 @@ a:hover { color: var(--brand-primary-600); }
 .home-card h2 {
   margin: 0 0 var(--space-6);
   font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-text);
+  font-weight: 400;
+  background: -webkit-linear-gradient(left, #ff9e00 0%, red 10%, #b5007d 20%, #21429c 40%, #0071ff 60%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Optional: small devices */

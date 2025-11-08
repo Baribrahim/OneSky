@@ -61,8 +61,8 @@ const Leaderboard = () => {
 
       <div className="leaderboard-list">
         {!loading && !error && rankedUsers.map((user, index) => (
-            <div>
-          <div key={index} className="leaderboard-user">
+          <div className="leaderboard-item" key={index} >
+          <div className="leaderboard-user">
             <span className="rank">{index + 1}.</span>{" "}
             <img
               src={
@@ -74,7 +74,10 @@ const Leaderboard = () => {
               className="leaderboard-img"
             />
             <span className="name">{user.FirstName} {user.LastName}</span>{" "}
-            <span className="score">{user.RankScore}</span>{" "}
+            <span className="score-tooltip">
+              <span className="score">{user.RankScore}</span>
+              <span className="tooltip-text">Scores are a weighted sum of events completed, hours spent, and badges earned.</span>
+            </span>
 
           </div>
           <div className="show-stats-wrapper" style={{ paddingLeft: '35px' }}>

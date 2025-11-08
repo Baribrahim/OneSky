@@ -13,9 +13,10 @@
 }
 
 .leaderboard-list {
+  margin-top: 2.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 2.0rem;
 }
 
 .leaderboard-user {
@@ -26,25 +27,78 @@
   justify-content: space-between;
 }
 
-.leaderboard-user:hover {
-  background: #f9fafb;
-  transform: translateX(4px);
+.leaderboard-item {
+  padding-top: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 0.1px solid #eee;  
+}
+
+.leaderboard-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+  border-color: var(--brand-primary);
 }
 
 .rank {
   font-weight: 600;
+  font-size: 1.2rem;
 }
 
 .name {
   flex: 1;
   margin-left: 0.5rem;
   color: #333;
+  font-size: 1.2rem;
 }
 
 .score {
   font-weight: 500;
-  color: #007bff;
 }
+
+/* Container */
+.score-tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+/* Tooltip text (hidden by default) */
+.score-tooltip .tooltip-text {
+  visibility: hidden;
+  width: 200px; /* adjust width */
+  background-color:#f0eaead6; 
+  color: #000000;
+  text-align: center;
+  border-radius: 5px;
+  padding: 5px;
+  position: absolute;
+  z-index: 10;
+  bottom: 125%; /* position above the score */
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.8rem;
+}
+
+/* Arrow under tooltip */
+.score-tooltip .tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%; /* arrow at bottom of tooltip */
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #f0eaead6 transparent transparent transparent;
+}
+
+/* Show tooltip on hover */
+.score-tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
 
 /* Hover Box (Tooltip) */
 .hover-box {
@@ -85,11 +139,15 @@
 }
 
 .leaderboard-img{
-  width: 50px; 
-  height: 50px; 
+  width: 70px; 
+  height: 70px; 
   border-radius: 50%;
+  margin-top: -1.5rem;
+  margin-right: 0.5rem;
+  margin-left: 1rem;
   object-fit: cover;
   box-shadow: 0 0.25rem 0.9375rem rgba(0,0,0,0.15);
+  border: 0.1rem solid rgb(203, 193, 193);
   background: #fff;
 }
 
@@ -106,7 +164,7 @@
 
 .show-stats-text {
   font-size: small;
-
+  margin-left: 22rem;
   cursor: pointer;
   margin-top: 4px;
   display: inline-block;
