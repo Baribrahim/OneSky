@@ -147,8 +147,20 @@
   word-break: break-word;
 }
 
+.image-error {
+  margin-top: 3rem;
+  margin-bottom: -1.5rem; 
+}
 
+.password-update-section{
+  margin: 3rem auto 0;
+  max-width: 420px;          
+}
 
+.old-password, .new-password, .confirm-password {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
 
 /* Responsive tweaks */
 @media (max-width: 768px) {

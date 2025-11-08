@@ -75,3 +75,28 @@ def serve_user_image(filename):
     except Exception as e:
         print(f"Error serving image {filename}: {e}")
         return jsonify({"error": "Image not found"}), 404
+
+#Update User Password
+@bp.post("/update-password")
+@token_required
+def update_password():
+    """Updates the current user's password"""
+    try:
+        email = g.current_user.get("sub")
+        data = request.get_json(silent=True) or request.form
+        new_password = data.get("new_password")
+        old_password = data.get("old_password")
+
+        if not new_password:
+            return jsonify({"error": "No new password provided"}), 400
+        
+        if not old_password:
+            return jsonify({"error": "Old password not provided"}), 400
+
+        if pc.update_user_password(email, old_password, new_password) == False:
+            return jsonify({"error": "Old password is incorrect"}), 400
+        
+        return jsonify({"message": "Password updated successfully"}), 200
+    except Exception as e:
+        print(f"Error in update_password: {e}")
+        return jsonify({"error": "Something went wrong"}), 500

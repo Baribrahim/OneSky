@@ -859,9 +859,6 @@ class DataAccess:
         """
         try:
             user_id = self.get_id_by_email(user_email)
-            if not user_id:
-                print(f"update_profile_image: User not found for email {user_email}")
-                return False
 
             sql = """
                 UPDATE USER
@@ -870,9 +867,31 @@ class DataAccess:
             """
             with self.get_connection() as conn, conn.cursor() as cursor:
                 cursor.execute(sql, (image_path, user_id))
-                conn.commit()
                 return cursor.rowcount > 0
 
         except Exception as e:
             print(f"update_profile_image: {e}")
+            raise
+    
+    def update_user_password(self, user_email, hashed_password):
+        """
+        Update the users password user.
+
+        :param user_email: str - user's email
+        :param hashed_password: str - new hashed password
+        """
+        try:
+            
+            user_id = self.get_id_by_email(user_email)
+
+            sql = """
+                UPDATE USER
+                SET Password = %s
+                WHERE ID = %s
+            """
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (hashed_password, user_id))
+
+        except Exception as e:
+            print(f"update_user_password: {e}")
             raise

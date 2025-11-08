@@ -11,9 +11,10 @@ create table User
 	Password varchar(100) not null,
 	FirstName varchar(100) not null,
 	LastName varchar(100) not null,
-  ProfileImgPath VARCHAR(255) DEFAULT 'default.png',
-	DateCreated DATETIME DEFAULT CURRENT_TIMESTAMP;
-  );
+  DateCreated DATETIME DEFAULT CURRENT_TIMESTAMP,
+  RankScore int DEFAULT 0,
+  ProfileImgPath varchar(255) default "default.png"
+	);
 
 create table Cause
 	(
