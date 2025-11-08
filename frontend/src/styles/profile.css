@@ -135,7 +135,7 @@
 
 .detail-label {
   flex: 0 0 160px;           /* fixed column width for alignment */
-  font-weight: 600;
+  font-weight: 500;
   color: #555;
   text-align: left;         /* right-align for consistent look */
 }
@@ -160,6 +160,16 @@
 .old-password, .new-password, .confirm-password {
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+.profile {
+  margin: 0 0 var(--space-6);
+  font-size: 1.3rem;
+  font-weight: 400;
+  background: -webkit-linear-gradient(left, #ff9e00 0%, red 10%, #b5007d 20%, #21429c 40%, #0071ff 60%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Responsive tweaks */
@@ -200,7 +210,7 @@
 
 @media (max-width: 480px) {
   .profile-card {
-    min-width: 200px;
+    min-width: 320px;
     padding-top: 5.5rem;
   }
 

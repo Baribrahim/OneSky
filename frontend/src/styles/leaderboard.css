@@ -75,18 +75,19 @@
   z-index: 10;
   bottom: 125%; /* position above the score */
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-80%);
   opacity: 0;
   transition: opacity 0.3s;
   font-size: 0.8rem;
 }
+
 
 /* Arrow under tooltip */
 .score-tooltip .tooltip-text::after {
   content: "";
   position: absolute;
   top: 100%; /* arrow at bottom of tooltip */
-  left: 50%;
+  left: 80%;
   transform: translateX(-50%);
   border-width: 5px;
   border-style: solid;
@@ -163,13 +164,22 @@
 }
 
 .show-stats-text {
-  font-size: small;
-  margin-left: 22rem;
+  font-size: 0.85rem;
   cursor: pointer;
   margin-top: 4px;
   display: inline-block;
   transition: color 0.2s;
+  margin-right: 1rem;
 }
+
+/* Optional: on very small screens, make it center */
+@media (max-width: 480px) {
+  .show-stats-text {
+    text-align: center;
+    margin-left: 0;
+  }
+}
+
 
 .show-stats-text:hover {
   text-decoration: underline;

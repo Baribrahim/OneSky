@@ -199,7 +199,7 @@ const Profile = () => {
 
               {/* Password Update Form */}
               <div className="password-update-section">
-                <h3>Update Password</h3>
+                <h3 className="profile">Update Password</h3>
                 {success && <div className="success" role="alert">{success}</div>}
                 {error && <div className="error" role="alert">{error}</div>}
 

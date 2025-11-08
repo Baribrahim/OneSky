@@ -81,9 +81,11 @@ const Leaderboard = () => {
 
           </div>
           <div className="show-stats-wrapper" style={{ paddingLeft: '35px' }}>
+            <div className="show-stats-wrapper-inner" style={{ display: 'flex', justifyContent: 'flex-end', paddingLeft: '35px' }}>
             <span className="show-stats-text" onClick={() => handleToggleStats(user.Email)}>
               {expandedUsers.includes(user.Email) ? "Hide Stats" : "Show Stats"}
             </span>
+            </div>
 
             {expandedUsers.includes(user.Email) && userStats[user.Email] && (
               <div className="user-stats">
