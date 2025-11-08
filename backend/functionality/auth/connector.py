@@ -1,4 +1,5 @@
 import bcrypt       
+import re
 from data_access import DataAccess
 
 """ Middle layer between routes and data access """
@@ -23,10 +24,18 @@ class Connector():
             print("CONNECTOR: User already exists")
             return False, "User already exists"
 
-        # Validation: password length
-        if len(password) < 8:
-            print("CONNECTOR: Password too short")
-            return False, "Password must be at least 8 characters"
+        # Validation: email domain (Sky internal only)
+        email_pattern = re.compile(r"^[A-Za-z0-9._%+-]+@sky\.uk$")
+        if not email_pattern.match(email):
+            print("CONNECTOR: Invalid email domain")
+            return False, "Email address not in a valid format"
+
+        # Validation: password strength
+        # At least 8 chars, one uppercase, one number, one special char
+        password_pattern = re.compile(r"^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$")
+        if not password_pattern.match(password):
+            print("CONNECTOR: Weak password")
+            return False, "Password must be at least 8 characters and include an uppercase letter, a number, and a special character."
 
         # Hash password and insert
         hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())

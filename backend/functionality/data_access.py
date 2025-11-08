@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import os
 import pymysql
 import random
+import json
+import numpy as np
 from pymysql.cursors import DictCursor
 from flask import request
 from datetime import date, timedelta
@@ -100,32 +102,44 @@ class DataAccess:
         combining individual and team registrations. Multiple teams per event are joined into a single row.
         """
         sql = """
-            SELECT 
-                e.ID,
-                e.Title,
-                DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
-                DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
-                DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
-                e.LocationCity,
-                e.Image_path,
-                IFNULL(
-                    GROUP_CONCAT(DISTINCT t.Name ORDER BY t.Name SEPARATOR ', '),
-                    'Individual'
-                ) AS RegistrationType
-            FROM Event e
-            LEFT JOIN TeamMembership tm ON tm.UserID = %s
-            LEFT JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
-            LEFT JOIN Team t ON t.ID = tm.TeamID
-            LEFT JOIN EventRegistration er ON er.UserID = %s AND er.EventID = e.ID
-            WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
-            AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
-            GROUP BY e.ID
-            ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
-            LIMIT %s
+                SELECT 
+                    e.ID,
+                    e.Title,
+                    e.About,
+                    e.Address,
+                    e.LocationPostcode,
+                    e.Capacity,
+                    DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
+                    DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
+                    DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                    e.LocationCity,
+                    e.Image_path,
+                    IFNULL(
+                        GROUP_CONCAT(DISTINCT t.Name ORDER BY t.Name SEPARATOR ', '),
+                        'Individual'
+                    ) AS RegistrationType
+                FROM Event e
+                LEFT JOIN EventRegistration er 
+                    ON er.UserID = %s AND er.EventID = e.ID
+                LEFT JOIN TeamMembership tm 
+                    ON tm.UserID = %s
+                LEFT JOIN TeamEventRegistration ter 
+                    ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
+                LEFT JOIN Team t 
+                    ON t.ID = ter.TeamID
+                WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
+                AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
+                GROUP BY e.ID, e.Title, e.About, e.Address, e.LocationPostcode, 
+                        e.Capacity, e.Date, e.StartTime, e.EndTime, 
+                        e.LocationCity, e.Image_path
+                ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
+                LIMIT %s
         """
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id, user_id, int(limit)))
-            return cursor.fetchall()
+            result = cursor.fetchall()
+            print(result)
+            return result
 
 
     def get_upcoming_events_paged(self, user_id: int, limit: int = 5, offset: int = 0):
@@ -134,28 +148,38 @@ class DataAccess:
         Multiple teams per event are joined into a single row.
         """
         sql = """
-            SELECT 
-                e.ID,
-                e.Title,
-                DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
-                DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
-                DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
-                e.LocationCity,
-                e.Image_path,
-                IFNULL(
-                    GROUP_CONCAT(DISTINCT t.Name ORDER BY t.Name SEPARATOR ', '),
-                    'Individual'
-                ) AS RegistrationType
-            FROM Event e
-            LEFT JOIN TeamMembership tm ON tm.UserID = %s
-            LEFT JOIN TeamEventRegistration ter ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
-            LEFT JOIN Team t ON t.ID = tm.TeamID
-            LEFT JOIN EventRegistration er ON er.UserID = %s AND er.EventID = e.ID
-            WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
-            AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
-            GROUP BY e.ID
-            ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
-            LIMIT %s OFFSET %s
+                SELECT 
+                    e.ID,
+                    e.Title,
+                    e.About,
+                    e.Address,
+                    e.LocationPostcode,
+                    e.Capacity,
+                    DATE_FORMAT(e.Date, '%%Y-%%m-%%d')      AS Date,
+                    DATE_FORMAT(e.StartTime, '%%H:%%i:%%s') AS StartTime,
+                    DATE_FORMAT(e.EndTime, '%%H:%%i:%%s')   AS EndTime,
+                    e.LocationCity,
+                    e.Image_path,
+                    IFNULL(
+                        GROUP_CONCAT(DISTINCT t.Name ORDER BY t.Name SEPARATOR ', '),
+                        'Individual'
+                    ) AS RegistrationType
+                FROM Event e
+                LEFT JOIN EventRegistration er 
+                    ON er.UserID = %s AND er.EventID = e.ID
+                LEFT JOIN TeamMembership tm 
+                    ON tm.UserID = %s
+                LEFT JOIN TeamEventRegistration ter 
+                    ON ter.TeamID = tm.TeamID AND ter.EventID = e.ID
+                LEFT JOIN Team t 
+                    ON t.ID = ter.TeamID 
+                WHERE TIMESTAMP(e.Date, e.StartTime) > NOW()
+                AND (er.EventID IS NOT NULL OR ter.EventID IS NOT NULL)
+                GROUP BY e.ID, e.Title, e.About, e.Address, e.LocationPostcode, 
+                        e.Capacity, e.Date, e.StartTime, e.EndTime, 
+                        e.LocationCity, e.Image_path
+                ORDER BY TIMESTAMP(e.Date, e.StartTime) ASC
+                LIMIT %s OFFSET %s
         """
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (user_id, user_id, int(limit), int(offset)))
@@ -459,7 +483,9 @@ class DataAccess:
     def get_filtered_events(self, keyword=None, location=None, start_date=None, end_date=None):
         events = []
         try:
-            if not start_date and not end_date:
+            # Only default to today if NO date parameters are provided at all
+            # If start_date or end_date are explicitly None (from user query), don't default
+            if start_date is None and end_date is None:
                 start_date = date.today()
                 # If we want to filter by default 30 days then uncomment below
                 # end_date = start_date + timedelta(days=30)
@@ -471,8 +497,8 @@ class DataAccess:
                         GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
                     FROM Event e
                     JOIN Cause c ON e.CauseID = c.ID
-                    JOIN CauseTag ct ON c.ID = ct.CauseID
-                    JOIN Tag t ON ct.TagID = t.ID
+                    LEFT JOIN CauseTag ct ON c.ID = ct.CauseID
+                    LEFT JOIN Tag t ON ct.TagID = t.ID
                     WHERE 1=1
                     """
                     params = []
@@ -489,10 +515,10 @@ class DataAccess:
                     if start_date and end_date:
                         query += " AND e.Date BETWEEN %s AND %s"
                         params.extend([start_date, end_date])
-                    elif start_date:
+                    elif start_date is not None:
                         query += " AND e.Date >= %s"
                         params.append(start_date)
-                    elif end_date:
+                    elif end_date is not None:
                         query += " AND e.Date <= %s"
                         params.append(end_date)
                     
@@ -504,7 +530,6 @@ class DataAccess:
 
                     cursor.execute(query, params)
                     result_set = cursor.fetchall()
-
                     
                     for item in result_set:
                         events.append({
@@ -604,6 +629,281 @@ class DataAccess:
         except Exception as e:
             print(f"Database error in get_event_schedule: {e}")
         return schedule
+    # ------------------------
+    # Embedding Methods for Events
+    # ------------------------
+
+    def get_event_text_for_embedding(self, event_id):
+        """
+        Get concatenated text from event fields for embedding generation.
+        
+        Args:
+            event_id (int): Event ID
+            
+        Returns:
+            str: Concatenated text from Title, About, Activities, Requirements, ExpectedImpact, and CauseName
+        """
+        sql = """
+            SELECT e.Title, e.About, e.Activities, e.Requirements, e.ExpectedImpact, c.Name AS CauseName
+            FROM Event e
+            JOIN Cause c ON e.CauseID = c.ID
+            WHERE e.ID = %s
+            LIMIT 1
+        """
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql, (event_id,))
+            event = cursor.fetchone()
+            
+            if not event:
+                return None
+            
+            # Combine all relevant fields
+            text_parts = []
+            if event.get('Title'):
+                text_parts.append(event['Title'])
+            if event.get('About'):
+                text_parts.append(event['About'])
+            if event.get('Activities'):
+                text_parts.append(event['Activities'])
+            if event.get('Requirements'):
+                text_parts.append(event['Requirements'])
+            if event.get('ExpectedImpact'):
+                text_parts.append(event['ExpectedImpact'])
+            if event.get('CauseName'):
+                text_parts.append(event['CauseName'])
+            
+            return ' '.join(text_parts) if text_parts else None
+
+    def store_event_embedding(self, event_id, embedding):
+        """
+        Store embedding for an event.
+        
+        Args:
+            event_id (int): Event ID
+            embedding (list): Embedding vector (list of floats)
+        """
+        if not embedding:
+            return
+            
+        embedding_json = json.dumps(embedding)
+        
+        sql = """
+            UPDATE Event 
+            SET Embedding = %s 
+            WHERE ID = %s
+        """
+        with self.get_connection() as conn, conn.cursor() as cursor:
+            try:
+                cursor.execute(sql, (embedding_json, event_id))
+            except pymysql.MySQLError as e:
+                print(f"Error storing embedding for event {event_id}: {e}")
+
+    def get_all_events_for_embedding(self):
+        """
+        Get all events with their IDs and relevant text fields.
+        
+        Returns:
+            list: List of dicts with ID and text for embedding
+        """
+        sql = """
+            SELECT e.ID, e.Title, e.About, e.Activities, e.RequirementsProvided, e.RequirementsBring,
+                   e.ExpectedImpact, c.Name AS CauseName
+            FROM Event e
+            JOIN Cause c ON e.CauseID = c.ID
+        """
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql)
+            events = cursor.fetchall()
+            
+            result = []
+            for event in events:
+                text_parts = []
+                if event.get('Title'):
+                    text_parts.append(event['Title'])
+                if event.get('About'):
+                    text_parts.append(event['About'])
+                if event.get('Activities'):
+                    text_parts.append(event['Activities'])
+                if event.get('RequirementsProvided'):
+                    text_parts.append(event['RequirementsProvided'])
+                if event.get('RequirementsBring'):
+                    text_parts.append(event['RequirementsBring'])
+                if event.get('ExpectedImpact'):
+                    text_parts.append(event['ExpectedImpact'])
+                if event.get('CauseName'):
+                    text_parts.append(event['CauseName'])
+                
+                if text_parts:
+                    result.append({
+                        'ID': event['ID'],
+                        'text': ' '.join(text_parts)
+                    })
+            
+            return result
+
+    def get_events_with_embeddings(self, location=None, start_date=None, end_date=None):
+        """
+        Get all events with their embeddings, optionally filtered by location and date range.
+        Optimized to avoid GROUP BY on large TEXT columns.
+        Only returns future events for better performance.
+        
+        Args:
+            location (str, optional): Filter by location city
+            start_date (date, optional): Filter events from this date onwards
+            end_date (date, optional): Filter events up to this date
+            
+        Returns:
+            list: List of dicts with event ID, embedding, and basic info
+        """
+        # Simplified query without GROUP BY to avoid sort memory issues
+        # Only get future events to reduce dataset size
+        sql = """
+            SELECT e.ID, e.Title, e.About, e.Date, e.StartTime, e.EndTime, 
+                   e.LocationCity, e.Address, e.LocationPostcode, e.Capacity, 
+                   e.Image_path, e.Embedding, c.Name AS CauseName
+            FROM Event e
+            JOIN Cause c ON e.CauseID = c.ID
+            WHERE e.Embedding IS NOT NULL
+        """
+        params = []
+        
+        # Add date filtering if provided (this takes precedence over NOW() check)
+        if start_date and end_date:
+            sql += " AND e.Date BETWEEN %s AND %s"
+            params.extend([start_date, end_date])
+        elif start_date:
+            sql += " AND e.Date >= %s"
+            params.append(start_date)
+        elif end_date:
+            sql += " AND e.Date <= %s"
+            params.append(end_date)
+        else:
+            # Only filter by NOW() if no specific date range is provided
+            sql += " AND TIMESTAMP(e.Date, e.StartTime) >= NOW()"
+        
+        if location:
+            sql += " AND LOWER(TRIM(e.LocationCity)) = %s"
+            params.append(location.lower().strip())
+        
+        sql += " ORDER BY e.Date ASC LIMIT 50"
+        
+        with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
+            cursor.execute(sql, params)
+            events = cursor.fetchall()
+            
+            # Get tags separately for each event to avoid GROUP BY issues
+            event_ids = [event['ID'] for event in events]
+            tags_dict = {}
+            if event_ids:
+                tags_sql = """
+                    SELECT e.ID, GROUP_CONCAT(t.TagName SEPARATOR ',') AS TagName
+                    FROM Event e
+                    JOIN Cause c ON e.CauseID = c.ID
+                    LEFT JOIN CauseTag ct ON c.ID = ct.CauseID
+                    LEFT JOIN Tag t ON ct.TagID = t.ID
+                    WHERE e.ID IN ({})
+                    GROUP BY e.ID
+                """.format(','.join(['%s'] * len(event_ids)))
+                
+                cursor.execute(tags_sql, event_ids)
+                tags_results = cursor.fetchall()
+                tags_dict = {row['ID']: row.get('TagName') for row in tags_results}
+            
+            result = []
+            for event in events:
+                embedding_json = event.get('Embedding')
+                embedding = None
+                if embedding_json:
+                    try:
+                        embedding = json.loads(embedding_json)
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+                
+                if embedding:
+                    result.append({
+                        'ID': event['ID'],
+                        'Title': event['Title'],
+                        'About': event.get('About'),
+                        'Date': str(event['Date']),
+                        'StartTime': str(event['StartTime']),
+                        'EndTime': str(event['EndTime']),
+                        'LocationCity': event['LocationCity'],
+                        'Address': event['Address'],
+                        'LocationPostcode': event.get('LocationPostcode'),
+                        'Capacity': event.get('Capacity'),
+                        'Image_path': event.get('Image_path'),
+                        'CauseName': event.get('CauseName'),
+                        'TagName': tags_dict.get(event['ID']),
+                        'embedding': embedding
+                    })
+            
+            return result
+
+    def search_events_with_embeddings(self, query_embedding, location=None, limit=10, similarity_threshold=0.3, start_date=None, end_date=None):
+        """
+        Search events using embedding similarity.
+        Optimized for performance with vectorized operations.
+        
+        Args:
+            query_embedding (list): Embedding vector for user query
+            location (str, optional): Filter by location city
+            limit (int): Maximum number of results
+            similarity_threshold (float): Minimum similarity score (0-1)
+            start_date (date, optional): Filter events from this date onwards
+            end_date (date, optional): Filter events up to this date
+            
+        Returns:
+            list: List of events sorted by similarity score (highest first)
+        """
+        if not query_embedding:
+            return []
+        
+        # Get events with embeddings (filtered by date range if provided)
+        events = self.get_events_with_embeddings(location, start_date, end_date)
+        
+        if not events:
+            return []
+        
+        # Pre-calculate query norm once (optimization)
+        query_vec = np.array(query_embedding, dtype=np.float32)
+        norm_query = np.linalg.norm(query_vec)
+        
+        if norm_query == 0:
+            return []
+        
+        # Vectorized similarity calculation
+        results = []
+        
+        for event in events:
+            event_embedding = event.get('embedding')
+            if not event_embedding:
+                continue
+            
+            try:
+                # Convert to float32 for faster computation
+                event_vec = np.array(event_embedding, dtype=np.float32)
+                norm_event = np.linalg.norm(event_vec)
+                
+                if norm_event == 0:
+                    continue
+                
+                # Fast cosine similarity calculation
+                dot_product = np.dot(query_vec, event_vec)
+                similarity = dot_product / (norm_query * norm_event)
+                
+                if similarity >= similarity_threshold:
+                    # Remove embedding from result (not needed in response)
+                    event_copy = {k: v for k, v in event.items() if k != 'embedding'}
+                    event_copy['similarity_score'] = float(similarity)
+                    results.append(event_copy)
+            except (ValueError, TypeError):
+                # Skip events with invalid embeddings
+                continue
+        
+        # Sort by similarity (highest first) and limit results
+        results.sort(key=lambda x: x['similarity_score'], reverse=True)
+        return results[:limit]
+
 
     
     # -----------------------------
@@ -753,6 +1053,70 @@ class DataAccess:
                 cursor.execute(sql, (team_id, event_id))
         except Exception as e:
             print(f"Error in insert_team_to_event_registration: {e}")
+            raise
+    
+    def get_all_teams(self):
+        """
+        Get all teams without filtering by user.
+        Returns all teams, newest first.
+        """
+        try:
+            sql = """
+                SELECT ID, Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive
+                FROM Team
+                WHERE IsActive = 1
+                ORDER BY ID DESC
+            """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql)
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Error in get_all_teams: {e}")
+            raise
+    
+    def get_team_events(self, user_email):
+        """
+        Get all events that teams the user is a member of are registered for.
+        
+        Args:
+            user_email (str): User's email
+            
+        Returns:
+            list: List of event dictionaries with team information
+        """
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = """
+                SELECT DISTINCT
+                    e.ID,
+                    e.Title,
+                    e.About,
+                    e.Date,
+                    e.StartTime,
+                    e.EndTime,
+                    e.LocationCity,
+                    e.Address,
+                    e.LocationPostcode,
+                    e.Capacity,
+                    e.Image_path,
+                    c.Name AS CauseName,
+                    t.ID AS TeamID,
+                    t.Name AS TeamName
+                FROM Event e
+                JOIN Cause c ON e.CauseID = c.ID
+                JOIN TeamEventRegistration ter ON e.ID = ter.EventID
+                JOIN Team t ON ter.TeamID = t.ID
+                JOIN TeamMembership tm ON t.ID = tm.TeamID
+                WHERE tm.UserID = %s
+                  AND t.IsActive = 1
+                  AND TIMESTAMP(e.Date, e.StartTime) >= NOW()
+                ORDER BY e.Date ASC, e.StartTime ASC
+            """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (user_id,))
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Error in get_team_events: {e}")
             raise
 
 
