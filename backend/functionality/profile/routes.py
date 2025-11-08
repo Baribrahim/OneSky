@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, g, request, send_from_directory, current_a
 from profile.connector import ProfileConnector
 from auth.routes import token_required
 import os
+import uuid
 
 bp = Blueprint("profile", __name__, url_prefix="/api/profile")
 pc = ProfileConnector()
@@ -47,8 +48,12 @@ def update_profile_image():
         # Save the file to your user images folder
         UPLOAD_FOLDER = os.path.join(current_app.root_path, "static/profile_images/")
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-        safe_filename = file.filename  # optional: secure_filename(file.filename)
-        file_path = os.path.join(UPLOAD_FOLDER, safe_filename)
+        
+        ext = os.path.splitext(file.filename)[1]  # keep original extension
+        unique_filename = f"{uuid.uuid4().hex}{ext}"
+        
+        safe_filename = file.filename 
+        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
         file.save(file_path)
 
         # Update database (store only filename)
@@ -66,6 +71,7 @@ def update_profile_image():
 # Serve User Images
 # ------------------------
 @bp.get("/images/<filename>")
+@token_required
 def serve_user_image(filename):
     """Serve profile images."""
     try:
