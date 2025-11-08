@@ -16,13 +16,12 @@ class FakeDA:
         return next((t for t in self.teams if t["JoinCode"] == code), None)
 
     # --- create + list ---
-    def create_team(self, name, description, department, capacity, owner_user_id, join_code):
+    def create_team(self, name, description, department, owner_user_id, join_code):
         row = {
             "ID": len(self.teams) + 1,
             "Name": name.strip(),
             "Description": description,
             "Department": department,
-            "Capacity": capacity,
             "OwnerUserID": owner_user_id,
             "JoinCode": join_code,
             "IsActive": 1,
@@ -43,7 +42,6 @@ def test_create_team_success():
         name="  Alpha  ",
         description="A team",
         department="Tech",
-        capacity=20,
     )
     assert row["Name"] == "Alpha"
     assert row["OwnerUserID"] == 1
@@ -54,16 +52,10 @@ def test_create_team_validation_errors():
     tc = TeamConnector(da=da)
 
     with pytest.raises(ValueError, match="Name is required"):
-        tc.create_team("owner@example.com", "", "", None, None)
+        tc.create_team("owner@example.com", "", "", None)
 
     with pytest.raises(ValueError, match="at most 120"):
-        tc.create_team("owner@example.com", "A"*121, "", None, None)
-
-    with pytest.raises(ValueError, match="positive integer"):
-        tc.create_team("owner@example.com", "Ok", "", None, "x")
-
-    with pytest.raises(ValueError, match=">= 1"):
-        tc.create_team("owner@example.com", "Ok", "", None, 0)
+        tc.create_team("owner@example.com", "A"*121, "", None)
 
 def test_browse_all_teams_order_and_empty_state():
     da = FakeDA()
@@ -74,9 +66,9 @@ def test_browse_all_teams_order_and_empty_state():
     assert items == []
 
     # seed a few
-    tc.create_team("owner@example.com", "Team 1", None, None, None)
-    tc.create_team("owner@example.com", "Team 2", None, None, None)
-    tc.create_team("owner@example.com", "Team 3", None, None, None)
+    tc.create_team("owner@example.com", "Team 1", None, None)
+    tc.create_team("owner@example.com", "Team 2", None, None)
+    tc.create_team("owner@example.com", "Team 3", None, None)
 
     items2 = tc.browse_all_teams("owner@example.com")
     assert [t["Name"] for t in items2] == ["Team 3", "Team 2", "Team 1"]

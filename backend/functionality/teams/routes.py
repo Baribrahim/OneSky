@@ -35,7 +35,6 @@ def list_teams(all=False):
                 "name": t["Name"],
                 "description": t.get("Description"),
                 "department": t.get("Department"),
-                "capacity": t.get("Capacity"),
                 "owner_user_id": t["OwnerUserID"],
                 "join_code": t["JoinCode"],
                 "is_active": t.get("IsActive", 1),
@@ -62,7 +61,7 @@ def list_teams(all=False):
 def create_team():
     """
     Creates a team for the authenticated user.
-    Body: { name, description, department, capacity }
+    Body: { name, description, department }
     """
     payload = request.get_json(silent=True) or {}
     creator_email = g.current_user.get("sub")
@@ -73,7 +72,6 @@ def create_team():
             name=payload.get("name"),
             description=payload.get("description"),
             department=payload.get("department"),
-            capacity=payload.get("capacity"),
         )
 
         response = {
@@ -81,7 +79,6 @@ def create_team():
             "name": row["Name"],
             "description": row.get("Description"),
             "department": row.get("Department"),
-            "capacity": row.get("Capacity"),
             "owner_user_id": row["OwnerUserID"],
             "join_code": row["JoinCode"],
             "is_active": row.get("IsActive", 1),
