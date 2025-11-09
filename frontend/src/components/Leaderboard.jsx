@@ -53,7 +53,7 @@ const Leaderboard = () => {
 
   return (
     <div className="leaderboard-card">
-      <h2>Leaderboard</h2>
+      <h2>Top Volunteers</h2>
 
       {loading && <p>Loading...</p>}
       {!loading && error && <div className="error" role="alert">{error}</div>}

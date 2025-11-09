@@ -56,7 +56,7 @@
   color: var(--brand-primary);
 }
 
-.team-card .button {
+.team-card .button-sky {
   align-self: flex-start;
   margin-top: 12px;
 }
@@ -71,7 +71,7 @@
   flex-wrap: wrap;
 }
 
-.button-group .button {
+.button-group .button-sky {
   margin-top: 0;
   flex: 1;
   min-width: 0;

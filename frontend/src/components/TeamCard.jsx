@@ -3,6 +3,7 @@ import {api, toResult} from '../lib/apiClient.js';
 import Popup from 'reactjs-popup';
 import '../styles/popup.css';
 import "../styles/teamCard.css";
+import "../styles/teamMemberspopup.css";
 
 /**
  * TeamCard
@@ -108,17 +109,17 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
 
           {(isOwner || isMember) ? (
             <Popup
-              trigger={<button className="button">View Members</button>}
+              trigger={<button className="button-sky">View Members</button>}
               modal
               onOpen={fetchMembers}
             >
               {close => (
                 <div className="popup-card">
-                  <h3 className="popup-title">Team Members</h3>
+                  <h2 className="team-members">Team Members</h2>
                   {membersLoading && <p>Loading members...</p>}
                   {membersError && <p className="error">{membersError}</p>}
                   {!membersLoading && members.length === 0 && <p>No members yet.</p>}
-                  <div className="members-list">
+                    <div className="members-list">
                     {members.map(member => (
                       <div className="member-card" key={member.email}>
                         <img
@@ -130,23 +131,32 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
                           alt="Profile"
                           className="member-img"
                         />
-                        <div>
-                          <p>{member.firstName} {member.lastName}</p>
-                          <p className="meta">{member.email}</p>
+                        <div className="member-info">
+                          <p className="member-name">{member.first_name} {member.last_name}</p>
+                          {member.id === team.owner_user_id && <span className="owner-label"> Owner</span>}
+                          <a 
+                            href={`mailto:${member.email}`} 
+                            className="member-email"
+                            title={`Email ${member.first_name} ${member.last_name}`}
+                          >
+                            {"\u{2709}"} {member.email}
+                          </a>
+
                         </div>
                       </div>
                     ))}
                   </div>
-                  <button className="button popup-button-secondary" onClick={close}>Close</button>
+
+                  <button className="button-sky" onClick={close}>Close</button>
                 </div>
               )}
             </Popup>): null}
 
-          {!isOwner && isMember ? <button className="button" onClick={handleLeave}>Leave</button>: null}
+          {!isOwner && isMember ? <button className="button-sky" onClick={handleLeave}>Leave</button>: null}
 
           {!isMember && (
             <Popup
-              trigger={<button className="button primary">Request to Join</button>}
+              trigger={<button className="button-sky">Request to Join</button>}
               modal
               onClose={resetStates}
             >
