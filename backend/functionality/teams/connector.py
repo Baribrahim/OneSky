@@ -64,3 +64,25 @@ class TeamConnector:
     """ Gets teams user has joined"""
     def browse_joined_teams(self, user_email):
         return self.da.get_all_joined_teams(user_email)
+    
+    def delete_team(self, team_id: int) -> None:
+        """
+        Delete a team by its ID.
+        Passes team_id to DAO method.
+        """
+        self.da.delete_team(team_id)
+
+    def leave_team(self, user_email: str, team_id: int) -> None:
+        """
+        Remove a user from a team.
+        Resolves user ID from email, then passes to DAO.
+        """
+        user_id = self.owner_id_from_email(user_email)
+        self.da.leave_team(user_id, team_id)
+
+    def read_all_team_members(self, team_id: int) -> list[dict]:
+        """
+        Return all members of a team.
+        Passes team_id to DAO method.
+        """
+        return self.da.read_all_team_members(team_id)

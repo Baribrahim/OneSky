@@ -108,23 +108,22 @@ create table Team
   IsActive tinyint not null default 1
 );
 
-create table TeamMembership
-	(
-	ID int primary key auto_increment,
-	UserID int,
-    FOREIGN KEY (UserID) references User(ID),
-    TeamID int,
-    FOREIGN KEY (TeamID) references Team(ID)
-	);
-    
-create table TeamEventRegistration
-	(
-	ID int primary key auto_increment,
-	EventID int,
-    FOREIGN KEY (EventID) references Event(ID),
-    TeamID int,
-    FOREIGN KEY (TeamID) references Team(ID)
-	);
+CREATE TABLE TeamMembership (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    UserID INT,
+    TeamID INT,
+    FOREIGN KEY (UserID) REFERENCES User(ID),
+    FOREIGN KEY (TeamID) REFERENCES Team(ID) ON DELETE CASCADE
+);
+
+CREATE TABLE TeamEventRegistration (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    EventID INT,
+    TeamID INT,
+    FOREIGN KEY (EventID) REFERENCES Event(ID),
+    FOREIGN KEY (TeamID) REFERENCES Team(ID) ON DELETE CASCADE
+);
+
   
 -- Insert badges
 INSERT INTO Badge (Name, Description, IconURL) VALUES

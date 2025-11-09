@@ -130,8 +130,63 @@ def signup_to_team():
 def list_joined_teams():
    return list_teams(all=False)
 
-# @bp.route("/owns", methods=["GET"])
-# @require_auth
-# def list_owned_teams():
-#    return list_teams(owner=True)
+# POST /api/teams/<team_id>/delete
+@bp.post("/<int:team_id>/delete")
+@require_auth
+def delete_team(team_id: int):
+    """
+    Delete a team by ID.
+    """
+    try:
+        connector.delete_team(team_id)
+        return jsonify({"message": f"Team {team_id} deleted successfully."}), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Could not delete team"}), 500
 
+
+# POST /api/teams/<team_id>/leave
+@bp.post("/<int:team_id>/leave")
+@require_auth
+def leave_team(team_id: int):
+    """
+     user leaves a team by ID.
+    """
+    try:
+        user_email = g.current_user.get("sub", "User")
+        connector.leave_team(user_email, team_id)
+        return jsonify({"message": f"User {user_email} left team {team_id} successfully."}), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Could not leave team"}), 500
+
+
+# GET /api/teams/<team_id>/members
+@bp.get("/<int:team_id>/members")
+@require_auth
+def get_team_members(team_id: int):
+    """
+    Returns all members of a team.
+    """
+    try:
+        members = connector.read_all_team_members(team_id)
+        members_out = [
+            {
+                "id": m["ID"],
+                "first_name": m.get("FirstName"),
+                "last_name": m.get("LastName"),
+                "email": m.get("Email"),
+                "profile_img_path": m.get("ProfileImgPath"),
+            }
+            for m in members
+        ]
+        return jsonify({"members": members_out, "count": len(members_out)}), 200
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Could not fetch team members"}), 500

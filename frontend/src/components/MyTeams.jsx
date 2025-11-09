@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import TeamCard from "./TeamCard";
 import "../styles/myTeams.css";
 
-export default function MyTeams({ teams = [], loading = false, error = "" }) {
+export default function MyTeams({ teams = [], loading = false, error = "", onJoin, onDelete}) {
   const navigate = useNavigate();
   const handleCreateTeam = () => {
     navigate("/teams/new");
@@ -64,6 +64,8 @@ export default function MyTeams({ teams = [], loading = false, error = "" }) {
                 isOwner={team.is_owner}
                 isMember={true}
                 showJoinCode={true}
+                onJoin ={onJoin}
+                onDelete={onDelete}
               />
             ))}
           </div>
