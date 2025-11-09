@@ -1,9 +1,10 @@
+/* ===== Base Styles ===== */
 .welcome-page {
   font-family: Arial, sans-serif;
   color: #333;
 }
 
-/* Hero Section */
+/* ===== Hero Section ===== */
 .hero {
   background: url('/images/volunteer-bg.jpg') center/cover no-repeat;
   height: 30vh;
@@ -16,54 +17,59 @@
 }
 
 .hero h1 {
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
+  font-size: 5rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 8px;
+  color: #555;
+  font-family: 'Poppins', sans-serif;
 }
 
 .hero p {
-  font-size: 1.2rem;
+  font-size: 2rem;
   margin-top: 0.5rem;
 }
 
-
-/* Animations */
+/* ===== Animations ===== */
 .fade-in {
   opacity: 0;
   animation: fadeIn 2s forwards;
 }
-.fade-in.delay {
-  animation-delay: 1s;
-}
+
+.fade-in.delay,
 .fade-in.delay2 {
   animation-delay: 1s;
 }
+
 @keyframes fadeIn {
-  to { opacity: 1; transform: translateY(0); }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-
-
-
+/* ===== Intro Video ===== */
 .intro-video {
-  width: 100%;        /* full width */
-  margin: 0;          /* no centering */
+  width: 100%;
+  margin: 0;
 }
 
 .intro-video video {
-  width: 100%;        /* stretch across screen */
-  height: 500px;      /* fixed height */
-  object-fit: cover;  /* crop to fill without distortion */
+  width: 100%;
+  height: 500px;
+  object-fit: cover;
   display: block;
 }
 
 @media (max-width: 768px) {
   .intro-video video {
-    height: 200px; /* smaller height for mobile */
+    height: 200px;
   }
 }
 
+/* ===== CTA Button ===== */
 .cta-btn {
-  background: #007bff;
+  background: #0056b3;
   color: #fff;
   padding: 0.8rem 1.5rem;
   border: none;
@@ -72,42 +78,25 @@
   font-weight: 600;
   cursor: pointer;
   margin-top: 1rem;
-  transition: background 0.3s ease, transform 0.2s ease;
-}
-.cta-btn:hover {
-  background: #0056b3;
-  transform: scale(1.05);
 }
 
+.cta-btn:hover {
+  background: #004494;
+}
+
+/* ===== Features Section ===== */
 .features {
   text-align: center;
-  padding-top: 1rem;
-  background: #f9f9f9; /* light gray */
+  background: #f9f9f9;
   padding: 3rem 2rem;
   border-radius: 8px;
   margin-top: 1rem;
-
 }
 
-.feature-card {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  overflow: hidden;
-  transition: transform 0.3s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-10px);
-}
-
-.feature-card h3 {
-  margin: 1rem 0 0.5rem;
-}
-
-.feature-card p {
-  padding: 0 1rem;
-  color: #555;
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
 }
 
 .feature-section {
@@ -130,24 +119,52 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 60%; /* Adjust as needed */
+  width: 60%;
 }
 
 .feature-text h3 {
   font-size: 1.8rem;
   margin: 0;
 }
+
 .feature-text p {
   font-size: 1rem;
   line-height: 1.6;
 }
 
-.feature-list {
-  display: flex;
-  flex-direction: column;
-  gap: 3rem;
+/* ===== Feature Card ===== */
+.feature-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease;
 }
 
+.feature-card:hover {
+  transform: translateY(-10px);
+}
+
+.feature-card h3 {
+  margin: 1rem 0 0.5rem;
+}
+
+.feature-card p {
+  padding: 0 1rem;
+  color: #555;
+}
+
+/* ===== Testimonials ===== */
+.testimonials {
+  padding: .5rem;
+  text-align: center;
+  border-radius: 12px;
+}
+
+.testimonials h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
 
 .testimonial-carousel {
   display: flex;
@@ -157,25 +174,57 @@
 }
 
 .testimonial-card {
-  background: #fff;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
   text-align: center;
-  width: 300px;
+  width: 90%; /* Bigger width */
+  min-height: 200px; 
+  transition: transform 0.4s ease, opacity 0.4s ease;
 }
 
+.testimonial-card .quote {
+  font-size: 1.4rem;
+  font-style: italic;
+  color: #444;
+  margin-bottom: 1rem;
+}
+
+.testimonial-card .name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #007bff;
+}
+
+
+/* Slide-in animation */
+.slide-in {
+  animation: slideIn 1.2s ease forwards; /* Increased duration */
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+
 .carousel-btn {
-  background: #007bff;
-  color: #fff;
-  border: none;
+  background: #fff;
+  border: 1px solid #ddd;
   font-size: 2rem;
   padding: 0.5rem 1rem;
   border-radius: 50%;
   cursor: pointer;
-  transition: background 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .carousel-btn:hover {
-  background: #0056b3;
+  background: #007bff;
+  color: #fff;
 }
