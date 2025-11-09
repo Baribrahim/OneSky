@@ -14,7 +14,9 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
   const { name, description, department, join_code, JoinCode } = team;
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
-  const [joinedTeams, setJoinedTeams] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState("");
  
   function resetStates() {
     setJoinCode("");
@@ -71,82 +73,105 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
     }
   };
 
+  const fetchMembers = async () => {
+    setMembersLoading(true);
+    setMembersError("");
+    try {
+      const { data, error } = await toResult(api.get(`/api/teams/${team.id}/members`));
+      if (error) setMembersError(error.message || "Failed to load members");
+      else setMembers(data.members || []);
+    } catch (err) {
+      setMembersError(err.message || "Unexpected error");
+    } finally {
+      setMembersLoading(false);
+    }
+  };
 
 
   return (
     <div className="team-card">
       <div>
         {browseEvents && (
-          <p className="meta-topright">
-            {isMember ? "Joined" : "\u00A0"}
-          </p>
+          <p className="meta-topright">{isMember ? "Joined" : "\u00A0"}</p>
         )}
         <h3>{name || team.Name}</h3>
-        {description && (
-          <p className="meta">{description}</p>
-        )}
-        {department && (
-          <p className="meta">Dept: {department}</p>
-        )}
-        {/* Only show join code if user is a member of the team */}
+        {description && <p className="meta">{description}</p>}
+        {department && <p className="meta">Dept: {department}</p>}
         {(join_code || JoinCode) && showJoinCode && (
           <p className="join-code">Join Code: {join_code || JoinCode}</p>
         )}
       </div>
 
-      {/* Conditional buttons based on user role */}
       <div className="team-card-actions">
         <div className="button-group">
           {isOwner ? <button className="button" onClick={handleDelete}>Delete</button> : null}
-          {isOwner || isMember ? <button className="button">View Members</button> : null}
-          {!isOwner && isMember ? <button className="button" onClick={handleLeave}>Leave</button> : null}
-          {!isMember ? (           
-            <Popup trigger={<button className="button primary">Request to Join</button>} modal
-              onClose={() => {
-                resetStates()
-              }}>
+
+          {(isOwner || isMember) ? (
+            <Popup
+              trigger={<button className="button">View Members</button>}
+              modal
+              onOpen={fetchMembers}
+            >
+              {close => (
+                <div className="popup-card">
+                  <h3 className="popup-title">Team Members</h3>
+                  {membersLoading && <p>Loading members...</p>}
+                  {membersError && <p className="error">{membersError}</p>}
+                  {!membersLoading && members.length === 0 && <p>No members yet.</p>}
+                  <div className="members-list">
+                    {members.map(member => (
+                      <div className="member-card" key={member.email}>
+                        <img
+                          src={
+                            member.profile_img_url
+                              ? `http://localhost:5000/${member.profile_img_url}`
+                              : "src/assets/profileImgs/default.png"
+                          }
+                          alt="Profile"
+                          className="member-img"
+                        />
+                        <div>
+                          <p>{member.firstName} {member.lastName}</p>
+                          <p className="meta">{member.email}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="button popup-button-secondary" onClick={close}>Close</button>
+                </div>
+              )}
+            </Popup>): null}
+
+          {!isOwner && isMember ? <button className="button" onClick={handleLeave}>Leave</button>: null}
+
+          {!isMember && (
+            <Popup
+              trigger={<button className="button primary">Request to Join</button>}
+              modal
+              onClose={resetStates}
+            >
               {close => (
                 <div className="popup-card">
                   <h3 className="popup-title">Enter Code</h3>
-                  {error && <div className="error" role="alert">{error}</div>}
+                  {error && <div className="error">{error}</div>}
                   <input
-                    className='form-input'
+                    className="form-input"
                     type="text"
                     placeholder="Code"
                     value={joinCode}
                     onChange={e => setJoinCode(e.target.value)}
-                    onKeyPress={e => {
-                      if (e.key === 'Enter') {
-                        handleJoin(team.id, joinCode, close);
-                      }
-                    }}
+                    onKeyPress={e => e.key === 'Enter' && handleJoin(team.id, joinCode, close)}
                   />
                   <div className="popup-actions">
-                    <button 
-                      className="button popup-button-primary" 
-                      onClick={async () => { 
-                        await handleJoin(team.id, joinCode, close);
-                      }}
-                    >
-                      Submit
-                    </button>
-                    <button
-                      className="button popup-button-secondary"
-                      onClick={() => {
-                        resetStates()
-                        close();
-                      }}
-                    >
-                      Close
-                    </button>
+                    <button className="button popup-button-primary" onClick={() => handleJoin(team.id, joinCode, close)}>Submit</button>
+                    <button className="button popup-button-secondary" onClick={close}>Close</button>
                   </div>
                 </div>
               )}
             </Popup>
-          ) : null}
+          )}
         </div>
       </div>
-
     </div>
   );
 }

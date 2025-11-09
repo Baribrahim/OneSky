@@ -26,12 +26,8 @@ export default function MyTeams({ teams = [], loading = false, error = "", onJoi
             <div className="stat-label">Teams Joined</div>
           </div>
           <div className="stat-item">
-            <div className="stat-value">47</div>
-            <div className="stat-label">Hours Volunteered</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-value">12</div>
-            <div className="stat-label">Events Completed</div>
+            <div className="stat-value">{teams.filter(team => team.is_owner == 1).length}</div>
+            <div className="stat-label">Teams you own</div>
           </div>
         </div>
 

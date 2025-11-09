@@ -184,6 +184,14 @@ def get_team_members(team_id: int):
             }
             for m in members
         ]
+
+        for member in members_out:
+            profile_img = member.get("profile_img_path")
+            if profile_img:
+                member["profile_img_url"] = f"api/profile/images/{profile_img}"
+            else:
+                member["profile_img_url"] = "api/profile/images/default.png"
+
         return jsonify({"members": members_out, "count": len(members_out)}), 200
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
