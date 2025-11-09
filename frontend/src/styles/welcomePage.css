@@ -33,7 +33,7 @@
 /* ===== Animations ===== */
 .fade-in {
   opacity: 0;
-  animation: fadeIn 2s forwards;
+  animation: fadeIn 4s forwards;
 }
 
 .fade-in.delay,
