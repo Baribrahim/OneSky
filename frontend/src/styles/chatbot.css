@@ -8,13 +8,13 @@
   font-family: var(--font-family-base);
 }
 
-/* Toggle Button */
+/* Chatbot button container (relative positioning for tooltip) */
 .chatbot-toggle {
-  width: 56px;
-  height: 56px;
+  position: relative; /* needed for tooltip positioning */
+  width: 70px;
+  height: 70px;
   border-radius: var(--radius-pill);
-  background: var(--brand-primary);
-  color: #fff;
+  background: linear-gradient(to top left, rgb(140, 40, 255) 10%, rgb(0, 35, 255) 60%, rgb(22, 144, 242) 100%);  color: #fff;
   border: none;
   box-shadow: var(--shadow-2);
   cursor: pointer;
@@ -22,18 +22,59 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
+/* Hover: darken gradient */
 .chatbot-toggle:hover {
-  background: var(--brand-primary-600);
+  background: linear-gradient(to top left, rgb(100, 30, 180) 10%, rgb(0, 25, 180) 60%, rgb(10, 100, 180) 100%);
   transform: scale(1.05);
   box-shadow: 0 6px 16px rgba(47, 111, 178, 0.3);
 }
 
-.chatbot-toggle:active {
-  transform: scale(0.98);
+/* Tooltip text */
+.chatbot-toggle::after {
+  content: 'Launch OneSky Assistant';
+  position: absolute;
+  max-width: 120px;
+  bottom: 70px; /* distance above button */
+  left: 50%;
+  transform: translateX(-50%) translateY(0); /* start at 0 */
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  white-space: normal;
+  text-align: center;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 10;
 }
+
+/* Arrow under tooltip */
+.chatbot-toggle::before {
+  content: "";
+  position: absolute;
+  bottom: 60px; /* relative to button */
+  left: 50%;
+  transform: translateX(-50%) translateY(0); /* start at 0 */
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.85) transparent transparent transparent;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 10;
+}
+
+/* Show tooltip and arrow on hover */
+.chatbot-toggle:hover::after,
+.chatbot-toggle:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-5px); /* move up together */
+}
+
 
 /* Chat Window */
 .chatbot-window {

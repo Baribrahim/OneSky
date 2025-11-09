@@ -40,7 +40,7 @@ export default function MyTeams({ teams = [], loading = false, error = "" }) {
           <div className="my-teams-content-header">
             <h3 style={{ marginBottom: 16, fontSize: "1.1rem" }}>My Team Memberships</h3>
             <button 
-              className="button small" 
+              className="button-sky small" 
               onClick={handleCreateTeam}
               aria-label="Create a new team"
             >

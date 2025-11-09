@@ -73,7 +73,7 @@ export default function CreateTeam() {
             </p>
             <p className="join-code">Join Code: <code>{success.join_code}</code></p>
 
-            <button className="button" onClick={() => navigate("/teams")} style={{ marginTop: 16 }}>
+            <button className="button-sky" onClick={() => navigate("/teams")} style={{ marginTop: 16 }}>
               Back to Teams
             </button>
           </div>
@@ -151,7 +151,7 @@ export default function CreateTeam() {
 
                   {error && <div className="error" role="alert" style={{ marginTop: 12 }}>{error}</div>}
 
-                  <button className="button" disabled={loading} style={{ marginTop: 16 }}>
+                  <button className="button-sky" disabled={loading} style={{ marginTop: 16 }}>
                     {loading ? "Creating..." : "Create Team"}
                   </button>
                 </form>
