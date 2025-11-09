@@ -73,7 +73,7 @@
   color: #fff;
   padding: 0.8rem 1.5rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 1.2rem;
   font-weight: 600;
   cursor: pointer;
@@ -87,7 +87,6 @@
 /* ===== Features Section ===== */
 .features {
   text-align: center;
-  background: #f9f9f9;
   padding: 3rem 2rem;
   border-radius: 8px;
   margin-top: 1rem;
@@ -113,6 +112,7 @@
   width: 30%;
   border-radius: 8px;
   object-fit: cover;
+  
 }
 
 .feature-text {
@@ -227,4 +227,47 @@
 .carousel-btn:hover {
   background: #007bff;
   color: #fff;
+}
+
+.page-container {
+  max-width: 1500px;
+  padding: 0 10px;
+}
+
+.footer-cta {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 1s ease, transform 1s ease;
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(90deg, #007bff, #7928ca);
+  color: #fff;
+  border-radius: 12px;
+  margin-top: 2rem;
+}
+
+.footer-cta.animate {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.footer-cta h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.footer-cta .cta-btn {
+  background: #fff;
+  color: #007bff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 0.8rem 1.8rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 1.30s ease;
+}
+
+.footer-cta .cta-btn:hover {
+  background: #f0f0f0;
+  color: #0056b3;
 }
