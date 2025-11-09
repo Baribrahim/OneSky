@@ -77,6 +77,17 @@ export default function Teams() {
   // --- UI rendering ---
   return (
     <>
+    <div className="welcome-banner">
+      <img 
+        src={"src/assets/teams-img.jpg"} 
+        alt="People volunteering" 
+        className="welcome-image" 
+      />
+      <div className="welcome-text">
+        <h1>Teams</h1>
+        <p>Volunteer together - find a team that's making a difference</p>
+      </div>
+    </div>
       <MyTeams teams={myTeams}
                loading={myTeamsLoading} 
                error={myTeamsError} 

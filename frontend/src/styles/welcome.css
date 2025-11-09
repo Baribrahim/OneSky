@@ -1,11 +1,11 @@
 .welcome-banner {
   position: relative;
-  width: 100vw; /* full viewport width */
+  width: 100vw;
   left: 50%;
   right: 50%;
-  margin-left: -50vw; /* trick to break out of centered container */
+  margin-left: -50vw;
   margin-right: -50vw;
-  height: 280px; /* adjust as needed */
+  height: 280px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -13,7 +13,6 @@
   margin-top: -25px;
 }
 
-/* Background image fills whole banner */
 .welcome-image {
   position: absolute;
   top: 0;
@@ -21,18 +20,66 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.75);
 }
 
+.welcome-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
 
 .welcome-text {
   position: relative;
   z-index: 2;
   color: white;
   text-align: center;
-  font-size: 2rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
+  max-width: 700px;
+  padding: 0 1rem;
 }
 
+.welcome-text h1 {
+  font-size: 3.5rem;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
+  margin: 0 0 0.5rem 0; /* remove top margin, small bottom margin */
+}
+
+.welcome-text p {
+  font-size: 1.4rem;
+  line-height: 1.4;
+  font-weight: 400;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
+  margin: 0; /* remove extra spacing */
+}
+
+
+/* 📱 Mobile adjustments */
+@media (max-width: 768px) {
+  .welcome-banner {
+    height: 200px;
+  }
+
+  .welcome-text h1 {
+    font-size: 1.8rem;
+  }
+
+  .welcome-text p {
+    font-size: 1rem;
+  }
+}
+
+/* 📱 Small mobile */
+@media (max-width: 480px) {
+  .welcome-banner {
+    height: 160px;
+    margin-top: -15px;
+  }
+
+  .welcome-text h1 {
+    font-size: 1.4rem;
+  }
+
+  .welcome-text p {
+    font-size: 0.9rem;
+  }
+}
