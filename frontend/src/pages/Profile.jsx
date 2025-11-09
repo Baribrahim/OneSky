@@ -42,7 +42,6 @@ const Profile = () => {
       }
     } catch (e) {
       setError("Unexpected error loading profile");
-      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -80,7 +79,6 @@ const Profile = () => {
       }
     } catch (e) {
       setError("Unexpected error uploading profile image");
-      console.error(e);
     } finally {
       setUploading(false);
     }
@@ -123,7 +121,6 @@ const Profile = () => {
         setPasswordErrors({ newPassword: "", confirmPassword: "" });
       }
     } catch (e) {
-      console.error(e);
       setError("Unexpected error updating password");
     } finally {
       setUpdatingPassword(false);
