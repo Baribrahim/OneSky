@@ -66,11 +66,22 @@ export default function Events() {
   };
 
   return (
+      <>
+    <div className="welcome-banner">
+      <div className="welcome-overlay"></div>
+      <img 
+        src={"src/assets/events-img.jpg"} 
+        alt="People volunteering" 
+        className="welcome-image" 
+      />
+      <div className="welcome-text">
+        <h1>Discover Events</h1>
+        <p>Turn your free time into something extraordinary—start by searching through upcoming events below</p>
+      </div>
+    </div>
     <div className="events-wrapper">
       <div className="card large-card" role="region" aria-label="Discover Events">
         <div className="filter-panel">
-          <h1 className="event-title">Discover Events</h1>
-          <p className="filter-tagline">Turn your free time into something extraordinary—start by searching through upcoming events below.</p>
 
           <form className="filter-grid" noValidate onSubmit={(e) => e.preventDefault()}>
             {/* Search */}
@@ -138,5 +149,6 @@ export default function Events() {
         </div>
       </div>
     </div>
+    </>
   );
 }
