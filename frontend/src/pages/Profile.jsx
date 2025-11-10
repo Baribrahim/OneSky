@@ -7,6 +7,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [updateError, setUpdateError] = useState("");
   const [uploading, setUploading] = useState(false);
 
   // Password fields
@@ -29,6 +30,15 @@ const Profile = () => {
     const date = new Date(year, month - 1);
     return date.toLocaleString("default", { month: "long", year: "numeric" });
   };
+
+    // Generates user initials
+    const getInitials = (firstName, lastName) => {
+      if (!firstName && !lastName) return "U";
+      const first = firstName ? firstName[0].toUpperCase() : "";
+      const last = lastName ? lastName[0].toUpperCase() : "";
+      return `${first}${last}`;
+    };
+
 
   const fetchDetails = async () => {
     setLoading(true);
@@ -91,13 +101,13 @@ const Profile = () => {
 
     // Check if all fields are filled
     if (!oldPassword || !newPassword || !confirmPassword) {
-      setError("All password fields are required.");
+      setUpdateError("All password fields are required.");
       return;
     }
 
     // Check for live validation errors
     if (passwordErrors.newPassword || passwordErrors.confirmPassword) {
-      setError("Please fix the validation errors before submitting.");
+      setUpdateError("Please fix the validation errors before submitting.");
       return;
     }
 
@@ -112,7 +122,7 @@ const Profile = () => {
       );
 
       if (error) {
-        setError(error.message || "Failed to update password.");
+        setUpdateError(error.message || "Failed to update password.");
       } else {
         setSuccess("Password updated successfully!");
         setOldPassword("");
@@ -121,7 +131,7 @@ const Profile = () => {
         setPasswordErrors({ newPassword: "", confirmPassword: "" });
       }
     } catch (e) {
-      setError("Unexpected error updating password");
+      setUpdateError("Unexpected error updating password");
     } finally {
       setUpdatingPassword(false);
     }
@@ -150,15 +160,17 @@ const Profile = () => {
 
           {!loading && (
             <div className="profile-content">
+            {info.ProfileImgURL && info.ProfileImgPath != 'default.png' ? (
               <img
-                src={
-                  info.ProfileImgURL
-                    ? `http://localhost:5000${info.ProfileImgURL}`
-                    : "src/assets/profileImgs/default.png"
-                }
-                alt="Profile"
+                src={`http://localhost:5000${info.ProfileImgURL}`}
+                alt={`${info.FirstName || ''} ${info.LastName || ''}`}
                 className="profile-img"
               />
+            ) : (
+              <div className="profile-avatar">
+                {getInitials(info.FirstName, info.LastName)}
+              </div>
+            )}
 
               <div className="upload-section">
                 <label className={`button-sky ${uploading ? "disabled" : ""}`}>
@@ -198,7 +210,7 @@ const Profile = () => {
               <div className="password-update-section">
                 <h3 className="profile">Update Password</h3>
                 {success && <div className="success" role="alert">{success}</div>}
-                {error && <div className="error" role="alert">{error}</div>}
+                {updateError && <div className="error" role="alert">{updateError}</div>}
 
                 <form onSubmit={handlePasswordUpdate}>
                   <div className="old-password">
