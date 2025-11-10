@@ -4,7 +4,7 @@ Flask blueprint for chatbot endpoints
 """
 from flask import Blueprint, request, jsonify, g
 from flask_cors import CORS
-from .connector import ChatbotConnector
+from .connector import ChatbotConnector, PromptInjectionError
 from auth.routes import token_required
 
 bp = Blueprint("chatbot", __name__, url_prefix="/api/chatbot")
@@ -78,6 +78,8 @@ def chat():
 
         return jsonify(response_data), 200
 
+    except PromptInjectionError as pie:
+        return jsonify({"error": "Message rejected", "details": str(pie)}), 400
     except ValueError as ve:
         print(f"Chatbot configuration error: {ve}")
         return (

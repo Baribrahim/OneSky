@@ -8,6 +8,7 @@ Chatbot Connector
 import os
 import json
 import calendar
+import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple, Callable
 
@@ -18,6 +19,27 @@ from data_access import DataAccess
 from .embedding_helper import EmbeddingHelper
 
 load_dotenv()
+
+# ---------------------------------------------------------------------
+# Security / Prompt-injection safeguards
+# ---------------------------------------------------------------------
+
+
+class PromptInjectionError(ValueError):
+    """Raised when a user message is deemed unsafe for processing."""
+
+
+_FORBIDDEN_PATTERNS = [
+    re.compile(r"ignore\s+previous\s+instructions", re.IGNORECASE),
+    re.compile(r"reset\s+the\s+conversation", re.IGNORECASE),
+    re.compile(r"system\s*prompt", re.IGNORECASE),
+    re.compile(r"(?:disregard|forget)\s+all\s+prior\s+(?:responses|instructions)", re.IGNORECASE),
+    re.compile(r"\b(database|schema|table|sql|drop table|truncate|delete from)\b", re.IGNORECASE),
+]
+
+_SPECIAL_CHARS = [
+    "!", "@", "$", "%", "^", "*", "(", ")", "-", "_", '"', "'", ":", ";", "<", ">", "/", "\\", "~", "“", "”", "‘", "’",
+]
 
 # Module-level memory storage (shared-ish)
 _short_term_memory: Dict[str, List[Dict[str, str]]] = {}
@@ -88,6 +110,30 @@ class ChatbotConnector:
         self.short_term_memory: Dict[str, List[Dict[str, str]]] = {}
         self.long_term_memory: Dict[str, str] = {}
 
+    def _sanitise_user_message(self, message: str) -> str:
+        """Basic input sanitisation to reduce prompt-injection risks."""
+        if not isinstance(message, str):
+            raise PromptInjectionError("Message rejected due to unsafe content.")
+
+        trimmed = message.strip()
+        if not trimmed:
+            raise PromptInjectionError("Message rejected due to unsafe content.")
+
+        for pattern in _FORBIDDEN_PATTERNS:
+            if pattern.search(trimmed):
+                raise PromptInjectionError("Message rejected due to unsafe content.")
+
+        sanitised = trimmed
+        for char in _SPECIAL_CHARS:
+            sanitised = sanitised.replace(char, "")
+
+        sanitised = re.sub(r"\s{2,}", " ", sanitised).strip()
+
+        if not sanitised:
+            raise PromptInjectionError("Message rejected due to unsafe content.")
+
+        return sanitised
+
     # ======================================================================
     # MAIN ENTRY POINT (HTTP)
     # ======================================================================
@@ -102,9 +148,11 @@ class ChatbotConnector:
         Returns 6 values:
         (response_text, category, events, teams, badges, team_events)
         """
+        sanitised_message = self._sanitise_user_message(user_message)
+
         # 1) Store user message in short-term memory
         if user_email:
-            self._add_to_conversation_history(user_email, "user", user_message)
+            self._add_to_conversation_history(user_email, "user", sanitised_message)
 
         # 2) Personalization
         user_first_name = self._get_user_first_name(user_email) if user_email else None
@@ -116,7 +164,7 @@ class ChatbotConnector:
         if user_email:
             history = self._get_conversation_history(user_email)
             messages.extend(history)
-        messages.append({"role": "user", "content": user_message})
+        messages.append({"role": "user", "content": sanitised_message})
 
         # 4) First call: let the model decide whether to call a tool
         try:
@@ -246,10 +294,24 @@ class ChatbotConnector:
         - If no tool is called → respond directly
         - Streams text progressively to improve UX
         """
+        try:
+            sanitised_message = self._sanitise_user_message(user_message)
+        except PromptInjectionError:
+            rejection_payload = {
+                "response": "Sorry, I can't process that request.",
+                "category": "general",
+                "done": True,
+                "stream": True,
+            }
+            if room:
+                emit_fn("chatbot_response", rejection_payload, room=room)
+            else:
+                emit_fn("chatbot_response", rejection_payload)
+            return
 
         # Save user message in short-term memory (for conversational context)
         if user_email:
-            self._add_to_conversation_history(user_email, "user", user_message)
+            self._add_to_conversation_history(user_email, "user", sanitised_message)
 
         user_first_name = self._get_user_first_name(user_email) if user_email else None
 
@@ -259,7 +321,7 @@ class ChatbotConnector:
         ]
         if user_email:
             messages.extend(self._get_conversation_history(user_email))
-        messages.append({"role": "user", "content": user_message})
+        messages.append({"role": "user", "content": sanitised_message})
 
         detected_category = "general"
 
