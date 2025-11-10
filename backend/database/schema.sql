@@ -98,7 +98,6 @@ create table Team
   Name varchar(120) not null,
   Description varchar(1000),
   Department varchar(120),
-  Capacity int,
   OwnerUserID int not null,
   foreign key (OwnerUserID) references User(ID),
   JoinCode char(8) not null,
@@ -1136,10 +1135,10 @@ VALUES
   ('a@test.com', '12345678', 'Alice', 'Smith');
 
 -- Dummy Data for Teams
-INSERT INTO Team (Name, Description, Department, Capacity, OwnerUserID, JoinCode, IsActive)
+INSERT INTO Team (Name, Description, Department, OwnerUserID, JoinCode, IsActive)
 VALUES
-('Alpha Innovators', 'Product development team focused on emerging technologies.', 'R&D', 12, 1, 'A1B2C3D4', 1),
-('Beta Builders', 'Team responsible for backend infrastructure and API management.', 'Engineering', 10, 1, 'B3C4D5E6', 1),
-('Creative Crew', 'Design team creating UX/UI assets and branding materials.', 'Design', 8, 1, 'C5D6E7F8', 1),
-('Delta Data', 'Analytics team working on data modeling and performance metrics.', 'Data Science', 9, 1, 'D7E8F9G0', 1),
-('Echo Executives', 'Leadership group coordinating company-wide strategy.', 'Management', 5, 1, 'E9F0G1H2', 1)
+('Alpha Innovators', 'Product development team focused on emerging technologies.', 'R&D', 1, 'A1B2C3D4', 1),
+('Beta Builders', 'Team responsible for backend infrastructure and API management.', 'Engineering', 1, 'B3C4D5E6', 1),
+('Creative Crew', 'Design team creating UX/UI assets and branding materials.', 'Design', 1, 'C5D6E7F8', 1),
+('Delta Data', 'Analytics team working on data modeling and performance metrics.', 'Data Science', 1, 'D7E8F9G0', 1),
+('Echo Executives', 'Leadership group coordinating company-wide strategy.', 'Management', 1, 'E9F0G1H2', 1)

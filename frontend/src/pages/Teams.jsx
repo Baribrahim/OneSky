@@ -61,7 +61,7 @@ export default function Teams() {
 
       <section className="teams-section" aria-labelledby="teams-heading">
         <div className="teams-inner card">
-          <h2 className="brand-gradient" id="teams-heading">Browse Teams</h2>
+          <h2 className="event-title" id="teams-heading">Browse Teams</h2>
           <p className="filter-tagline">Explore all active teams below.</p>
 
           {/* Browse Teams section */}
