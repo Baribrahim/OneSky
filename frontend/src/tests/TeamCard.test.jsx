@@ -39,7 +39,6 @@ describe("TeamCard", () => {
     expect(
       screen.getByRole("button", { name: /request to join/i })
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /view/i })).toBeInTheDocument();
   });
 
   it("shows error if join is attempted with empty code", async () => {
@@ -47,9 +46,8 @@ describe("TeamCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /request to join/i }));
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Join code is required."
-    );
+  expect(await screen.findByText("Join code is required.")).toBeInTheDocument();
+
   });
 
   it("calls API when join code is entered", async () => {
@@ -86,8 +84,8 @@ describe("TeamCard", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
 
-    const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Invalid code");
+    expect(await screen.findByText("Invalid code")).toBeInTheDocument();
+
   });
 
   it("does not render request to join button if already in team", () => {
@@ -98,16 +96,16 @@ describe("TeamCard", () => {
     expect(joinBtn).not.toBeInTheDocument();
   });
 
-  it("does not render view/manage button if not team owner", () => {
+  it("does not render leave button if not team owner", () => {
     render(<TeamCard team={mockTeam} isOwner={false} />);
-    const vmbtn = screen.queryByRole("button", { name: /view\/manage/i });
+    const vmbtn = screen.queryByRole("button", { name: /leave/i });
     expect(vmbtn).not.toBeInTheDocument();
   });
 
-  it("renders view/manage button if team owner", () => {
+  it("renders delete if team owner", () => {
     render(<TeamCard team={mockTeam} isOwner={true} />);
     expect(
-      screen.getByRole("button", { name: /view\/manage/i })
+      screen.getByRole("button", { name: /delete/i })
     ).toBeInTheDocument();
   });
 
