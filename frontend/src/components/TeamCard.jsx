@@ -105,7 +105,7 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
 
       <div className="team-card-actions">
         <div className="button-group">
-          {isOwner ? <button className="button" onClick={handleDelete}>Delete</button> : null}
+          {isOwner ? <button className="button-sky" onClick={handleDelete}>Delete</button> : null}
 
           {(isOwner || isMember) ? (
             <Popup

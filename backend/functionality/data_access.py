@@ -1170,7 +1170,7 @@ class DataAccess:
 
     def read_user_by_ordered_rank_score(self):
         """Read user FirstName LastName by ordered RankScore. Filter out test dummy data."""
-        sql = "SELECT Email, FirstName, LastName, RankScore, ProfileImgPath FROM User WHERE CONCAT(FirstName, ' ', LastName) NOT IN ('Test User', 'A B', 'Jane Doe') ORDER BY RankScore DESC LIMIT 15"
+        sql = "SELECT Email, FirstName, LastName, RankScore, ProfileImgPath FROM User WHERE CONCAT(FirstName, ' ', LastName) NOT IN ('Test User', 'A B', 'Jane Doe') ORDER BY RankScore DESC LIMIT 10"
         try:
             with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute(sql)
