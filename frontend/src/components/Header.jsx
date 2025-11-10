@@ -53,42 +53,49 @@ export default function Header() {
     };
   }, [isMobileMenuOpen]);
 
+  const isLoggedIn = !!user; // true if user object exists
+
   return (
     <header className="header" role="banner" ref={headerRef}>
       {/* Left: Logo */}
       <div className="logo-container">
-        <Link to="/" aria-label="OneSky Home" onClick={closeMobileMenu}>
+        <Link to="/home" aria-label="OneSky Home" onClick={closeMobileMenu}>
           <img src={logo} alt="OneSky Logo" className="logo" />
         </Link>
       </div>
 
-      {/* Center: Nav links (desktop) */}
-      <nav className="nav-links" aria-label="Primary navigation">
-        <Link to="/">Home</Link>
-        <Link to="/events">Events</Link>
-        <Link to="/teams">Teams</Link>
-      </nav>
+      {/* Center: Nav links (only show if logged in) */}
+      {isLoggedIn && (
+        <nav className="nav-links" aria-label="Primary navigation">
+          <Link to="/home">Home</Link>
+          <Link to="/events">Events</Link>
+          <Link to="/teams">Teams</Link>
+        </nav>
+      )}
 
-      {/* Right: Auth buttons (desktop) */}
+      {/* Right: Auth buttons */}
       <div className="logout-container">
-        {isAuthenticated ? (
+        {isLoggedIn ? (
           <a
             href="#"
-            onClick={handleLogout}
+            onClick={(e) => {
+              e.preventDefault();   // prevent full page reload
+              logout();          // call your logout handler
+            }}
             className="logout-btn"
           >
             Log out
           </a>
         ) : (
-          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-            <Link to="/login" className="logout-btn" style={{ textDecoration: "none" }}>
-              Login
-            </Link>
-            <Link to="/register" className="logout-btn" style={{ textDecoration: "none" }}>
-              Register
-            </Link>
-          </div>
-        )}
+          <>
+          <Link to="/login" className="logout-btn">
+            Log in
+          </Link>
+          <Link to="/register" className="logout-btn">
+            Register
+          </Link>
+        </>
+      )}
       </div>
 
       {/* Mobile: Hamburger menu button */}
@@ -119,7 +126,7 @@ export default function Header() {
         className={`mobile-nav ${isMobileMenuOpen ? 'open' : ''}`}
         aria-label="Mobile navigation"
       >
-        <Link to="/" onClick={closeMobileMenu}>Home</Link>
+        <Link to="/home" onClick={closeMobileMenu}>Home</Link>
         <Link to="/events" onClick={closeMobileMenu}>Events</Link>
         <Link to="/teams" onClick={closeMobileMenu}>Teams</Link>
         {isAuthenticated ? (
