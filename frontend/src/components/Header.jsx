@@ -59,7 +59,7 @@ export default function Header() {
     <header className="header" role="banner" ref={headerRef}>
       {/* Left: Logo */}
       <div className="logo-container">
-        <Link to="/" aria-label="OneSky Home" onClick={closeMobileMenu}>
+        <Link to="/home" aria-label="OneSky Home" onClick={closeMobileMenu}>
           <img src={logo} alt="OneSky Logo" className="logo" />
         </Link>
       </div>
@@ -67,7 +67,7 @@ export default function Header() {
       {/* Center: Nav links (only show if logged in) */}
       {isLoggedIn && (
         <nav className="nav-links" aria-label="Primary navigation">
-          <Link to="/">Home</Link>
+          <Link to="/home">Home</Link>
           <Link to="/events">Events</Link>
           <Link to="/teams">Teams</Link>
         </nav>
@@ -126,7 +126,7 @@ export default function Header() {
         className={`mobile-nav ${isMobileMenuOpen ? 'open' : ''}`}
         aria-label="Mobile navigation"
       >
-        <Link to="/" onClick={closeMobileMenu}>Home</Link>
+        <Link to="/home" onClick={closeMobileMenu}>Home</Link>
         <Link to="/events" onClick={closeMobileMenu}>Events</Link>
         <Link to="/teams" onClick={closeMobileMenu}>Teams</Link>
         {isAuthenticated ? (
