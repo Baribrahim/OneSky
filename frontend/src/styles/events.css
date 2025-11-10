@@ -4,8 +4,10 @@
   justify-content: center;
   align-items: flex-start;
   min-height: 100vh;
-  padding: 10px 40px 40px;
-  background-color: #f5f5f5;
+  padding: 10px 16px 40px;
+  background-color: #ffffff;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ===== Page Container for Consistent Width ===== */
@@ -24,11 +26,12 @@
 /* ===== Main Card Container ===== */
 .card.large-card {
   width: 100%;
-  max-width: 1200px;
+  max-width: 100%;
   padding: 20px;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
 /* ===== Event List Grid ===== */
@@ -36,6 +39,27 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 640px) {
+  .events-wrapper {
+    padding: 10px 16px 40px;
+  }
+
+  .card.large-card {
+    padding: 16px;
+  }
+
+  .event-list {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .filter-panel {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
 }
 
 /* ===== Event Card ===== */
@@ -222,7 +246,7 @@
 }
 
 .info-item {
-  background: #f9f9f9;
+  background: #ffffff;
   padding: 16px;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
@@ -296,7 +320,8 @@
   flex: 1.5;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
+  gap: 20px;
 }
 
 .right-column h3 {
@@ -308,9 +333,30 @@
   -webkit-text-fill-color: transparent;
 }
 
+.right-column .event-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.right-column .event-section.map-section {
+  flex: 1;
+  min-height: 0;
+}
+
+.right-column .map-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+  min-height: 0;
+}
+
 .right-column iframe {
   width: 100%;
-  height: 300px;
+  height: 100%;
+  min-height: 400px;
+  flex: 1;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
@@ -324,14 +370,54 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
+  .page-container {
+    width: 100%;
+  }
+
   .event-details-container {
     flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
   }
 
   .left-column,
   .right-column {
-    width: 90%;
+    width: 100%;
+    flex: none;
+  }
+
+  .left-column {
+    gap: 16px;
+  }
+
+  .requirements-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .requirements-section {
+    flex: none;
+    width: 100%;
+  }
+
+  .event-section,
+  .event-info-cards-wrapper {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .info-item {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .event-title {
+    font-size: 1.75rem;
+  }
+
+  .event-section h2 {
+    font-size: 1.25rem;
   }
 }
 
@@ -430,7 +516,7 @@
 
 /* Schedule item cards */
 .schedule-item {
-  background: #f9f9f9;
+  background: #ffffff;
   border-radius: 12px;
   padding: 16px 20px;
   margin-bottom: 16px;

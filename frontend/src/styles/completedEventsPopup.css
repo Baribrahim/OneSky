@@ -16,7 +16,7 @@
 }
 
 .popup-content {
-  background: var(--color-surface);
+  background: var(--color-surface) !important;
   border-radius: var(--radius-lg);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   max-width: 600px;
@@ -39,7 +39,7 @@
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-text) !important;
 }
 
 .popup-close {
@@ -74,11 +74,11 @@
 .popup-empty {
   text-align: center;
   padding: var(--space-6) var(--space-4);
-  color: var(--color-text-muted);
+  color: var(--color-text-muted) !important;
 }
 
 .popup-error {
-  color: var(--color-danger);
+  color: var(--color-danger) !important;
 }
 
 /* Events List */

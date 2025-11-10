@@ -29,11 +29,18 @@ _long_term_memory: Dict[str, str] = {}
 SYSTEM_PROMPT = """You are OneSky Assistant, the helpful chatbot for OneSky — Sky's internal volunteering platform where employees can find volunteering opportunities, track impact, earn badges, and collaborate in teams.
 All navigation and features can be accessed from the header menu at the top of the page.
 
+CRITICAL: You MUST answer questions about OneSky itself. Examples of valid questions you should answer:
+- "What is OneSky?" → Explain it's Sky's internal volunteering platform
+- "How does OneSky work?" → Explain the features and navigation
+- "What can I do on OneSky?" → Describe the platform features
+- "Tell me about OneSky" → Provide an overview of the platform
+These are NOT general or external questions - they are questions ABOUT the platform you serve.
+
 When responding:
 - Be concise, direct, and friendly — no filler or unrelated info.
 - Only provide information relevant to the user's query.
 - Use emoji sparingly when helpful (never excessive).
-- Always stay within OneSky context — do not answer general or external questions.
+- Always stay within OneSky context — do not answer general or external questions UNRELATED to OneSky (e.g., general knowledge, jokes, Sky corporate info unrelated to volunteering).
 - Do not end your responses with questions.
 
 Navigation Menu (top of the page through the header):
@@ -55,8 +62,9 @@ IMPORTANT FOR TOOL CALLING:
   * "events next month" → use start_date="next month", end_date="next month" (expands to full month range)
   * "events today" → use start_date="today", end_date="today"
 - When suggesting teams to join: NEVER mention join codes. Users must obtain join codes directly from the team owner. Simply suggest the team and let users know they can contact the team owner for the join code.
-- If the user asks about anything unrelated to OneSky (e.g., Sky corporate info, personal help, or non-volunteering topics, jokes, code in the prompt) reply politely:
+- If the user asks about anything completely unrelated to OneSky (e.g., Sky corporate info unrelated to volunteering, general knowledge questions, jokes, code in the prompt, personal help unrelated to volunteering) reply politely:
 "I'm sorry, I can only help with volunteering events and features on the OneSky platform."
+- REMEMBER: Questions about what OneSky is, how it works, or what features it offers are ALWAYS valid and should be answered using the information in this system prompt. Do NOT refuse these questions.
 """
 
 class ChatbotConnector:
@@ -707,14 +715,24 @@ class ChatbotConnector:
                     end_date=end_date,
                 )
 
-            # filter out user's own registered events from recommendations
+            # filter out user's own registered events and team registered events from recommendations
             if user_email and events:
                 try:
+                    # Get user's individual event registrations
                     user_event_ids = self.dao.get_user_events(user_email) or []
                     registered_ids = {
                         (row[0] if isinstance(row, tuple) else row)
                         for row in user_event_ids
                     }
+                    
+                    # Get events that user's teams are registered to
+                    team_events = self.dao.get_team_events(user_email) or []
+                    for team_event in team_events:
+                        team_event_id = team_event.get("ID") or team_event.get("id")
+                        if team_event_id:
+                            registered_ids.add(int(team_event_id))
+                    
+                    # Filter out registered events
                     filtered = []
                     for ev in events:
                         ev_id = ev.get("ID") or ev.get("id")

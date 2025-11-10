@@ -1,9 +1,12 @@
-
 .popup-content { 
   margin-top: 15vh !important; 
   top: auto !important; 
-  width: 300px;
-  }
+  width: 100% !important;
+  max-width: 400px !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
 
 /* Dim background overlay */
 .popup-overlay {
@@ -13,7 +16,81 @@
 [data-popup='tooltip'].popup-overlay 
 { background: transparent; }
 
+/* Popup card container */
+.popup-card {
+  background: var(--color-surface, #fff);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-8, 24px);
+  box-shadow: var(--shadow-2, 0 4px 12px rgba(0, 0, 0, 0.15));
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
 
+.popup-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 var(--space-6, 20px) 0;
+  text-align: center;
+  color: var(--color-text, #1f2430);
+}
+
+/* Input styling */
+.form-input {
+  width: 100%;
+  margin: 0 0 var(--space-4, 16px) 0;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border, #e6e8f0);
+  border-radius: var(--radius-md, 8px);
+  text-align: center;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--brand-primary, #2f6fb2);
+  box-shadow: 0 0 0 3px rgba(47, 111, 178, 0.1);
+}
+
+/* Stack and center buttons */
+.popup-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  margin-top: var(--space-2, 8px);
+  width: 100%;
+}
+
+.popup-button-primary {
+  flex: 1;
+  background: var(--brand-primary, #2f6fb2);
+  color: white;
+  border: none;
+}
+
+.popup-button-primary:hover {
+  background: var(--brand-primary-600, #285f98);
+}
+
+.popup-button-secondary {
+  flex: 1;
+  background: var(--color-surface, #fff);
+  color: var(--brand-primary, #2f6fb2);
+  border: 1px solid var(--brand-primary, #2f6fb2);
+}
+
+.popup-button-secondary:hover {
+  background: var(--brand-primary-050, #eaf2fb);
+  border-color: var(--brand-primary-600, #285f98);
+}
+
+/* Backward compatibility for other popups */
 .content {
   display: flex;
   flex-direction: column;
@@ -22,17 +99,6 @@
   width: 100%;
 }
 
-/* Input styling */
-.form-input {
-  width: 80%;
-  margin: 10px 0;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: var(--radius-sm, 4px);
-  text-align: center;
-}
-
-/* Stack and center buttons */
 .actions {
   display: flex;
   flex-direction: row;
