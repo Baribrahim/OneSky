@@ -85,6 +85,7 @@
   border-radius: 12px;
   overflow: hidden;
   padding: 0;
+  justify-content: space-between;
 }
 
 .event-card-link {
@@ -424,7 +425,7 @@
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 10px;
+  padding: 1rem;
 }
 
 .event-actions .button {
