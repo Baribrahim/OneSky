@@ -24,6 +24,14 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
     setError("");
   }
 
+    // Generates user initials
+    const getInitials = (firstName, lastName) => {
+      if (!firstName && !lastName) return "U";
+      const first = firstName ? firstName[0].toUpperCase() : "";
+      const last = lastName ? lastName[0].toUpperCase() : "";
+      return `${first}${last}`;
+    };
+
   const handleJoin = async (team_id, join_code, close) => {
     if(!join_code){
       setError("Join code is required.");
@@ -105,7 +113,7 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
 
       <div className="team-card-actions">
         <div className="button-group">
-          {isOwner ? <button className="button-sky" onClick={handleDelete}>Delete</button> : null}
+          
 
           {(isOwner || isMember) ? (
             <Popup
@@ -122,15 +130,17 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
                     <div className="members-list">
                     {members.map(member => (
                       <div className="member-card" key={member.email}>
-                        <img
-                          src={
-                            member.profile_img_url
-                              ? `http://localhost:5000/${member.profile_img_url}`
-                              : "src/assets/profileImgs/default.png"
-                          }
-                          alt="Profile"
-                          className="member-img"
-                        />
+                      {member.profile_img_url && member.profile_img_path != 'default.png' ? (
+                          <img
+                            src={`http://localhost:5000/${member.profile_img_url}`}
+                            alt={"Profile Image"}
+                            className="member-img"
+                          />
+                        ) : (
+                          <div className="member-avatar">
+                            {getInitials(member.first_name, member.last_name)}
+                          </div>
+                        )}
                         <div className="member-info">
                           <p className="member-name">{member.first_name} {member.last_name}</p>
                           {member.id === team.owner_user_id && <span className="owner-label"> Owner</span>}
@@ -151,7 +161,7 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
                 </div>
               )}
             </Popup>): null}
-
+          {isOwner ? <button className="button-sky" onClick={handleDelete}>Delete</button> : null}
           {!isOwner && isMember ? <button className="button-sky" onClick={handleLeave}>Leave</button>: null}
 
           {!isMember && (

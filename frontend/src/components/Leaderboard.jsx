@@ -65,7 +65,7 @@ const Leaderboard = () => {
       {loading && <p>Loading...</p>}
       {!loading && error && <div className="error" role="alert">{error}</div>}
       {!loading && !error && rankedUsers.length === 0 && <p>No users yet.</p>}
-
+      <p className="helper">Scores are a weighted sum of events completed, hours spent, and badges earned.</p>
       <div className="leaderboard-list">
         {!loading && !error && rankedUsers.map((user, index) => (
           <div className="leaderboard-item" key={index} >
@@ -85,7 +85,6 @@ const Leaderboard = () => {
             <span className="name">{user.FirstName} {user.LastName}</span>{" "}
             <span className="score-tooltip">
               <span className="score">{user.RankScore}</span>
-              <span className="tooltip-text">Scores are a weighted sum of events completed, hours spent, and badges earned.</span>
             </span>
 
           </div>
