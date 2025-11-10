@@ -52,14 +52,13 @@ def update_profile_image():
         ext = os.path.splitext(file.filename)[1]  # keep original extension
         unique_filename = f"{uuid.uuid4().hex}{ext}"
         
-        safe_filename = file.filename 
         file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
         file.save(file_path)
 
         # Update database (store only filename)
-        pc.update_profile_image(email, safe_filename)
+        pc.update_profile_image(email, unique_filename)
 
-        file_url = f"/api/profile/images/{safe_filename}"
+        file_url = f"/api/profile/images/{unique_filename}"
         return jsonify({"message": "Profile image updated", "url": file_url}), 200
 
     except Exception as e:
