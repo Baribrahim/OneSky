@@ -11,6 +11,10 @@ from teams.routes import bp as teams_bp
 from badges.routes import bp as badges_bp
 from chatbot.routes import bp as chatbot_bp
 from landing.routes import bp as landing_bp
+# from search.routes import bp as search_bp           # (later)
+# from eventregistration.routes import bp as er_bp     # (later)
+
+
 from chatbot.socket_chat import socketio
 
 
