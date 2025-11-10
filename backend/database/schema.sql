@@ -108,23 +108,22 @@ create table Team
   IsActive tinyint not null default 1
 );
 
-create table TeamMembership
-	(
-	ID int primary key auto_increment,
-	UserID int,
-    FOREIGN KEY (UserID) references User(ID),
-    TeamID int,
-    FOREIGN KEY (TeamID) references Team(ID)
-	);
-    
-create table TeamEventRegistration
-	(
-	ID int primary key auto_increment,
-	EventID int,
-    FOREIGN KEY (EventID) references Event(ID),
-    TeamID int,
-    FOREIGN KEY (TeamID) references Team(ID)
-	);
+CREATE TABLE TeamMembership (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    UserID INT,
+    TeamID INT,
+    FOREIGN KEY (UserID) REFERENCES User(ID),
+    FOREIGN KEY (TeamID) REFERENCES Team(ID) ON DELETE CASCADE
+);
+
+CREATE TABLE TeamEventRegistration (
+    ID INT PRIMARY KEY AUTO_INCREMENT,
+    EventID INT,
+    TeamID INT,
+    FOREIGN KEY (EventID) REFERENCES Event(ID),
+    FOREIGN KEY (TeamID) REFERENCES Team(ID) ON DELETE CASCADE
+);
+
   
 -- Insert badges
 INSERT INTO Badge (Name, Description, IconURL) VALUES
@@ -1145,3 +1144,12 @@ VALUES
 ('Creative Crew', 'Design team creating UX/UI assets and branding materials.', 'Design', 1, 'C5D6E7F8', 1),
 ('Delta Data', 'Analytics team working on data modeling and performance metrics.', 'Data Science', 1, 'D7E8F9G0', 1),
 ('Echo Executives', 'Leadership group coordinating company-wide strategy.', 'Management', 1, 'E9F0G1H2', 1)
+
+-- Insert Alice (UserID = 1) into all 5 teams
+INSERT INTO TeamMembership (UserID, TeamID)
+VALUES 
+  (1, 1),
+  (1, 2),
+  (1, 3),
+  (1, 4),
+  (1, 5);

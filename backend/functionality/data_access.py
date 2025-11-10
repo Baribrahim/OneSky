@@ -1009,6 +1009,51 @@ class DataAccess:
         except Exception as e:
             print(f"Error in get_all_joined_teams: {e}")
             raise
+    
+    def delete_team(self, team_id):
+        """Delete a team and all related memberships and event registrations"""
+        sql = "DELETE FROM Team WHERE ID = %s"
+        try:
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (team_id,))
+                conn.commit()
+        except Exception as e:
+            print(f"Error in delete_team: {e}")
+            raise
+    
+    def leave_team(self, user_id, team_id):
+        """Remove a user from a team.""" 
+        try:
+            sql = "DELETE FROM TeamMembership WHERE UserID = %s AND TeamID = %s"
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (user_id, team_id))
+        except Exception as e:
+            print(f"Error in leave_team: {e}")
+            raise
+
+
+    def read_all_team_members(self, team_id):
+        """Read all members of a team"""
+        try:
+            sql = """
+            SELECT
+                u.ID,
+                u.FirstName,
+                u.LastName,
+                u.Email,
+                u.ProfileImgPath
+            FROM User u
+            JOIN TeamMembership tm
+            ON u.ID = tm.UserID
+            WHERE tm.TeamID = %s
+            """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (team_id,))
+                return cursor. fetchall()
+        except Exception as e:
+            print(f"Error in read_all_team_members: {e}")
+            raise
+
 
     # ------------------------
     # Team Event Registration Methods
@@ -1124,8 +1169,8 @@ class DataAccess:
     # ------------------------
 
     def read_user_by_ordered_rank_score(self):
-        """Read user FirstName LastName by ordered RankScore"""
-        sql = "SELECT Email, FirstName, LastName, RankScore, ProfileImgPath FROM User ORDER BY RankScore DESC LIMIT 10"
+        """Read user FirstName LastName by ordered RankScore. Filter out test dummy data."""
+        sql = "SELECT Email, FirstName, LastName, RankScore, ProfileImgPath FROM User WHERE CONCAT(FirstName, ' ', LastName) NOT IN ('Test User', 'A B', 'Jane Doe') ORDER BY RankScore DESC LIMIT 10"
         try:
             with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute(sql)

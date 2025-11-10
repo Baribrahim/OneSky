@@ -39,7 +39,9 @@ export default function Teams() {
     }
   };
   
-  const notify = (joinedTeamName) => toast.success(`Joined Team ${joinedTeamName}`);  
+  const notifyJoined = (joinedTeamName) => toast.success(`Joined Team ${joinedTeamName}`);  
+  const notifyLeft = (joinedTeamName) => toast.success(`Left Team ${joinedTeamName}`);  
+  const notifyDeleted = (deletedTeamName) => toast.success(`Deleted Team ${deletedTeamName}`);
 
 
   useEffect(() => {
@@ -53,11 +55,34 @@ export default function Teams() {
     return () => { active = false; };
   }, []);
 
+  const onJoin = (joinedTeam, toJoin) => {
+    if (toJoin) {
+      setMyTeams(prev => [...prev, joinedTeam]); notifyJoined(joinedTeam.name)
+    }
+    else {
+      setMyTeams(prev => prev.filter(team => team.id !== joinedTeam.id)); 
+      notifyLeft(joinedTeam.name)
+    }
+  }
+
+  const onDelete = (deletedTeam) => {
+    setTeams(prev => prev.filter(team => team.id !== deletedTeam.id));
+    setMyTeams(prev => prev.filter(team => team.id !== deletedTeam.id));
+    notifyDeleted(deletedTeam.name)
+  }
+
+
+
 
   // --- UI rendering ---
   return (
     <>
-      <MyTeams teams={myTeams} loading={myTeamsLoading} error={myTeamsError} />
+      <MyTeams teams={myTeams}
+               loading={myTeamsLoading} 
+               error={myTeamsError} 
+               onJoin={onJoin}
+               onDelete={onDelete}
+               />
 
       <section className="teams-section" aria-labelledby="teams-heading">
         <div className="teams-inner card">
@@ -77,7 +102,7 @@ export default function Teams() {
                 isMember={myTeams.some(mt => mt.id === t.id)}
                 isOwner={t.is_owner}
                 browseEvents = {true}
-                onJoin={(joinedTeam) => {setMyTeams(prev => [...prev, joinedTeam]); notify(joinedTeam.name)}}
+                onJoin={onJoin}
               />
               ))}
             </div>

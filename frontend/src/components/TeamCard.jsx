@@ -3,6 +3,7 @@ import {api, toResult} from '../lib/apiClient.js';
 import Popup from 'reactjs-popup';
 import '../styles/popup.css';
 import "../styles/teamCard.css";
+import "../styles/teamMemberspopup.css";
 
 /**
  * TeamCard
@@ -10,11 +11,13 @@ import "../styles/teamCard.css";
  * Displays team information including name, description, department,
  * and join code with conditional buttons based on whether the user is the owner of the team.
  */
-export default function TeamCard({ team, isOwner = false, isMember = false, showJoinCode = false, onJoin, browseEvents = false }) {
+export default function TeamCard({ team, isOwner = false, isMember = false, showJoinCode = false, onJoin, browseEvents = false, onDelete}) {
   const { name, description, department, join_code, JoinCode } = team;
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState("");
-  const [joinedTeams, setJoinedTeams] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState("");
  
   function resetStates() {
     setJoinCode("");
@@ -34,7 +37,7 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
       }
       else{
         resetStates();
-        if (onJoin) onJoin(team);
+        if (onJoin) onJoin(team, true);
         if (close) close();
       }
     } 
@@ -43,82 +46,141 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      const { data, error } = await toResult(api.post(`/api/teams/${team.id}/delete`));
+      if (error) {
+        setError(error.message || "Failed to delete team");
+      } else {
+        if (onDelete) onDelete(team);
+      }
+    } catch (err) {
+      setError(err.message || String(err));
+    }
+  };
+
+  const handleLeave = async () => {
+    try {
+      const { data, error } = await toResult(api.post(`/api/teams/${team.id}/leave`));
+      if (error) {
+        setError(error.message || "Failed to leave team");
+        console.log(error.message);
+      } else {
+        console.log("HELLO");
+        if (onJoin) onJoin(team, false);
+      }
+    } catch (err) {
+      setError(err.message || String(err));
+    }
+  };
+
+  const fetchMembers = async () => {
+    setMembersLoading(true);
+    setMembersError("");
+    try {
+      const { data, error } = await toResult(api.get(`/api/teams/${team.id}/members`));
+      if (error) setMembersError(error.message || "Failed to load members");
+      else setMembers(data.members || []);
+    } catch (err) {
+      setMembersError(err.message || "Unexpected error");
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
 
   return (
     <div className="team-card">
       <div>
         {browseEvents && (
-          <p className="meta-topright">
-            {isMember ? "Joined" : "\u00A0"}
-          </p>
+          <p className="meta-topright">{isMember ? "Joined" : "\u00A0"}</p>
         )}
         <h3>{name || team.Name}</h3>
-        {description && (
-          <p className="meta">{description}</p>
-        )}
-        {department && (
-          <p className="meta">Dept: {department}</p>
-        )}
-        {/* Only show join code if user is a member of the team */}
+        {description && <p className="meta">{description}</p>}
+        {department && <p className="meta">Dept: {department}</p>}
         {(join_code || JoinCode) && showJoinCode && (
           <p className="join-code">Join Code: {join_code || JoinCode}</p>
         )}
       </div>
 
-      {/* Conditional buttons based on user role */}
       <div className="team-card-actions">
-        {isOwner ? (
-          <button className="button">View/Manage</button>
-        ) : (
-          <div className="button-group">
-            <button className="button secondary">View</button>
-            {!isMember && (           
-            <Popup trigger={<button className="button primary">Request to Join</button>} modal
-            onClose={() => {
-              resetStates()
-          }}>
-    {close => (
-      <div className="popup-card">
-        <h3 className="popup-title">Enter Code</h3>
-        {error && <div className="error" role="alert">{error}</div>}
-        <input
-          className='form-input'
-          type="text"
-          placeholder="Code"
-          value={joinCode}
-          onChange={e => setJoinCode(e.target.value)}
-          onKeyPress={e => {
-            if (e.key === 'Enter') {
-              handleJoin(team.id, joinCode, close);
-            }
-          }}
-        />
-        <div className="popup-actions">
-          <button 
-            className="button popup-button-primary" 
-            onClick={async () => { 
-              await handleJoin(team.id, joinCode, close);
-            }}
-          >
-            Submit
-          </button>
-          <button
-            className="button popup-button-secondary"
-            onClick={() => {
-              resetStates()
-              close();
-            }}
-          >
-            Close
-          </button>
+        <div className="button-group">
+          {isOwner ? <button className="button-sky" onClick={handleDelete}>Delete</button> : null}
+
+          {(isOwner || isMember) ? (
+            <Popup
+              trigger={<button className="button-sky">View Members</button>}
+              modal
+              onOpen={fetchMembers}
+            >
+              {close => (
+                <div className="popup-card">
+                  <h2 className="team-members">Team Members</h2>
+                  {membersLoading && <p>Loading members...</p>}
+                  {membersError && <p className="error">{membersError}</p>}
+                  {!membersLoading && members.length === 0 && <p>No members yet.</p>}
+                    <div className="members-list">
+                    {members.map(member => (
+                      <div className="member-card" key={member.email}>
+                        <img
+                          src={
+                            member.profile_img_url
+                              ? `http://localhost:5000/${member.profile_img_url}`
+                              : "src/assets/profileImgs/default.png"
+                          }
+                          alt="Profile"
+                          className="member-img"
+                        />
+                        <div className="member-info">
+                          <p className="member-name">{member.first_name} {member.last_name}</p>
+                          {member.id === team.owner_user_id && <span className="owner-label"> Owner</span>}
+                          <a 
+                            href={`mailto:${member.email}`} 
+                            className="member-email"
+                            title={`Email ${member.first_name} ${member.last_name}`}
+                          >
+                            {"\u{2709}"} {member.email}
+                          </a>
+
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button className="button-sky" onClick={close}>Close</button>
+                </div>
+              )}
+            </Popup>): null}
+
+          {!isOwner && isMember ? <button className="button-sky" onClick={handleLeave}>Leave</button>: null}
+
+          {!isMember && (
+            <Popup
+              trigger={<button className="button-sky">Request to Join</button>}
+              modal
+              onClose={resetStates}
+            >
+              {close => (
+                <div className="popup-card">
+                  <h3 className="popup-title">Enter Code</h3>
+                  {error && <div className="error">{error}</div>}
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="Code"
+                    value={joinCode}
+                    onChange={e => setJoinCode(e.target.value)}
+                    onKeyPress={e => e.key === 'Enter' && handleJoin(team.id, joinCode, close)}
+                  />
+                  <div className="popup-actions">
+                    <button className="button popup-button-primary" onClick={() => handleJoin(team.id, joinCode, close)}>Submit</button>
+                    <button className="button popup-button-secondary" onClick={close}>Close</button>
+                  </div>
+                </div>
+              )}
+            </Popup>
+          )}
         </div>
-      </div>
-    )}
-  </Popup>)}
-
-
-          </div>
-        )}
       </div>
     </div>
   );
