@@ -1,31 +1,41 @@
 /* ===== Base Styles ===== */
 .welcome-page {
   color: #333;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* ===== Hero Section ===== */
 .hero {
   background: url('/images/volunteer-bg.jpg') center/cover no-repeat;
-  height: 30vh;
+  min-height: 30vh;
   display: flex;
   justify-content: center;
   align-items: center;
   text-align: center;
   color: black;
   margin-bottom: 1rem;
+  padding: 2rem 1rem;
+}
+
+.hero-content {
+  max-width: 100%;
+  width: 100%;
 }
 
 .hero h1 {
-  font-size: 5rem;
+  font-size: 2.5rem;
   font-weight: bold;
   text-align: center;
   margin-bottom: 8px;
   color: #555;
+  line-height: 1.2;
 }
 
 .hero p {
-  font-size: 2rem;
+  font-size: 1.2rem;
   margin-top: 0.5rem;
+  line-height: 1.5;
 }
 
 /* ===== Animations ===== */
@@ -59,12 +69,6 @@
   display: block;
 }
 
-@media (max-width: 768px) {
-  .intro-video video {
-    height: 200px;
-  }
-}
-
 /* ===== CTA Button ===== */
 .cta-btn {
   background: #0056b3;
@@ -76,6 +80,9 @@
   font-weight: 600;
   cursor: pointer;
   margin-top: 1rem;
+  display: inline-block;
+  text-decoration: none;
+  transition: background 0.3s ease;
 }
 
 .cta-btn:hover {
@@ -100,6 +107,7 @@
   display: flex;
   align-items: center;
   gap: 2rem;
+  flex-wrap: wrap;
 }
 
 .feature-section.reverse {
@@ -108,9 +116,10 @@
 
 .feature-image {
   width: 30%;
+  min-width: 250px;
   border-radius: 8px;
   object-fit: cover;
-  
+  flex-shrink: 0;
 }
 
 .feature-text {
@@ -118,16 +127,20 @@
   flex-direction: column;
   justify-content: center;
   width: 60%;
+  flex: 1;
+  min-width: 250px;
+  text-align: left;
 }
 
 .feature-text h3 {
   font-size: 1.8rem;
-  margin: 0;
+  margin: 0 0 1rem 0;
 }
 
 .feature-text p {
   font-size: 1rem;
   line-height: 1.6;
+  margin: 0;
 }
 
 /* ===== Feature Card ===== */
@@ -229,7 +242,10 @@
 
 .page-container {
   max-width: 1500px;
+  margin: 0 auto;
   padding: 0 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .footer-cta {
@@ -241,7 +257,9 @@
   background: linear-gradient(90deg, #007bff, #7928ca);
   color: #fff;
   border-radius: 12px;
-  margin-top: 2rem;
+  margin: 2rem 0;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .footer-cta.animate {
@@ -262,10 +280,297 @@
   padding: 0.8rem 1.8rem;
   border-radius: 8px;
   text-decoration: none;
-  transition: all 1.30s ease;
+  transition: all 0.3s ease;
+  display: inline-block;
 }
 
 .footer-cta .cta-btn:hover {
   background: #f0f0f0;
   color: #0056b3;
+}
+
+/* ===== Responsive Styles ===== */
+
+/* Tablet and below (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .hero h1 {
+    font-size: 3rem;
+  }
+
+  .hero p {
+    font-size: 1.5rem;
+  }
+
+  .intro-video video {
+    height: 400px;
+  }
+
+  .feature-section {
+    gap: 1.5rem;
+  }
+
+  .feature-image {
+    width: 35%;
+    min-width: 200px;
+  }
+
+  .feature-text {
+    width: 55%;
+    min-width: 200px;
+  }
+
+  .feature-text h3 {
+    font-size: 1.6rem;
+  }
+}
+
+/* Tablet (max-width: 768px) */
+@media (max-width: 768px) {
+  .hero {
+    min-height: 25vh;
+    padding: 1.5rem 1rem;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+  }
+
+  .hero p {
+    font-size: 1.1rem;
+  }
+
+  .intro-video {
+    margin-top: -20px;
+  }
+
+  .intro-video video {
+    height: 300px;
+  }
+
+  .features {
+    padding: 2rem 1rem;
+  }
+
+  .feature-list {
+    gap: 2rem;
+  }
+
+  .feature-section {
+    flex-direction: column !important;
+    gap: 1.5rem;
+    text-align: center;
+  }
+
+  .feature-section.reverse {
+    flex-direction: column !important;
+  }
+
+  .feature-image {
+    width: 100%;
+    max-width: 500px;
+    min-width: unset;
+  }
+
+  .feature-text {
+    width: 100%;
+    min-width: unset;
+    text-align: center;
+  }
+
+  .feature-text h3 {
+    font-size: 1.5rem;
+  }
+
+  .feature-text p {
+    font-size: 0.95rem;
+  }
+
+  .testimonials {
+    padding: 1rem;
+  }
+
+  .testimonials h2 {
+    font-size: 1.5rem;
+  }
+
+  .testimonial-card {
+    width: 85%;
+    padding: 2rem 1.5rem;
+    min-height: 180px;
+  }
+
+  .testimonial-card .quote {
+    font-size: 1.2rem;
+  }
+
+  .testimonial-card .name {
+    font-size: 1rem;
+  }
+
+  .carousel-btn {
+    font-size: 1.5rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .footer-cta {
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .footer-cta h2 {
+    font-size: 1.5rem;
+  }
+
+  .footer-cta .cta-btn {
+    font-size: 1rem;
+    padding: 0.7rem 1.5rem;
+  }
+
+  .cta-btn {
+    font-size: 1rem;
+    padding: 0.7rem 1.3rem;
+  }
+}
+
+/* Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+  .hero {
+    min-height: 20vh;
+    padding: 1rem 0.75rem;
+  }
+
+  .hero h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero p {
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+  }
+
+  .intro-video {
+    margin-top: -30px;
+  }
+
+  .intro-video video {
+    height: 200px;
+  }
+
+  .features {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .feature-list {
+    gap: 1.5rem;
+  }
+
+  .feature-section {
+    gap: 1rem;
+  }
+
+  .feature-image {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .feature-text h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .feature-text p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .testimonials {
+    padding: 0.75rem;
+  }
+
+  .testimonials h2 {
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .testimonial-carousel {
+    gap: 0.5rem;
+  }
+
+  .testimonial-card {
+    width: 90%;
+    padding: 1.5rem 1rem;
+    min-height: 150px;
+  }
+
+  .testimonial-card .quote {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .testimonial-card .name {
+    font-size: 0.9rem;
+  }
+
+  .carousel-btn {
+    font-size: 1.2rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .footer-cta {
+    padding: 1.25rem 1rem;
+    margin: 1.5rem 0;
+    border-radius: 8px;
+  }
+
+  .footer-cta h2 {
+    font-size: 1.3rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .footer-cta .cta-btn {
+    font-size: 0.95rem;
+    padding: 0.6rem 1.2rem;
+  }
+
+  .cta-btn {
+    font-size: 0.95rem;
+    padding: 0.6rem 1.2rem;
+    margin-top: 0.75rem;
+  }
+
+  .page-container {
+    padding: 0 0.75rem;
+  }
+}
+
+/* Small mobile (max-width: 320px) */
+@media (max-width: 320px) {
+  .hero h1 {
+    font-size: 1.3rem;
+  }
+
+  .hero p {
+    font-size: 0.85rem;
+  }
+
+  .feature-text h3 {
+    font-size: 1.2rem;
+  }
+
+  .feature-text p {
+    font-size: 0.85rem;
+  }
+
+  .testimonial-card {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .testimonial-card .quote {
+    font-size: 0.95rem;
+  }
+
+  .footer-cta h2 {
+    font-size: 1.2rem;
+  }
 }

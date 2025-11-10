@@ -150,7 +150,9 @@ export default function Register() {
                   Show confirm password
                 </label>
               </div>
-              {error && <div className="error" role="alert">{error}</div>}
+              <div className="error-container" role="alert" style={{ minHeight: '24px', marginTop: 8, marginBottom: 0 }}>
+                {error && <div className="error" style={{ marginTop: 0 }}>{error}</div>}
+              </div>
               <button className="button-sky" disabled={submitting} style={{ marginTop: 16 }}>
                 {submitting ? "Creating..." : "Create account"}
               </button>

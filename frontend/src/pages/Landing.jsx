@@ -113,7 +113,9 @@ const footerRef = useRef(null);
             </section>
 
         </div>
-            {/* Footer CTA */}
+        
+        {/* Footer CTA */}
+        <div className="page-container">
             <footer
                 ref={footerRef}
                 className={`footer-cta ${isVisible ? "animate" : ""}`}
@@ -123,6 +125,7 @@ const footerRef = useRef(null);
                     Sign Up Today
                 </Link>
             </footer>
+        </div>
 
         <Footer />
        
