@@ -82,7 +82,7 @@ function EventCard({ event}) {
                 </p>
                 <p>📅 {event.Date ? formatDate(event.Date) : ''}</p>
                 <p>{event.StartTime && event.EndTime ? `${timeUnicode(event.StartTime)} ${formatTime(event.StartTime)} - ${formatTime(event.EndTime)}` : ''}</p>
-                <p>👥 {event.Capacity || ''}</p>
+                {/* <p>👥 {event.Capacity || ''}</p> */}
               </div>
             </div>
         </Link>

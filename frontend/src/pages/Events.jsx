@@ -22,10 +22,10 @@ export default function Events() {
     const today = new Date();
     // const thirtyDaysLater = new Date();
     // thirtyDaysLater.setDate(today.getDate() + 30);
-
     setFilters((prev) => ({
       ...prev,
       startDate: formatDate(today),
+      endDate: '',
       // endDate: formatDate(thirtyDaysLater),
     }));
   }, []);
@@ -59,7 +59,9 @@ export default function Events() {
       keyword: '',
       location: '',
       startDate: formatDate(today),
+      endDate: '',
       // endDate: formatDate(thirtyDaysLater),
+
     });
   };
 

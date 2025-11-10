@@ -61,7 +61,7 @@ export default function Register() {
       setError(err.message || "Registration failed.");
       return;
     }
-    navigate("/", { replace: true });
+    navigate("/home", { replace: true });
   };
 
   return (
