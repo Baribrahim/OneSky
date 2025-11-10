@@ -12,6 +12,7 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Teams from "./pages/Teams.jsx";
 import CreateTeam from "./pages/CreateTeam.jsx";
+import Profile from "./pages/Profile.jsx";
 import Landing from "./pages/Landing.jsx";
 import { Navigate } from "react-router-dom";
 
@@ -29,6 +30,7 @@ createRoot(document.getElementById("root")).render(
               <Route path="/events/:id" element={<EventPage />} />
               <Route path="/teams" element={<Teams />} />
               <Route path="/teams/new" element={<CreateTeam />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
           </Route>
 

@@ -129,6 +129,7 @@ export default function Header() {
         <Link to="/home" onClick={closeMobileMenu}>Home</Link>
         <Link to="/events" onClick={closeMobileMenu}>Events</Link>
         <Link to="/teams" onClick={closeMobileMenu}>Teams</Link>
+        <Link to="/profile" onClick={closeMobileMenu}>Profile</Link>
         {isAuthenticated ? (
           <a
             href="#"

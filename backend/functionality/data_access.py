@@ -1010,8 +1010,9 @@ class DataAccess:
             print(f"Error in get_all_joined_teams: {e}")
             raise
 
-    #Team Event registration methods
-    """Read all team information for teams a user owns and team is not registered for event"""
+    # ------------------------
+    # Team Event Registration Methods
+    # ------------------------
     def read_user_teams_with_registration_status(self, event_id, user_email):
         """Read all teams a user owns (and is a member of) with a column indicating registration status for an event."""
         try:
@@ -1118,3 +1119,142 @@ class DataAccess:
             raise
 
 
+    # ------------------------
+    # Leaderboard  Methods
+    # ------------------------
+
+    def read_user_by_ordered_rank_score(self):
+        """Read user FirstName LastName by ordered RankScore"""
+        sql = "SELECT Email, FirstName, LastName, RankScore, ProfileImgPath FROM User ORDER BY RankScore DESC LIMIT 10"
+        try:
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql)
+                result = cursor.fetchall()
+                return result
+        except Exception as e:
+            print(f"Error in read_user_by_ordered_rank_score: {e}")
+            raise
+
+    def read_user_rank(self, user_email):
+        """Get the current rank of a user based on RankScore"""
+        user_id = self.get_id_by_email(user_email)
+        sql = """
+        SELECT currRank FROM (
+            SELECT 
+                ID,
+                RANK() OVER (ORDER BY RankScore DESC) AS currRank
+            FROM User
+        ) ranked_users
+        WHERE ID = %s
+        """
+        try:
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (user_id,))
+                row = cursor.fetchone()
+                return row["currRank"] if row else None
+        except Exception as e:
+            print(f"Error in get_user_rank: {e}")
+            raise
+
+    def read_user_stats(self, user_email):
+        """Read user stats by id"""
+        user_id = self.get_id_by_email(user_email)
+        completed_event_count = self.get_completed_events_count(user_id)
+        total_hours = self.get_total_hours(user_id)
+        badges_count = len(self.get_badges(user_id))
+
+        result = {
+            "CompletedEvents": completed_event_count,
+            "TotalHours": total_hours,
+            "BadgesCount": badges_count
+        }
+
+        return result
+
+        
+    def update_rank_score(self, user_email):
+        """Update user rank score"""
+        user_id = self.get_id_by_email(user_email)
+        completed_event_count = self.get_completed_events_count(user_id)
+        total_hours = self.get_total_hours(user_id)
+        badges_count = len(self.get_badges(user_id))
+
+        rank_score = round(
+            (
+                0.5 * min(completed_event_count / 5, 1) +
+                0.3 * min(total_hours / 20, 1) +
+                0.2 * min(badges_count / 4, 1)
+            ) * 100
+        )
+        print(rank_score)
+        sql = "UPDATE User SET RankScore = %s WHERE ID = %s"
+        try:
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (rank_score, user_id))
+        except Exception as e:
+            print(f"Error in update_rank_score: {e}")
+            raise
+        
+    # ------------------------
+    # Profile  Methods
+    # ------------------------
+    def read_user_info(self, user_email):
+        """Read information on user"""
+        try:
+            user_id = self.get_id_by_email(user_email)
+            sql = """
+                SELECT FirstName, LastName, Email, ProfileImgPath, DATE_FORMAT(DateCreated, '%%Y-%%m') AS DateJoined FROM USER WHERE ID = %s
+            """
+            with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute(sql, (user_id, ))
+                return cursor.fetchone() 
+        except Exception as e:
+            print(f"read_user_info: {e}")
+            raise
+
+    def update_profile_image(self, user_email, image_path):
+        """
+        Update the profile image path for a user.
+
+        :param user_email: str - user's email
+        :param image_path: str - path to the new profile image
+        :return: bool - True if update succeeded, False otherwise
+        """
+        try:
+            user_id = self.get_id_by_email(user_email)
+
+            sql = """
+                UPDATE USER
+                SET ProfileImgPath = %s
+                WHERE ID = %s
+            """
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (image_path, user_id))
+                return cursor.rowcount > 0
+
+        except Exception as e:
+            print(f"update_profile_image: {e}")
+            raise
+    
+    def update_user_password(self, user_email, hashed_password):
+        """
+        Update the users password user.
+
+        :param user_email: str - user's email
+        :param hashed_password: str - new hashed password
+        """
+        try:
+            
+            user_id = self.get_id_by_email(user_email)
+
+            sql = """
+                UPDATE USER
+                SET Password = %s
+                WHERE ID = %s
+            """
+            with self.get_connection() as conn, conn.cursor() as cursor:
+                cursor.execute(sql, (hashed_password, user_id))
+
+        except Exception as e:
+            print(f"update_user_password: {e}")
+            raise

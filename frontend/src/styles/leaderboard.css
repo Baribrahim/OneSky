@@ -1,0 +1,222 @@
+.leaderboard-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 12px;
+  border-color: #007bff;
+  color: #333;
+}
+
+.leaderboard-title {
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  color: #222;
+}
+
+.leaderboard-list {
+  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.0rem;
+}
+
+.leaderboard-user {
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+}
+
+.leaderboard-item {
+  padding-top: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 0.1px solid #eee;  
+}
+
+.leaderboard-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+  border-color: var(--brand-primary);
+}
+
+.rank {
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.name {
+  flex: 1;
+  margin-left: 0.5rem;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.score {
+  font-weight: 500;
+}
+
+/* Container */
+.score-tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+/* Tooltip text (hidden by default) */
+.score-tooltip .tooltip-text {
+  visibility: hidden;
+  width: 200px; /* adjust width */
+  background-color:#f0eaead6; 
+  color: #000000;
+  text-align: center;
+  border-radius: 5px;
+  padding: 5px;
+  position: absolute;
+  z-index: 10;
+  bottom: 125%; /* position above the score */
+  left: 50%;
+  transform: translateX(-80%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.8rem;
+}
+
+
+/* Arrow under tooltip */
+.score-tooltip .tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%; /* arrow at bottom of tooltip */
+  left: 80%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #f0eaead6 transparent transparent transparent;
+}
+
+/* Show tooltip on hover */
+.score-tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+
+/* Hover Box (Tooltip) */
+.hover-box {
+  position: fixed;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  pointer-events: none;
+  min-width: 220px;
+  animation: fadeIn 0.2s ease-out;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.hover-title {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111;
+}
+
+.hover-box p {
+  margin: 0.25rem 0;
+}
+
+.your-rank {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-weight: 400;
+  font-size: 18px;
+  background-clip: text;
+  background-image: linear-gradient(to right, rgb(240, 92, 0) 8%, rgb(248, 0, 50) 28%, rgb(255, 0, 160) 40%, rgb(140, 40, 255) 60%, rgb(0, 35, 255) 80%, rgb(22, 144, 242) 100%);
+  -webkit-text-fill-color: transparent;
+}
+
+.leaderboard-img{
+  width: 70px; 
+  height: 70px; 
+  border-radius: 50%;
+  margin-top: -1.5rem;
+  margin-right: 0.5rem;
+  margin-left: 1rem;
+  object-fit: cover;
+  box-shadow: 0 0.25rem 0.9375rem rgba(0,0,0,0.15);
+  border: 0.1rem solid rgb(203, 193, 193);
+  background: #fff;
+}
+
+.leaderboard-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  margin-top: -1.5rem;
+  margin-right: 0.5rem;
+  margin-left: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0077b6; /* same accent color as profile-avatar */
+  color: white;
+  font-size: 1.6rem; /* readable initials at this smaller size */
+  font-weight: 600;
+  text-transform: uppercase;
+  box-shadow: 0 0.25rem 0.9375rem rgba(0, 0, 0, 0.15);
+  border: 0.1rem solid rgb(203, 193, 193);
+  background: linear-gradient(135deg, #0077b6, #0096c7);
+  user-select: none;
+}
+
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.show-stats-text {
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-top: 4px;
+  display: inline-block;
+  transition: color 0.2s;
+  margin-right: 1rem;
+}
+
+/* Optional: on very small screens, make it center */
+@media (max-width: 480px) {
+  .show-stats-text {
+    text-align: center;
+    margin-left: 0;
+  }
+}
+
+
+.show-stats-text:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
+.user-stats {
+  margin-top: 2px;
+  font-size: 0.9rem;
+  color: #444;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-stats p {
+  margin: 6px 0; 
+}

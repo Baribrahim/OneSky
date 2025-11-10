@@ -82,7 +82,7 @@ export default function Login() {
                 style={{ marginTop: 8 }}
               />
               {error && <div className="error" role="alert">{error}</div>}
-              <button className="button" disabled={submitting} style={{ marginTop: 16 }}>
+              <button className="button-sky" disabled={submitting} style={{ marginTop: 16 }}>
                 {submitting ? "Signing in..." : "Sign in"}
               </button>
             </form>

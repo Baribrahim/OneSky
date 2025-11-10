@@ -90,9 +90,9 @@ function EventCard({ event}) {
       {/* Buttons */}
       <div className="event-actions">
         {isSignedUp ? (
-          <button className="button inverse" onClick={handleUnregister}>Unregister</button>
+          <button className="button-sky inverse" onClick={handleUnregister}>Unregister</button>
         ) : (
-          <button className="button" onClick={handleSignup}>👤 Register</button>
+          <button className="button-sky" onClick={handleSignup}>👤 Register</button>
         )}
         <EventTeamsPopup eventID={event.ID} />
       </div>
