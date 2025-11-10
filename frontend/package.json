@@ -17,7 +17,8 @@
     "react-router": "^7.9.4",
     "react-router-dom": "^7.9.4",
     "react-toastify": "^11.0.5",
-    "reactjs-popup": "^2.0.6"
+    "reactjs-popup": "^2.0.6",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
