@@ -44,10 +44,10 @@ function EventInfoCards({ date, startTime, endTime, location, address, locationP
                     </p>
                 </div>
 
-                <div className="info-item">
+                {/* <div className="info-item">
                     <h4>Capacity</h4>
                     <p>{capacity} Volunteers Maximum</p>
-                </div>
+                </div> */}
 
                 <div className="info-item">
                     <h4> Associated Cause</h4>

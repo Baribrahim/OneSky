@@ -15,7 +15,7 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = location.state?.from?.pathname || "/";
+  const redirectTo = location.state?.from?.pathname || "/home";
 
   const onSubmit = async (e) => {
     e.preventDefault();
