@@ -10,6 +10,13 @@ const Leaderboard = () => {
   const [expandedUsers, setExpandedUsers] = useState([]);
   const [userStats, setUserStats] = useState({});
 
+
+  const getInitials = (firstName, lastName) => {
+    const first = firstName?.[0]?.toUpperCase() || '';
+    const last = lastName?.[0]?.toUpperCase() || '';
+    return (first + last) || 'U'; // fallback "U" for Unknown User
+  };
+
   const fetchRankedUsers = async () => {
     setLoading(true);
     setError("");
@@ -64,15 +71,17 @@ const Leaderboard = () => {
           <div className="leaderboard-item" key={index} >
           <div className="leaderboard-user">
             <span className="rank">{index + 1}.</span>{" "}
-            <img
-              src={
-                user.ProfileImgURL
-                  ? `http://localhost:5000/${user.ProfileImgURL}`
-                  : "src/assets/profileImgs/default.png"
-              }
-              alt="Profile"
-              className="leaderboard-img"
-            />
+            {user.ProfileImgURL && user.ProfileImgPath != 'default.png' ? (
+              <img
+                src={`http://localhost:5000${user.ProfileImgURL}`}
+                alt="Profile"
+                className="leaderboard-img"
+              />
+            ) : (
+              <div className="leaderboard-avatar">
+                {getInitials(user.FirstName, user.LastName)}
+              </div>
+            )}
             <span className="name">{user.FirstName} {user.LastName}</span>{" "}
             <span className="score-tooltip">
               <span className="score">{user.RankScore}</span>
