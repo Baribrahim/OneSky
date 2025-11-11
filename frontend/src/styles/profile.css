@@ -151,12 +151,12 @@
 .detail-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   width: 100%;
   max-width: 420px;          /* keeps rows centered and consistent */
   border-bottom: 1px solid #ddd;
   padding: 1.2rem 0;
-  gap: 6.5rem;               /* consistent space between label & value */
+  gap: 1.5rem;               /* consistent space between label & value */
   flex-wrap: wrap;           /* allows clean wrapping when too narrow */
 
 }
@@ -171,7 +171,7 @@
 .detail-value {
   flex: 1 1 auto;            /* flexible column */
   color: #333;
-  text-align: center;
+  text-align: left;
   word-break: break-word;
 }
 
