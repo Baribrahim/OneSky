@@ -13,11 +13,10 @@ from flask import request
 from datetime import date, timedelta
 
 class DataAccess:
-    load_dotenv()
     DB_HOST = os.getenv("MYSQL_HOST")
     DB_USER = os.getenv("MYSQL_USER")
     DB_DATABASE = os.getenv("MYSQL_DB")
-    DB_PORT = int(os.getenv("MYSQL_PORT"))
+    DB_PORT = os.getenv("MYSQL_PORT")
     DB_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
     def __init__(self):
@@ -25,7 +24,7 @@ class DataAccess:
         self.DB_HOST = os.getenv("MYSQL_HOST")
         self.DB_USER = os.getenv("MYSQL_USER")
         self.DB_DATABASE = os.getenv("MYSQL_DB")
-        self.DB_PORT = int(os.getenv("MYSQL_PORT"))
+        self.DB_PORT = int(os.getenv("MYSQL_PORT", 3301))
         self.DB_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
     # conn = pymysql.connect(
