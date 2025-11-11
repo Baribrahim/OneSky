@@ -5,12 +5,13 @@ pipeline {
 
     stage('Checkout') {
       steps {
-        git branch: 'main', url: 'X'
+        git branch: 'main', url: 'https://github.com/Baribrahim/OneSky.git'
       }
     }
 
     stage('Install') {
       steps {
+        // go straight into the real backend code
         dir('backend/functionality') {
           sh '''
             python3 -m venv venv
@@ -27,28 +28,18 @@ pipeline {
         dir('backend/functionality') {
           withCredentials([string(credentialsId: 'team1-backend-env', variable: 'OPENAI_API_KEY')]) {
             sh '''
-              # activate existing venv
+              # activate the existing venv
               . venv/bin/activate
 
-              # turn off shell echo for sensitive operations
-              set +x
-
-              # write the env file in Python so the secret never appears in the shell script
-              python3 - << 'PY'
-import os
-from pathlib import Path
-
-secret = os.environ.get("OPENAI_API_KEY", "")
-Path(".env").write_text(secret)
-PY
-
-              # turn echo back on if you want (optional)
-              set -x
+              # create a temporary .env for the tests
+              cat > .env <<EOF
+$OPENAI_API_KEY
+EOF
 
               # run tests
               pytest --maxfail=1 --disable-warnings -q
 
-              # cleanup
+              # cleanup: remove the secret file after tests
               rm -f .env
             '''
           }
@@ -62,6 +53,7 @@ PY
       }
       steps {
         withSonarQubeEnv('sonar-qube-1') {
+          // sonar-project.properties is in backend/, so run from there
           dir('backend') {
             sh "${scannerHome}/bin/sonar-scanner"
           }
