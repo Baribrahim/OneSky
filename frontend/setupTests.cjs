@@ -36,3 +36,17 @@ if (!window.URL.createObjectURL) {
 // but tests also sometimes read process.env directly, so set safe defaults here.
 process.env.VITE_API_URL = process.env.VITE_API_URL || 'http://test';
 process.env.VITE_SOME_FLAG = process.env.VITE_SOME_FLAG || 'false';
+
+// Mock IntersectionObserver globally for tests
+class IntersectionObserverMock {
+  constructor(callback, options) {
+    this.callback = callback;
+    this.options = options;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+global.IntersectionObserver = IntersectionObserverMock;
+
+
