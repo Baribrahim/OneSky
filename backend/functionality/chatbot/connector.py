@@ -1032,8 +1032,10 @@ class ChatbotConnector:
     def _normalize_event(self, event: dict) -> dict:
         """
         Normalize event dictionary keys for frontend compatibility,
-        and convert date/time/timedelta to strings so they can be JSON-encoded.
+        and convert date/time/timedelta/Decimal to JSON-serializable types.
         """
+        from decimal import Decimal
+        
         e = dict(event)
 
         # map IDs/names
@@ -1050,6 +1052,11 @@ class ChatbotConnector:
         for key in ["Date", "StartTime", "EndTime", "date", "start_time", "end_time"]:
             if key in e and isinstance(e[key], (date, datetime, timedelta)):
                 e[key] = str(e[key])
+        
+        # convert Decimal values to float for JSON serialization
+        for key, value in e.items():
+            if isinstance(value, Decimal):
+                e[key] = float(value)
 
         return e
 
