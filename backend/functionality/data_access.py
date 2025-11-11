@@ -23,6 +23,8 @@ class DataAccess:
         self.DB_HOST = os.getenv("MYSQL_HOST")
         self.DB_USER = os.getenv("MYSQL_USER")
         self.DB_DATABASE = os.getenv("MYSQL_DB")
+        self.DB_PORT = int(os.getenv("MYSQL_PORT"))
+        self.DB_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
     # conn = pymysql.connect(
     #     host=DB_HOST,
@@ -37,6 +39,8 @@ class DataAccess:
             "host": self.DB_HOST,
             "user": self.DB_USER,
             "database": self.DB_DATABASE,
+            "port": self.DB_PORT,
+            "password": self.DB_PASSWORD,
             "autocommit": True
         }
         if use_dict_cursor:
@@ -59,13 +63,13 @@ class DataAccess:
 
     def user_exists(self, email):
         """Check if a user with this email already exists."""
-        sql = "SELECT 1 FROM user WHERE Email = %s LIMIT 1"
+        sql = "SELECT 1 FROM User WHERE Email = %s LIMIT 1"
         with self.get_connection() as conn, conn.cursor() as cursor:
             cursor.execute(sql, (email,))
             return cursor.fetchone() is not None
 
     def get_user_by_email(self, email):
-        sql = "SELECT * FROM user WHERE Email = %s LIMIT 1"
+        sql = "SELECT * FROM User WHERE Email = %s LIMIT 1"
         with self.get_connection(use_dict_cursor=True) as conn, conn.cursor() as cursor:
             cursor.execute(sql, (email,))
             return cursor.fetchone()
