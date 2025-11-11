@@ -28,15 +28,19 @@ pipeline {
         dir('backend/functionality') {
           withCredentials([string(credentialsId: 'team1-backend-env', variable: 'OPENAI_API_KEY')]) {
             sh '''
-              # Write the secret text into a local .env file
-              echo "$OPENAI_API_KEY" > .env
-
-              python3 -m venv venv
+              # activate the existing venv
               . venv/bin/activate
-              pip install --upgrade pip
-              pip install -r requirements.txt
 
+              # create a temporary .env for the tests
+              cat > .env <<EOF
+$OPENAI_API_KEY
+EOF
+
+              # run tests
               pytest --maxfail=1 --disable-warnings -q
+
+              # cleanup: remove the secret file after tests
+              rm -f .env
             '''
           }
         }
