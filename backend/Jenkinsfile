@@ -1,5 +1,3 @@
-// This Jenkins pipeline adds install and test stages before static code analysis (SonarQube)
-
 pipeline {
   agent any
 
@@ -7,23 +5,25 @@ pipeline {
 
     stage('Checkout') {
       steps {
-        // Get source code from a GitHub repository
+        // This checks out the repo at workspace root
         git branch: 'main', url: 'https://github.com/Baribrahim/OneSky.git'
+        // After this, your Jenkinsfile (this file) is at: workspace/backend/Jenkinsfile
       }
     }
 
     stage('Install') {
       steps {
+        // We are already in workspace root when the script runs,
+        // but this Jenkinsfile lives in backend/, so we need to cd into backend now
         dir('backend') {
           sh '''
-            # Install system dependencies required for mysqlclient and wheel builds
             sudo apt-get update -y
-            sudo apt-get install -y python3-dev pkg-config default-libmysqlclient-dev build-essential
-            
-            # (Optional) virtual environment and pip install
+            sudo apt-get install -y python3-dev python3-venv pkg-config default-libmysqlclient-dev build-essential
+
             python3 -m venv venv
             . venv/bin/activate
-            pip3 install -r requirements.txt
+            pip install --upgrade pip
+            pip install -r requirements.txt
           '''
         }
       }
@@ -31,8 +31,7 @@ pipeline {
 
     stage('Test') {
       steps {
-        // Run the Python tests using pytest inside the virtual environment
-        dir('backend/functionality') {
+        dir('backend') {
           sh '''
             . venv/bin/activate
             pytest --maxfail=1 --disable-warnings -q
@@ -47,6 +46,7 @@ pipeline {
       }
       steps {
         withSonarQubeEnv('sonar-qube-1') {
+          // sonar-project.properties is in backend/, so run scanner there
           dir('backend') {
             sh "${scannerHome}/bin/sonar-scanner"
           }
@@ -58,5 +58,5 @@ pipeline {
       }
     }
 
-  } // end of stages
+  }
 }
