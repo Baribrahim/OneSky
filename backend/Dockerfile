@@ -1,7 +1,7 @@
 FROM python:3.11
 
 # Set working directory
-WORKDIR /backend/functionality
+WORKDIR functionality
 
 # Install dependencies
 COPY requirements.txt .
