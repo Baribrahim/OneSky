@@ -5,13 +5,14 @@ pipeline {
 
     stage('Checkout') {
       steps {
+        // repo root -> will contain backend/ and frontend/
         git branch: 'main', url: 'https://github.com/Baribrahim/OneSky.git'
       }
     }
 
     stage('Install') {
       steps {
-        // go straight into the real backend code
+        // your real code lives here
         dir('backend/functionality') {
           sh '''
             python3 -m venv venv
@@ -26,21 +27,23 @@ pipeline {
     stage('Test') {
       steps {
         dir('backend/functionality') {
-          withCredentials([string(credentialsId: 'team1-backend-env', variable: 'OPENAI_API_KEY')]) {
+          // pull ALL envs from Jenkins as ONE secret text
+          // but only export what we need right now
+          withCredentials([string(credentialsId: 'team1-backend-env', variable: 'ENV_VARS')]) {
             sh '''
-              # activate the existing venv
+              # be extra safe: don’t print commands with values
+              set +x
+
+              # write the whole secret block to .env (not printed)
+              printf "%s\n" "$ENV_VARS" > .env
+
+              # extract ONLY the key we actually need for tests
+              OPENAI_API_KEY=$(grep '^OPENAI_API_KEY=' .env | cut -d= -f2-)
+              export OPENAI_API_KEY
+
+              # now run tests
               . venv/bin/activate
-
-              # create a temporary .env for the tests
-              cat > .env <<EOF
-$OPENAI_API_KEY
-EOF
-
-              # run tests
               pytest --maxfail=1 --disable-warnings -q
-
-              # cleanup: remove the secret file after tests
-              rm -f .env
             '''
           }
         }
@@ -53,7 +56,7 @@ EOF
       }
       steps {
         withSonarQubeEnv('sonar-qube-1') {
-          // sonar-project.properties is in backend/, so run from there
+          // sonar-project.properties is in backend/
           dir('backend') {
             sh "${scannerHome}/bin/sonar-scanner"
           }
