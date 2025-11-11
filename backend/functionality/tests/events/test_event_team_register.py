@@ -15,7 +15,11 @@ def client():
     app = create_app()
     app.config["TESTING"] = True
     app.config["SECRET_KEY"] = SECRET
+    app.config["SERVER_NAME"] = "localhost" 
+
     with app.test_client() as client:
+        # Ensure Flask sees a proper host
+        client.environ_base['HTTP_HOST'] = 'localhost'
         yield client
 
 
