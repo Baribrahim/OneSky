@@ -14,7 +14,6 @@ pipeline {
         // go straight into the real backend code
         dir('backend/functionality') {
           sh '''
-            set -e
             python3 -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
@@ -30,19 +29,20 @@ pipeline {
           // secret file in Jenkins with your .env content
           withCredentials([file(credentialsId: 'team1-backend-env', variable: 'ENV_FILE')]) {
             sh '''
-              # don't echo secrets
               set +x
+              cp "$ENV_FILE" .env
 
-              # export all non-comment lines from the secret file
-              # this assumes lines like KEY=VALUE
-              if [ -f "$ENV_FILE" ]; then
-                # shellcheck disable=SC2046
-                export $(grep -v '^#' "$ENV_FILE" | xargs || true)
-              fi
+              # export the vars we actually have in the secret
+              export $(grep '^OPENAI_API_KEY=' .env | xargs || true)
+              export $(grep '^MYSQL_HOST=' .env | xargs || true)
+              export $(grep '^MYSQL_USER=' .env | xargs || true)
+              export $(grep '^MYSQL_PASSWORD=' .env | xargs || true)
+              export $(grep '^MYSQL_DB=' .env | xargs || true)
 
-              # now run tests in the venv
               . venv/bin/activate
               pytest --maxfail=1 --disable-warnings -q
+
+              rm -f .env
             '''
           }
         }
@@ -57,9 +57,7 @@ pipeline {
         withSonarQubeEnv('sonar-qube-1') {
           // sonar-project.properties is in backend/, so run from there
           dir('backend') {
-            sh """
-              ${scannerHome}/bin/sonar-scanner
-            """
+            sh "${scannerHome}/bin/sonar-scanner"
           }
         }
 
