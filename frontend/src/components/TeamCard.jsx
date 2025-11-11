@@ -113,9 +113,7 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
 
       <div className="team-card-actions">
         <div className="button-group">
-          
-
-          {(isOwner || isMember) ? (
+        
             <Popup
               trigger={<button className="button-sky">View Members</button>}
               modal
@@ -160,7 +158,7 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
                   <button className="button-sky" onClick={close}>Close</button>
                 </div>
               )}
-            </Popup>): null}
+            </Popup>
           {isOwner ? <button className="button-sky" onClick={handleDelete}>Delete</button> : null}
           {!isOwner && isMember ? <button className="button-sky" onClick={handleLeave}>Leave</button>: null}
 
