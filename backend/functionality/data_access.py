@@ -17,6 +17,8 @@ class DataAccess:
     DB_HOST = os.getenv("MYSQL_HOST")
     DB_USER = os.getenv("MYSQL_USER")
     DB_DATABASE = os.getenv("MYSQL_DB")
+    DB_PORT = int(os.getenv("MYSQL_PORT"))
+    DB_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
     def __init__(self):
         load_dotenv()
