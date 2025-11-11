@@ -143,16 +143,16 @@ export default function Header() {
           <a
             href="#"
             onClick={handleLogout}
-            className="mobile-logout-btn"
+            className="button-sky" style={{color: 'white'}}
           >
             Log out
           </a>
         ) : (
           <>
-            <Link to="/login" onClick={closeMobileMenu} className="mobile-logout-btn">
+            <Link to="/login" onClick={closeMobileMenu} className="button-sky" style={{color: 'white'}}>
               Login
             </Link>
-            <Link to="/register" onClick={closeMobileMenu} className="mobile-logout-btn">
+            <Link to="/register" onClick={closeMobileMenu} className="button-sky" style={{color: 'white'}}>
               Register
             </Link>
           </>
