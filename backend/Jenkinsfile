@@ -5,7 +5,7 @@ pipeline {
 
     stage('Checkout') {
       steps {
-        git branch: 'main', url: 'Xt'
+        git branch: 'main', url: 'https://github.com/Baribrahim/OneSky.git'
       }
     }
 
