@@ -1,38 +1,18 @@
-# =========================
-# Stage 1: Build Python Backend
-# =========================
-FROM python:3.11-alpine AS build
+FROM python:3.11
 
 # Set working directory
 WORKDIR /backend/functionality
 
-# Install system dependencies (needed for packages like mysqlclient, psycopg2, etc.)
-RUN apk add --no-cache gcc musl-dev linux-headers mariadb-dev pkgconfig
-
-# Copy requirements and install dependencies
+# Install dependencies
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN python3 -m venv venv && \
-    . venv/bin/activate && \
-    pip3 install --no-cache-dir -r requirements.txt
-
-# Copy the backend source code into the image
+# Copy the rest of the code
 COPY . .
 
-# =========================
-# Stage 2: Runtime container
-# =========================
-FROM python:3.11-alpine
-
-# Set working directory
-WORKDIR /backend/functionality
-
-# Copy virtual environment and app files from build stage
-COPY --from=build /backend/functionality /backend/functionality
-
-# Expose backend port (e.g. Flask or FastAPI usually uses 8000)
+# Expose the port your app runs on
 EXPOSE 5001
 
-# Command to start your backend (edit if different)
-# Example for Flask:
-CMD ["/backend/functionality/venv/bin/python3", "app.py"]
+# Run the app
+CMD ["python3", "app.py"]
+
