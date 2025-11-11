@@ -54,7 +54,7 @@ const footerRef = useRef(null);
                 <div className="hero-content">
                     <h1 className="fade-in">Make an Impact with OneSky</h1>
                     <p className="fade-in delay">Connecting people with meaningful volunteer opportunities.</p>
-                    <Link to="/register" className="cta-btn">
+                    <Link to="/register" className="button-sky" style={{color: 'white', textDecoration: 'none', marginTop: '1rem', display: 'inline-flex', width: 'auto', padding: '0.75rem 2rem', fontSize: '1rem', alignItems: 'center', justifyContent: 'center', height: 'auto', minHeight: '48px'}}>
                     Sign Up Today
                     </Link>
                 </div>
