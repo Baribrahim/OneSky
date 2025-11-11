@@ -11,7 +11,6 @@ pipeline {
 
     stage('Install') {
       steps {
-        // go straight into the real backend code
         dir('backend/functionality') {
           sh '''
             python3 -m venv venv
@@ -26,28 +25,24 @@ pipeline {
     stage('Test') {
       steps {
         dir('backend/functionality') {
-          // secret file in Jenkins with your .env content
           withCredentials([file(credentialsId: 'team1-backend-env', variable: 'ENV_FILE')]) {
             sh '''
               set +x
-              cp "$ENV_FILE" .env
-
-              # export the vars we actually have in the secret
-              export $(grep '^OPENAI_API_KEY=' .env | xargs || true)
-              export $(grep '^MYSQL_HOST=' .env | xargs || true)
-              export $(grep '^MYSQL_USER=' .env | xargs || true)
-              export $(grep '^MYSQL_PASSWORD=' .env | xargs || true)
-              export $(grep '^MYSQL_DB=' .env | xargs || true)
+              # Load vars from credential file into current shell
+              set -a
+              . "$ENV_FILE"
+              set +a
 
               . venv/bin/activate
-              pytest --maxfail=1 --disable-warnings -q
 
-              rm -f .env
+              # Pass only what pytest needs
+              OPENAI_API_KEY="$OPENAI_API_KEY" pytest --maxfail=1 --disable-warnings -q
             '''
           }
         }
       }
     }
+
 
     stage('SonarQube Analysis') {
       environment {
@@ -55,7 +50,6 @@ pipeline {
       }
       steps {
         withSonarQubeEnv('sonar-qube-1') {
-          // sonar-project.properties is in backend/, so run from there
           dir('backend') {
             sh "${scannerHome}/bin/sonar-scanner"
           }

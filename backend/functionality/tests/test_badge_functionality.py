@@ -15,6 +15,17 @@ from badges.connector import BadgeConnector
 from data_access import DataAccess
 
 
+@pytest.fixture(autouse=True)
+def mock_db_connection():
+    """Auto-use fixture to mock pymysql.connect to prevent real DB connections."""
+    with patch('data_access.pymysql.connect') as mock_connect:
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_connect.return_value.__enter__.return_value = mock_conn
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        yield mock_connect
+
+
 class TestBadgeConnector:
     """Test cases for BadgeConnector class."""
     
