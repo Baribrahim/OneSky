@@ -26,10 +26,19 @@ pipeline {
     stage('Test') {
       steps {
         dir('backend/functionality') {
-          sh '''
-            . venv/bin/activate
-            pytest --maxfail=1 --disable-warnings -q
-          '''
+          withCredentials([string(credentialsId: 'team1-backend-env', variable: 'ENV_VARS')]) {
+            sh '''
+              # Write the secret text into a local .env file
+              echo "$ENV_VARS" > .env
+
+              python3 -m venv venv
+              . venv/bin/activate
+              pip install --upgrade pip
+              pip install -r requirements.txt
+
+              pytest --maxfail=1 --disable-warnings -q
+            '''
+          }
         }
       }
     }
