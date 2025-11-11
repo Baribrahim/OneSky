@@ -26,10 +26,10 @@ pipeline {
     stage('Test') {
       steps {
         dir('backend/functionality') {
-          withCredentials([string(credentialsId: 'team1-backend-env', variable: 'ENV_VARS')]) {
+          withCredentials([string(credentialsId: 'team1-backend-env', variable: 'OPENAI_API_KEY')]) {
             sh '''
               # Write the secret text into a local .env file
-              echo "$ENV_VARS" > .env
+              echo "$OPENAI_API_KEY" > .env
 
               python3 -m venv venv
               . venv/bin/activate
