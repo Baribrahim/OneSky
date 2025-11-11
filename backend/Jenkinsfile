@@ -26,20 +26,29 @@ pipeline {
     stage('Test') {
       steps {
         dir('backend/functionality') {
-          withCredentials([string(credentialsId: 'team1-backend-env', variable: 'OPENAI_API_KEY')]) {
+          // secret file in Jenkins with your .env content
+          withCredentials([file(credentialsId: 'team1-backend-env', variable: 'ENV_FILE')]) {
             sh '''
-              # activate the existing venv
+              # do not echo commands with secrets
+              set +x
+
+              # copy the secret .env into workspace
+              cp "$ENV_FILE" .env
+
+              # pull ONLY the value we need right now
+              OPENAI_API_KEY=$(grep -E '^OPENAI_API_KEY=' .env | head -n1 | cut -d= -f2- | tr -d '\\r')
+              if [ -z "$OPENAI_API_KEY" ]; then
+                echo "OPENAI_API_KEY not found in secret file"
+                rm -f .env
+                exit 1
+              fi
+              export OPENAI_API_KEY
+
+              # activate venv and run tests
               . venv/bin/activate
-
-              # create a temporary .env for the tests
-              cat > .env <<EOF
-$OPENAI_API_KEY
-EOF
-
-              # run tests
               pytest --maxfail=1 --disable-warnings -q
 
-              # cleanup: remove the secret file after tests
+              # cleanup
               rm -f .env
             '''
           }
