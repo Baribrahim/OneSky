@@ -11,7 +11,8 @@ pipeline {
 
     stage('Install') {
       steps {
-        dir('backend') {
+        // go straight into the real backend code
+        dir('backend/functionality') {
           sh '''
             python3 -m venv venv
             . venv/bin/activate
@@ -24,7 +25,7 @@ pipeline {
 
     stage('Test') {
       steps {
-        dir('backend') {
+        dir('backend/functionality') {
           sh '''
             . venv/bin/activate
             pytest --maxfail=1 --disable-warnings -q
@@ -39,6 +40,7 @@ pipeline {
       }
       steps {
         withSonarQubeEnv('sonar-qube-1') {
+          // sonar-project.properties is in backend/, so run from there
           dir('backend') {
             sh "${scannerHome}/bin/sonar-scanner"
           }
