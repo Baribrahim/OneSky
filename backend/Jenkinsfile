@@ -5,14 +5,13 @@ pipeline {
 
     stage('Checkout') {
       steps {
-        // repo root -> will contain backend/ and frontend/
-        git branch: 'main', url: 'https://github.com/Baribrahim/OneSky.git'
+        git branch: 'main', url: 'Xt'
       }
     }
 
     stage('Install') {
       steps {
-        // your real code lives here
+        // go straight into the real backend code
         dir('backend/functionality') {
           sh '''
             python3 -m venv venv
@@ -27,23 +26,30 @@ pipeline {
     stage('Test') {
       steps {
         dir('backend/functionality') {
-          // pull ALL envs from Jenkins as ONE secret text
-          // but only export what we need right now
-          withCredentials([string(credentialsId: 'team1-backend-env', variable: 'ENV_VARS')]) {
+          // secret file in Jenkins with your .env content
+          withCredentials([file(credentialsId: 'team1-backend-env', variable: 'ENV_FILE')]) {
             sh '''
-              # be extra safe: don’t print commands with values
+              # do not echo commands with secrets
               set +x
 
-              # write the whole secret block to .env (not printed)
-              printf "%s\n" "$ENV_VARS" > .env
+              # copy the secret .env into workspace
+              cp "$ENV_FILE" .env
 
-              # extract ONLY the key we actually need for tests
-              OPENAI_API_KEY=$(grep '^OPENAI_API_KEY=' .env | cut -d= -f2-)
+              # pull ONLY the value we need right now
+              OPENAI_API_KEY=$(grep -E '^OPENAI_API_KEY=' .env | head -n1 | cut -d= -f2- | tr -d '\\r')
+              if [ -z "$OPENAI_API_KEY" ]; then
+                echo "OPENAI_API_KEY not found in secret file"
+                rm -f .env
+                exit 1
+              fi
               export OPENAI_API_KEY
 
-              # now run tests
+              # activate venv and run tests
               . venv/bin/activate
               pytest --maxfail=1 --disable-warnings -q
+
+              # cleanup
+              rm -f .env
             '''
           }
         }
@@ -56,7 +62,7 @@ pipeline {
       }
       steps {
         withSonarQubeEnv('sonar-qube-1') {
-          // sonar-project.properties is in backend/
+          // sonar-project.properties is in backend/, so run from there
           dir('backend') {
             sh "${scannerHome}/bin/sonar-scanner"
           }
