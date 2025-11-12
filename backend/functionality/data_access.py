@@ -1253,7 +1253,7 @@ class DataAccess:
         try:
             user_id = self.get_id_by_email(user_email)
             sql = """
-                SELECT FirstName, LastName, Email, ProfileImgPath, DATE_FORMAT(DateCreated, '%%Y-%%m') AS DateJoined FROM USER WHERE ID = %s
+                SELECT FirstName, LastName, Email, ProfileImgPath, DATE_FORMAT(DateCreated, '%%Y-%%m') AS DateJoined FROM User WHERE ID = %s
             """
             with self.get_connection() as conn, conn.cursor(pymysql.cursors.DictCursor) as cursor:
                 cursor.execute(sql, (user_id, ))
@@ -1274,7 +1274,7 @@ class DataAccess:
             user_id = self.get_id_by_email(user_email)
 
             sql = """
-                UPDATE USER
+                UPDATE User
                 SET ProfileImgPath = %s
                 WHERE ID = %s
             """
@@ -1298,7 +1298,7 @@ class DataAccess:
             user_id = self.get_id_by_email(user_email)
 
             sql = """
-                UPDATE USER
+                UPDATE User
                 SET Password = %s
                 WHERE ID = %s
             """
