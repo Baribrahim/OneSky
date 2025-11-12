@@ -4,7 +4,7 @@ services:
     ports:
       - "5001:5001"
     env_file:
-      - .env
+      - ./backend/functionality/.env
     depends_on:
       - db
 
@@ -15,7 +15,7 @@ services:
     environment:
       - VITE_API_BASE_URL=http://35.210.202.5/5001
     env_file:
-      - .env
+      - ./frontend/.env
     depends_on:
       - backend
 
