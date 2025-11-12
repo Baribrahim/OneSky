@@ -28,16 +28,15 @@ def create_app():
         raise RuntimeError("SECRET_KEY environment variable must be set")  # NOSONAR - Error message, not a credential
     app.config["SECRET_KEY"] = secret_key  # NOSONAR - Configuration key name, value comes from env var
 
+    # Get allowed origins from environment or use defaults
+    allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost:5174").split(",")
+    
     CORS(
         app,
         supports_credentials=True,
         resources={
             r"/*": {
-                "origins": [
-                    "http://localhost:5173",
-                    "http://localhost:3000",
-                    "http://localhost:5174",
-                ]
+                "origins": allowed_origins
             }
         },
     )
@@ -79,13 +78,11 @@ if __name__ == "__main__":
     app = create_app()
 
     # IMPORTANT: init socketio on the app
+    # Get allowed origins from environment or use defaults
+    socketio_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost:5174").split(",")
     socketio.init_app(
         app,
-        cors_allowed_origins=[
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "http://localhost:5174",
-        ],
+        cors_allowed_origins=socketio_origins,
     )
 
     # IMPORTANT: run with socketio, not app.run
