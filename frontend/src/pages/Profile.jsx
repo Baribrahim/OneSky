@@ -162,7 +162,7 @@ const Profile = () => {
             <div className="profile-content">
             {info.ProfileImgURL && info.ProfileImgPath != 'default.png' ? (
               <img
-                src={`http://localhost:5000${info.ProfileImgURL}`}
+                src={`http://35.210.202.5:5001${info.ProfileImgURL}`}
                 alt={`${info.FirstName || ''} ${info.LastName || ''}`}
                 className="profile-img"
               />

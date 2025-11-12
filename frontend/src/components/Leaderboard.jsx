@@ -73,7 +73,7 @@ const Leaderboard = () => {
             <span className="rank">{index + 1}.</span>{" "}
             {user.ProfileImgURL && user.ProfileImgPath != 'default.png' ? (
               <img
-                src={`http://localhost:5000${user.ProfileImgURL}`}
+                src={`http://35.210.202.5:5001${user.ProfileImgURL}`}
                 alt="Profile"
                 className="leaderboard-img"
               />

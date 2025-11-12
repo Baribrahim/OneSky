@@ -29,7 +29,7 @@ def create_app():
     app.config["SECRET_KEY"] = secret_key  # NOSONAR - Configuration key name, value comes from env var
 
     # Get allowed origins from environment or use defaults
-    allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost:5174").split(",")
+    allowed_origins = os.getenv("CORS_ORIGINS", "http://35.210.202.5:81,http://localhost:3000,http://localhost:5174").split(",")
     
     CORS(
         app,
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     # IMPORTANT: init socketio on the app
     # Get allowed origins from environment or use defaults
-    socketio_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost:5174").split(",")
+    socketio_origins = os.getenv("CORS_ORIGINS", "http://35.210.202.5:81,http://localhost:3000,http://localhost:5174").split(",")
     socketio.init_app(
         app,
         cors_allowed_origins=socketio_origins,

@@ -8,7 +8,7 @@ function EventSchedule({ event }) {
   useEffect(() => {
     async function fetchSchedule() {
       try {
-        const response = await fetch(`http://localhost:5000/api/events/events/${event.ID}/schedule`);
+        const response = await fetch(`http://35.210.202.5:5001/api/events/events/${event.ID}/schedule`);
 
         // If the response is not OK, throw an error
         if (!response.ok) {

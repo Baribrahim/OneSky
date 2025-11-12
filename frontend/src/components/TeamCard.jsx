@@ -130,7 +130,7 @@ export default function TeamCard({ team, isOwner = false, isMember = false, show
                       <div className="member-card" key={member.email}>
                       {member.profile_img_url && member.profile_img_path != 'default.png' ? (
                           <img
-                            src={`http://localhost:5000/${member.profile_img_url}`}
+                            src={`http://35.210.202.5:5001/${member.profile_img_url}`}
                             alt={"Profile Image"}
                             className="member-img"
                           />
