@@ -24,7 +24,7 @@ class DataAccess:
         self.DB_HOST = os.getenv("MYSQL_HOST")
         self.DB_USER = os.getenv("MYSQL_USER")
         self.DB_DATABASE = os.getenv("MYSQL_DB")
-        self.DB_PORT = int(os.getenv("MYSQL_PORT", 3301))
+        self.DB_PORT = int(os.getenv("MYSQL_PORT", 3306))
         self.DB_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
     # conn = pymysql.connect(

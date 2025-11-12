@@ -5,6 +5,12 @@ services:
       - "5001:5001"
     env_file:
       - ./backend/functionality/.env
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_PORT=3306
+      - MYSQL_USER=onesky
+      - MYSQL_PASSWORD=secretsecret1
+      - MYSQL_DB=oneskyv1
     depends_on:
       - db
 
@@ -23,11 +29,8 @@ services:
     image: mysql:8
     ports:
       - "3301:3306"
-    env_file:
-      - ./backend/functionality/.env
     environment:
-      - MYSQL_HOST=35.210.202.5
-      - MYSQL_PORT=3301
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
       - MYSQL_USER=onesky
       - MYSQL_PASSWORD=secretsecret1
       - MYSQL_DATABASE=oneskyv1
