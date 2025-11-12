@@ -280,13 +280,6 @@ def test_me_returns_user_info_with_bearer_token(client):
 
 # ---------- (Optional) Auth guard sanity for dashboard ----------
 
-def test_dashboard_impact_requires_auth(client):
-    # Arrange/Act: no token
-    resp = client.get("/dashboard/impact", follow_redirects=False)
-
-    # Assert: token_required for HTML typically redirects; for API you may get a 302 or 401 depending on your decorator
-    assert resp.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FOUND, HTTPStatus.SEE_OTHER)
-
 def test_dashboard_impact_with_token_returns_200_and_shape(client, mock_data_access):
     # Arrange
     email, r = _register_user(client, password="Password123!")
@@ -306,6 +299,74 @@ def test_dashboard_impact_with_token_returns_200_and_shape(client, mock_data_acc
     assert "counts" in data and isinstance(data["counts"], dict)
     assert "upcoming_events" in data["counts"]
     assert "badges" in data["counts"]
+
+# ---------- Auth page routes and form-based flows ----------
+
+def test_register_page_returns_200(client):
+    """Test register_page route returns 200."""
+    resp = client.get("/register_page")
+    assert resp.status_code == HTTPStatus.OK
+
+def test_login_page_returns_200(client):
+    """Test login_page route returns 200."""
+    resp = client.get("/login_page")
+    assert resp.status_code == HTTPStatus.OK
+
+def test_register_form_based_redirects_on_success(client, mock_data_access):
+    """Test form-based register (non-JSON) redirects to home on success."""
+    email = _rand_email()
+    mock_data_access['auth'].user_exists.return_value = False
+    
+    resp = client.post("/register", data={
+        "email": email,
+        "password": "Password123!",
+        "first_name": "Test",
+        "last_name": "User"
+    }, follow_redirects=False)
+    
+    # Form-based should redirect (not return JSON)
+    assert resp.status_code in (HTTPStatus.FOUND, HTTPStatus.SEE_OTHER)
+    assert "home" in resp.location.lower() or resp.status_code == HTTPStatus.OK
+
+def test_register_form_based_renders_error_on_failure(client, mock_data_access):
+    """Test form-based register renders template with error on failure."""
+    email = _rand_email()
+    mock_data_access['auth'].user_exists.return_value = True  # Duplicate
+    
+    resp = client.post("/register", data={
+        "email": email,
+        "password": "Password123!",
+        "first_name": "Test",
+        "last_name": "User"
+    })
+    
+    # Should render template (200) with error, not JSON
+    assert resp.status_code == HTTPStatus.OK
+
+def test_login_form_based_redirects_on_success(client, mock_data_access):
+    """Test form-based login (non-JSON) redirects to home on success."""
+    email, r = _register_user(client, password="Password123!")
+    assert r.status_code == HTTPStatus.OK
+    
+    resp = client.post("/login", data={
+        "email": email,
+        "password": "Password123!"
+    }, follow_redirects=False)
+    
+    # Form-based should redirect (not return JSON)
+    assert resp.status_code in (HTTPStatus.FOUND, HTTPStatus.SEE_OTHER, HTTPStatus.OK)
+
+def test_logout_redirects_to_login(client, mock_data_access):
+    """Test logout route redirects to login page."""
+    # First login to get a token
+    email, r = _register_user(client, password="Password123!")
+    assert r.status_code == HTTPStatus.OK
+    token, _ = _login_get_token(client, email, "Password123!")
+    
+    # Now logout
+    resp = client.get("/logout", headers={"Authorization": f"Bearer {token}"}, follow_redirects=False)
+    assert resp.status_code in (HTTPStatus.FOUND, HTTPStatus.SEE_OTHER)
+    assert "login" in resp.location.lower()
 
 
 

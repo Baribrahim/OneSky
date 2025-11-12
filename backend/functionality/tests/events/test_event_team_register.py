@@ -217,3 +217,49 @@ def test_get_available_teams_success(client):
         assert "teams" in data
         assert len(data["teams"]) == 2
         assert data["teams"][0]["Name"] == "Team Alpha"
+
+
+# ---------------------------------------------------------------------
+# /api/events/signup-status
+# ---------------------------------------------------------------------
+
+def test_check_signup_status_success(client):
+    """GET /api/events/signup-status returns user's signed up events"""
+    email, _ = _register_user(client)
+    token, _ = _login_get_token(client, email, "Password123!")
+
+    mock_signed_up_events = [
+        {"ID": 1, "Title": "Event 1", "Date": "2024-01-01"},
+        {"ID": 2, "Title": "Event 2", "Date": "2024-02-01"}
+    ]
+
+    with patch.object(routes.con, "user_signed_up_for_events", return_value=mock_signed_up_events):
+        response = client.get(
+            "/api/events/signup-status",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, list)
+        assert len(data) == 2
+        assert data[0]["Title"] == "Event 1"
+
+
+def test_check_signup_status_empty(client):
+    """GET /api/events/signup-status returns empty list when user has no signups"""
+    email, _ = _register_user(client)
+    token, _ = _login_get_token(client, email, "Password123!")
+
+    with patch.object(routes.con, "user_signed_up_for_events", return_value=[]):
+        response = client.get(
+            "/api/events/signup-status",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+
+        # Assert
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, list)
+        assert len(data) == 0
