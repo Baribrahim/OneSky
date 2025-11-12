@@ -75,7 +75,7 @@ export default function Chatbot() {
   // init socket
   useEffect(() => {
     // connect to same origin socket.io
-    const socket = io("http://localhost:5000", { withCredentials: true });
+    const socket = io("http://35.210.202.5:5001", { withCredentials: true });
 
     socketRef.current = socket;
 

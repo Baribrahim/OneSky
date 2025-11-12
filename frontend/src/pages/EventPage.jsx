@@ -17,7 +17,7 @@ function EventPage(){
     useEffect(() => {
         async function fetchEvent() {
             try {
-                const response = await fetch(`http://localhost:5000/api/events/events/${id}`);
+                const response = await fetch(`http://35.210.202.5:5001/api/events/events/${id}`);
                 if (!response.ok) {
                     throw new Error('Event not found');
                 }
