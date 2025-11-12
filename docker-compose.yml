@@ -1,0 +1,36 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    volumes:
+      - ./uploads:/app/uploads
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "81:81"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5000
+    env_file:
+      - .env
+    depends_on:
+      - backend
+
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: "secretsecret1"
+      MYSQL_DATABASE: oneskyv1
+    ports:
+      - "3301:3306"
+    volumes:
+      - team-1-project_db_data:/var/lib/mysql
+      - ./backend/database:/docker-entrypoint-initdb.d
+
+volumes:
+  team-1-project_db_data:
