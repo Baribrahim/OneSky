@@ -29,9 +29,9 @@ services:
     env_file:
       - ./backend/functionality/.env
     environment:
-      - MYSQL_DATABASE=${MYSQL_DB:-oneskyv1}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=oneskyv1
+      - MYSQL_USER=onesky
+      - MYSQL_PASSWORD=secretsecret1
     volumes:
       - team-1-project_db_data:/var/lib/mysql
       - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
