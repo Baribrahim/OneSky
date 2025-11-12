@@ -34,7 +34,7 @@ pipeline {
         sh '''
           # Source .env file to make variables available for docker-compose substitution
           set -a
-          source ./backend/functionality/.env
+          . ./backend/functionality/.env
           set +a
           docker compose up --build -d
         '''
