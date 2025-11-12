@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { api, toResult } from '../lib/apiClient.js';
 import '../styles/theme.css';
 import '../styles/badges.css';
+import helpingHandImg from '../assets/badges/helpingHand.png'
 
 const BadgesDisplay = () => {
   const [badges, setBadges] = useState([]);
@@ -106,7 +107,7 @@ const BadgesDisplay = () => {
                     src={getBadgeIcon(badge.Name)} 
                     alt={badge.Name}
                     onError={(e) => {
-                      e.target.src = '../assets/badges/helpingHand.png';
+                      e.target.src = helpingHandImg;
                     }}
                   />
                 </div>
@@ -133,7 +134,7 @@ const BadgesDisplay = () => {
                 alt={selectedBadge.Name}
                 className="badge-modal-icon"
                 onError={(e) => {
-                  e.target.src = '../assets/badges/helpingHand.png';
+                  e.target.src = helpingHandImg;
                 }}
               />
               <h3 className="badge-modal-title">{selectedBadge.Name}</h3>
