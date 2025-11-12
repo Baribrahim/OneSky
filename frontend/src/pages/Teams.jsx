@@ -5,6 +5,7 @@ import MyTeams from "../components/MyTeams";
 import "../styles/teams.css";
 import { ToastContainer, toast } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
+import teamHero from "../assets/teams-img.jpg"
 /**
  * Teams Page
  * Displays all existing teams for browsing.
@@ -79,7 +80,7 @@ export default function Teams() {
     <>
     <div className="welcome-banner">
       <img 
-        src={"src/assets/teams-img.jpg"} 
+        src={teamHero} 
         alt="People volunteering" 
         className="welcome-image" 
       />

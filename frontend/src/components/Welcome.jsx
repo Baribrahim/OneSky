@@ -1,5 +1,7 @@
 import React from 'react'
 import '../styles/welcome.css'
+import welcomeHero from "../assets/welcome-img.jpg";
+
 
 const Welcome = ({ user }) => {
     const now = new Date();
@@ -19,7 +21,7 @@ const Welcome = ({ user }) => {
     <div className="welcome-banner">
       <div className="welcome-overlay"></div>
       <img 
-        src={"src/assets/welcome-img.jpg"} 
+        src={welcomeHero} 
         alt="People volunteering" 
         className="welcome-image" 
       />

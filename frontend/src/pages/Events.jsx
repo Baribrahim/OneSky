@@ -3,6 +3,7 @@ import axios from 'axios';
 import EventCard from '../components/EventCard';
 import { api, toResult } from "../lib/apiClient";
 import "../styles/events.css";
+import eventsBanner from '../assets/events-img.jpg'
 
 export default function Events() {
   const [filters, setFilters] = useState({
@@ -70,7 +71,7 @@ export default function Events() {
     <div className="welcome-banner">
       <div className="welcome-overlay"></div>
       <img 
-        src={"src/assets/events-img.jpg"} 
+        src={eventsBanner} 
         alt="People volunteering" 
         className="welcome-image" 
       />
