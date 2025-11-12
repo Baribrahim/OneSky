@@ -5,11 +5,6 @@ services:
       - "5001:5001"
     env_file:
       - ./backend/functionality/.env
-    environment:
-      - MYSQL_HOST=db
-      - MYSQL_PORT=3306
-    depends_on:
-      - db
 
   frontend:
     build: ./frontend
@@ -21,13 +16,6 @@ services:
       - ./frontend/.env
     depends_on:
       - backend
-
-  db:
-    image: mysql:8
-    ports:
-      - "3301:3306"
-    volumes:
-      - team-1-project_db_data:/var/lib/mysql
 
 volumes:
   team-1-project_db_data:
