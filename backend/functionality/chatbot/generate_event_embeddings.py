@@ -18,7 +18,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data_access import DataAccess
 from chatbot.embedding_helper import EmbeddingHelper
 
-load_dotenv()
+# Load .env but don't override existing env vars (for Docker compatibility)
+load_dotenv(override=False)
+
+# For local development, use localhost instead of external IP
+if os.getenv("MYSQL_HOST") == "35.210.202.5" and not os.getenv("DOCKER_ENV"):
+    os.environ["MYSQL_HOST"] = "localhost"
+    if os.getenv("MYSQL_PORT") == "3306":
+        os.environ["MYSQL_PORT"] = "3301"
 
 
 def generate_all_event_embeddings():

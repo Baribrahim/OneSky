@@ -86,5 +86,20 @@ pipeline {
         sh 'docker compose up --build -d'
       }
     }
+
+    stage('Generate Event Embeddings') {
+      steps {
+        sh '''
+          echo "Waiting for containers to be ready..."
+          sleep 10
+          
+          echo "Generating embeddings for all events..."
+          docker compose exec -T backend python3 -m chatbot.generate_event_embeddings || {
+            echo "Warning: Embedding generation failed or no events found. Continuing deployment..."
+            exit 0
+          }
+        '''
+      }
+    }
   }
 }
