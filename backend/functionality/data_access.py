@@ -20,7 +20,8 @@ class DataAccess:
     DB_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
     def __init__(self):
-        load_dotenv()
+        # Don't override Docker environment variables with .env file
+        load_dotenv(override=False)
         self.DB_HOST = os.getenv("MYSQL_HOST")
         self.DB_USER = os.getenv("MYSQL_USER")
         self.DB_DATABASE = os.getenv("MYSQL_DB")

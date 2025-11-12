@@ -5,8 +5,8 @@ from flask_cors import CORS
 import jwt
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (don't override Docker env vars)
+load_dotenv(override=False)
 
 # Import blueprints from feature packages
 from auth.routes import bp as auth_bp
