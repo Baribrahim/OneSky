@@ -1,32 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from flask import Flask
-from events.routes import bp
 from data_access import DataAccess
 from datetime import timedelta, date
-
-def create_app(testing=False):
-    app = Flask(__name__)
-    if testing:
-        app.config["TESTING"] = True
-    app.register_blueprint(bp)
-    return app
-
-@pytest.fixture(autouse=True)
-def mock_db_connection():
-    """Auto-use fixture to mock pymysql.connect to prevent real DB connections."""
-    with patch('data_access.pymysql.connect') as mock_connect:
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_connect.return_value.__enter__.return_value = mock_conn
-        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-        yield mock_connect
-
-@pytest.fixture
-def client():
-    app = create_app(testing=True)
-    with app.test_client() as client:
-        yield client
 
 # ---------------- ROUTE TESTS ---------------- #
 
