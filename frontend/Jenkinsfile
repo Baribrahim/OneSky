@@ -22,7 +22,7 @@ pipeline {
         steps {
           // Run the ReactJS tests
           dir('frontend') {
-            sh 'CI=true npm test'
+            sh 'CI=true npm test -- --coverage'
           }
         }
     }
