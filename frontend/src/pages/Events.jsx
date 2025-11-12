@@ -32,7 +32,7 @@ export default function Events() {
 
   // ✅ Fetch events whenever filters change
   useEffect(() => {
-    axios.get('http://127.0.0.1:5000/api/events/events', {
+    axios.get('http://35.210.202.5:5001/api/events/events', {
       params: filters,
       withCredentials: true
     })
@@ -41,7 +41,7 @@ export default function Events() {
   }, [filters]);
 
   useEffect(() => {
-    axios.get('http://127.0.0.1:5000/api/events/filter_events')
+    axios.get('http://35.210.202.5:5001/api/events/filter_events')
       .then(res => setLocations(res.data))
       .catch(err => console.error('Error fetching locations', err));
   }, []);
