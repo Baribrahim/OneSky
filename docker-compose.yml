@@ -7,15 +7,13 @@ services:
       - .env
     depends_on:
       - db
-    volumes:
-      - ./uploads:/app/uploads
 
   frontend:
     build: ./frontend
     ports:
       - "81:81"
     environment:
-      - VITE_API_BASE_URL=http://localhost:5000
+      - VITE_API_BASE_URL=http://35.210.202.5/5001
     env_file:
       - .env
     depends_on:
@@ -23,9 +21,6 @@ services:
 
   db:
     image: mysql:8
-    environment:
-      MYSQL_ROOT_PASSWORD: "secretsecret1"
-      MYSQL_DATABASE: oneskyv1
     ports:
       - "3301:3306"
     volumes:
