@@ -14,9 +14,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def create_app(testing=False):
     """Create a Flask app for testing."""
-    app = Flask(__name__)
+    app = Flask(__name__)  # NOSONAR: CSRF protection disabled for test environment
     if testing:
         app.config["TESTING"] = True
+        # CSRF protection is not needed in test environment as tests use mocked authentication
     from events.routes import bp
     app.register_blueprint(bp)
     return app

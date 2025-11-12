@@ -13,3 +13,16 @@ venv/
 node_modules/
 __pycache__/
 .pytest_cache/
+
+# Coverage reports
+coverage/
+*.coverage
+.coverage
+coverage.xml
+
+# Test images
+**/tests/**/*.jpg
+**/tests/**/*.jpeg
+**/tests/**/*.png
+**/tests/**/*.gif
+**/tests/**/*.webp

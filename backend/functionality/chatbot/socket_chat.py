@@ -30,7 +30,9 @@ def _get_user_email_from_cookie() -> str | None:
     if not token:
         return None
 
-    secret = current_app.config.get("SECRET_KEY", "supersecret")
+    secret = current_app.config.get("SECRET_KEY")
+    if not secret:
+        return None
     try:
         payload = jwt.decode(token, secret, algorithms=["HS256"])
         # auth uses "sub" as the user email

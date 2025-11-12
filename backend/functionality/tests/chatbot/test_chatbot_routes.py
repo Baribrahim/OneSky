@@ -33,9 +33,11 @@ from chatbot.connector import PromptInjectionError
 
 def make_app(bp):
     """Create Flask app for testing."""
-    app = Flask(__name__)
-    app.config["SECRET_KEY"] = "test-secret-key"
+    app = Flask(__name__)  # NOSONAR: CSRF protection disabled for test environment
+    # Use environment variable for SECRET_KEY in tests, with test-only fallback
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")
     app.config["TESTING"] = True
+    # CSRF protection is not needed in test environment as tests use mocked authentication
     # Register auth blueprint for login_page route
     app.register_blueprint(auth_routes.bp)
     app.register_blueprint(bp)

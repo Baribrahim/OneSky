@@ -1,13 +1,15 @@
 # Joining a team functionality Testing
 
 
+import os
 from unittest.mock import MagicMock, patch
 import pytest
 from teams import routes
 from teams.connector import TeamConnector
-from tests.test_validation import _login_get_token, _register_user
+from tests.test_validation import _login_get_token, _register_user, TEST_PASSWORD
 
-SECRET = "supersecret"  # match app config
+# Use environment variable for SECRET_KEY in tests, with test-only fallback
+SECRET = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")
 
 @pytest.fixture(autouse=True)
 def mock_data_access():
@@ -118,7 +120,7 @@ def test_add_user_to_team_calls_insert():
 def test_successful_team_join(client):
     #Arrange
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
    
     with patch.object(routes.connector, 'verify_team_code', return_value=True), \
          patch.object(routes.connector, 'add_user_to_team', return_value=None):
@@ -138,7 +140,7 @@ def test_successful_team_join(client):
 def test_invalid_join_code(client):
     #Arrange
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
 
     with patch.object(routes.connector, 'verify_team_code', return_value=False), \
          patch.object(routes.connector, 'add_user_to_team', return_value=None):
@@ -155,7 +157,7 @@ def test_missing_join_code(client):
     #Arrange
 
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
 
     #Act
     response = client.post('/api/teams/join',

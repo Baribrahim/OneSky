@@ -9,7 +9,13 @@ import sys
 import os
 import types
 import importlib.util
+import tempfile
 from flask import Flask, g
+
+# Test-only password constants (not real credentials)
+TEST_OLD_PASSWORD = "test-old-password-for-testing-only"  # NOSONAR: test-only password constant
+TEST_NEW_PASSWORD = "test-new-password-for-testing-only"  # NOSONAR: test-only password constant
+TEST_WRONG_PASSWORD = "test-wrong-password-for-testing-only"  # NOSONAR: test-only password constant
 
 # Add the parent directory to sys.path to import modules
 parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -55,10 +61,14 @@ routes_spec.loader.exec_module(profile_routes)
 
 def make_app(bp):
     """Create Flask app for testing."""
-    app = Flask(__name__)
-    app.config["SECRET_KEY"] = "test-secret-key"
+    app = Flask(__name__)  # NOSONAR: CSRF protection disabled for test environment
+    # Use environment variable for SECRET_KEY in tests, with test-only fallback
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")
     app.config["TESTING"] = True
-    app.config["UPLOAD_FOLDER"] = "/tmp/test_uploads"
+    # CSRF protection is not needed in test environment as tests use mocked authentication
+    # Use secure temporary directory for test uploads (only accessible by current user)
+    test_upload_dir = tempfile.mkdtemp(prefix="onesky_test_uploads_")
+    app.config["UPLOAD_FOLDER"] = test_upload_dir  # NOSONAR: secure temp directory, test-only, files not actually written
     # Register auth blueprint for login_page route
     app.register_blueprint(auth_routes.bp)
     app.register_blueprint(bp)
@@ -241,8 +251,8 @@ def test_update_password_success(monkeypatch, fake_connector):
     client = app.test_client()
     
     response = client.post("/api/profile/update-password", json={
-        "old_password": "oldpass",
-        "new_password": "newpass"
+        "old_password": TEST_OLD_PASSWORD,
+        "new_password": TEST_NEW_PASSWORD
     })
     assert response.status_code == 200
     data = response.get_json()
@@ -257,7 +267,7 @@ def test_update_password_missing_new(monkeypatch, fake_connector):
     client = app.test_client()
     
     response = client.post("/api/profile/update-password", json={
-        "old_password": "oldpass"
+        "old_password": TEST_OLD_PASSWORD
     })
     assert response.status_code == 400
     data = response.get_json()
@@ -272,7 +282,7 @@ def test_update_password_missing_old(monkeypatch, fake_connector):
     client = app.test_client()
     
     response = client.post("/api/profile/update-password", json={
-        "new_password": "newpass"
+        "new_password": TEST_NEW_PASSWORD
     })
     assert response.status_code == 400
     data = response.get_json()
@@ -289,8 +299,8 @@ def test_update_password_incorrect_old(monkeypatch, fake_connector):
     client = app.test_client()
     
     response = client.post("/api/profile/update-password", json={
-        "old_password": "wrongpass",
-        "new_password": "newpass"
+        "old_password": TEST_WRONG_PASSWORD,
+        "new_password": TEST_NEW_PASSWORD
     })
     assert response.status_code == 400
     data = response.get_json()
@@ -307,8 +317,8 @@ def test_update_password_exception(monkeypatch, fake_connector):
     client = app.test_client()
     
     response = client.post("/api/profile/update-password", json={
-        "old_password": "oldpass",
-        "new_password": "newpass"
+        "old_password": TEST_OLD_PASSWORD,
+        "new_password": TEST_NEW_PASSWORD
     })
     assert response.status_code == 500
 

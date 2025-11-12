@@ -11,6 +11,11 @@ import types
 import importlib.util
 import bcrypt
 
+# Test-only password constants (not real credentials)
+TEST_OLD_PASSWORD = "test-old-password-for-testing-only"  # NOSONAR: test-only password constant
+TEST_NEW_PASSWORD = "test-new-password-for-testing-only"  # NOSONAR: test-only password constant
+TEST_WRONG_PASSWORD = "test-wrong-password-for-testing-only"  # NOSONAR: test-only password constant
+
 # Add the parent directory to sys.path to import modules
 parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if parent_dir not in sys.path:
@@ -94,10 +99,10 @@ def test_update_user_password_success(connector, mock_data_access):
     """Test successful password update."""
     mock_data_access.verify_user_by_password.return_value = {"ID": 1}
     
-    result = connector.update_user_password("test@example.com", "oldpass", "newpass")
+    result = connector.update_user_password("test@example.com", TEST_OLD_PASSWORD, TEST_NEW_PASSWORD)
     
     assert result is True
-    mock_data_access.verify_user_by_password.assert_called_once_with("test@example.com", "oldpass")
+    mock_data_access.verify_user_by_password.assert_called_once_with("test@example.com", TEST_OLD_PASSWORD)
     mock_data_access.update_user_password.assert_called_once()
     # Verify the password was hashed
     call_args = mock_data_access.update_user_password.call_args
@@ -109,10 +114,10 @@ def test_update_user_password_incorrect_old(connector, mock_data_access):
     """Test password update with incorrect old password."""
     mock_data_access.verify_user_by_password.return_value = None
     
-    result = connector.update_user_password("test@example.com", "wrongpass", "newpass")
+    result = connector.update_user_password("test@example.com", TEST_WRONG_PASSWORD, TEST_NEW_PASSWORD)
     
     assert result is False
-    mock_data_access.verify_user_by_password.assert_called_once_with("test@example.com", "wrongpass")
+    mock_data_access.verify_user_by_password.assert_called_once_with("test@example.com", TEST_WRONG_PASSWORD)
     mock_data_access.update_user_password.assert_not_called()
 
 
@@ -122,7 +127,7 @@ def test_update_user_password_verification_exception(connector, mock_data_access
     
     # Should handle exception gracefully
     with pytest.raises(Exception):
-        connector.update_user_password("test@example.com", "oldpass", "newpass")
+        connector.update_user_password("test@example.com", TEST_OLD_PASSWORD, TEST_NEW_PASSWORD)
     
     mock_data_access.update_user_password.assert_not_called()
 
@@ -131,7 +136,7 @@ def test_update_user_password_hash_verification(connector, mock_data_access):
     """Test that password is properly hashed before storage."""
     mock_data_access.verify_user_by_password.return_value = {"ID": 1}
     
-    connector.update_user_password("test@example.com", "oldpass", "newpass")
+    connector.update_user_password("test@example.com", TEST_OLD_PASSWORD, TEST_NEW_PASSWORD)
     
     # Verify update_user_password was called with hashed password
     call_args = mock_data_access.update_user_password.call_args
@@ -140,7 +145,7 @@ def test_update_user_password_hash_verification(connector, mock_data_access):
     # Verify it's a bcrypt hash
     assert isinstance(hashed_password, bytes)
     # Verify the hash can be used to verify the password
-    assert bcrypt.checkpw("newpass".encode("utf-8"), hashed_password)
+    assert bcrypt.checkpw(TEST_NEW_PASSWORD.encode("utf-8"), hashed_password)
 
 
 def test_connector_initialization_with_dao():

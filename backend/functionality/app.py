@@ -1,7 +1,12 @@
 # app.py
+import os
 from flask import Flask, jsonify, redirect, url_for, request, current_app
 from flask_cors import CORS
 import jwt
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import blueprints from feature packages
 from auth.routes import bp as auth_bp
@@ -18,7 +23,10 @@ from chatbot.socket_chat import socketio
 
 def create_app():
     app = Flask(__name__, template_folder="templates", static_folder="static")
-    app.config["SECRET_KEY"] = "supersecret"
+    secret_key = os.getenv("SECRET_KEY")
+    if not secret_key:
+        raise RuntimeError("SECRET_KEY environment variable must be set")
+    app.config["SECRET_KEY"] = secret_key
 
     CORS(
         app,

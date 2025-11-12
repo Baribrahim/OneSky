@@ -1,13 +1,15 @@
 # Joining a team functionality Testing
 
 #Connector Methods
+import os
 from unittest.mock import patch, MagicMock
 import pytest
 from events.connector import EventConnector
 from events import routes
-from tests.test_validation import _login_get_token, _register_user
+from tests.test_validation import _login_get_token, _register_user, TEST_PASSWORD
 
-SECRET = "supersecret"  # match app config
+# Use environment variable for SECRET_KEY in tests, with test-only fallback
+SECRET = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")
 
 @pytest.fixture(autouse=True)
 def mock_data_access():
@@ -144,7 +146,7 @@ def test_successful_team_signup(client):
     """POST /api/events/signup-team returns 200 on success"""
     # Arrange
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
 
     with patch.object(routes.con, "register_team_for_event", return_value=None) as mock_register:
         # Act
@@ -164,7 +166,7 @@ def test_successful_team_signup(client):
 def test_signup_team_missing_event_id_returns_400(client):
     """Should return 400 if event_id missing"""
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
 
     response = client.post(
         "/api/events/signup-team",
@@ -179,7 +181,7 @@ def test_signup_team_missing_event_id_returns_400(client):
 def test_signup_team_missing_team_id_returns_400(client):
     """Should return 400 if team_id missing"""
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
 
     response = client.post(
         "/api/events/signup-team",
@@ -198,7 +200,7 @@ def test_signup_team_missing_team_id_returns_400(client):
 def test_get_available_teams_success(client):
     """GET /api/events/<id>/available-teams returns available teams"""
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
 
     mock_teams = [
         {"ID": 1, "Name": "Team Alpha", "isRegistered": 1},
@@ -226,7 +228,7 @@ def test_get_available_teams_success(client):
 def test_check_signup_status_success(client):
     """GET /api/events/signup-status returns user's signed up events"""
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
 
     mock_signed_up_events = [
         {"ID": 1, "Title": "Event 1", "Date": "2024-01-01"},
@@ -250,7 +252,7 @@ def test_check_signup_status_success(client):
 def test_check_signup_status_empty(client):
     """GET /api/events/signup-status returns empty list when user has no signups"""
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
 
     with patch.object(routes.con, "user_signed_up_for_events", return_value=[]):
         response = client.get(
@@ -272,7 +274,7 @@ def test_check_signup_status_empty(client):
 def test_unregister_from_event_success(client):
     """POST /api/events/unregister returns 200 on success"""
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
 
     with patch.object(routes.con, "unregister_user_from_event", return_value=None) as mock_unregister:
         response = client.post(
@@ -294,7 +296,7 @@ def test_unregister_from_event_success(client):
 def test_unregister_from_event_missing_event_id(client):
     """POST /api/events/unregister returns 400 if event_id missing"""
     email, _ = _register_user(client)
-    token, _ = _login_get_token(client, email, "Password123!")
+    token, _ = _login_get_token(client, email, TEST_PASSWORD)
 
     response = client.post(
         "/api/events/unregister",
