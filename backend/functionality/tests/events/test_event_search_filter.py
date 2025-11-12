@@ -12,6 +12,16 @@ def create_app(testing=False):
     app.register_blueprint(bp)
     return app
 
+@pytest.fixture(autouse=True)
+def mock_db_connection():
+    """Auto-use fixture to mock pymysql.connect to prevent real DB connections."""
+    with patch('data_access.pymysql.connect') as mock_connect:
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_connect.return_value.__enter__.return_value = mock_conn
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        yield mock_connect
+
 @pytest.fixture
 def client():
     app = create_app(testing=True)
@@ -110,8 +120,8 @@ def test_get_filtered_events_large_result(mock_get_filtered_events, client):
 # ---------------------------
 # Test get_location()
 # ---------------------------
-def test_get_location_sorted_unique():
-    dao = DataAccess()
+@patch('data_access.pymysql.connect')
+def test_get_location_sorted_unique(mock_connect):
     mock_cursor = MagicMock()
     mock_cursor.fetchall.return_value = [
         {"LocationCity": "London"},
@@ -119,25 +129,26 @@ def test_get_location_sorted_unique():
         {"LocationCity": "London"}
     ]
     mock_conn = MagicMock()
-    mock_conn.__enter__.return_value = mock_conn
+    mock_connect.return_value.__enter__.return_value = mock_conn
     mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-    dao.get_connection = MagicMock(return_value=mock_conn)
-
+    
+    dao = DataAccess()
     result = dao.get_location()
     assert sorted(result) == ["London", "Manchester"]
     assert mock_cursor.fetchall.called
 
-def test_get_location_db_error():
+@patch('data_access.pymysql.connect')
+def test_get_location_db_error(mock_connect):
+    mock_connect.side_effect = Exception("DB error")
     dao = DataAccess()
-    dao.get_connection = MagicMock(side_effect=Exception("DB error"))
     result = dao.get_location()
     assert result == []  # Should return empty list on error
 
 # ---------------------------
 # Test get_filtered_events()
 # ---------------------------
-def test_get_filtered_events_with_params():
-    dao = DataAccess()
+@patch('data_access.pymysql.connect')
+def test_get_filtered_events_with_params(mock_connect):
     mock_cursor = MagicMock()
     mock_cursor.fetchall.return_value = [
         {"ID": 1, "Title": "Charity Run", "About": "Help", "Date": date.today(),
@@ -146,39 +157,40 @@ def test_get_filtered_events_with_params():
          "Image_path": "images/run.jpg", "CauseName": "Health", "TagName": "Fitness"}
     ]
     mock_conn = MagicMock()
-    mock_conn.__enter__.return_value = mock_conn
+    mock_connect.return_value.__enter__.return_value = mock_conn
     mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-    dao.get_connection = MagicMock(return_value=mock_conn)
-
+    
+    dao = DataAccess()
     result = dao.get_filtered_events(keyword="charity", location="London", start_date="2025-11-04", end_date="2025-11-10")
     assert len(result) == 1
     assert result[0]["Title"] == "Charity Run"
     assert "Image_path" in result[0]
 
-def test_get_filtered_events_default_date():
-    dao = DataAccess()
+@patch('data_access.pymysql.connect')
+def test_get_filtered_events_default_date(mock_connect):
     mock_cursor = MagicMock()
     mock_cursor.fetchall.return_value = []
     mock_conn = MagicMock()
-    mock_conn.__enter__.return_value = mock_conn
+    mock_connect.return_value.__enter__.return_value = mock_conn
     mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-    dao.get_connection = MagicMock(return_value=mock_conn)
-
+    
+    dao = DataAccess()
     result = dao.get_filtered_events(keyword=None, location=None)
     assert isinstance(result, list)
     assert mock_cursor.execute.called
 
-def test_get_filtered_events_db_error():
+@patch('data_access.pymysql.connect')
+def test_get_filtered_events_db_error(mock_connect):
+    mock_connect.side_effect = Exception("DB error")
     dao = DataAccess()
-    dao.get_connection = MagicMock(side_effect=Exception("DB error"))
     result = dao.get_filtered_events(keyword="test")
     assert result == []
 
 # ---------------------------
 # Test get_event_by_id()
 # ---------------------------
-def test_get_event_by_id_found():
-    dao = DataAccess()
+@patch('data_access.pymysql.connect')
+def test_get_event_by_id_found(mock_connect):
     mock_cursor = MagicMock()
     mock_cursor.fetchone.return_value = {
         "ID": 1, "Title": "Charity Run", "About": "Help", "Activities": "Run",
@@ -189,63 +201,65 @@ def test_get_event_by_id_found():
         "Image_path": "images/run.jpg", "CauseName": "Health", "TagName": "Fitness"
     }
     mock_conn = MagicMock()
-    mock_conn.__enter__.return_value = mock_conn
+    mock_connect.return_value.__enter__.return_value = mock_conn
     mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-    dao.get_connection = MagicMock(return_value=mock_conn)
-
+    
+    dao = DataAccess()
     result = dao.get_event_by_id(1)
     assert result["Title"] == "Charity Run"
     assert "Latitude" in result
 
-def test_get_event_by_id_not_found():
-    dao = DataAccess()
+@patch('data_access.pymysql.connect')
+def test_get_event_by_id_not_found(mock_connect):
     mock_cursor = MagicMock()
     mock_cursor.fetchone.return_value = None
     mock_conn = MagicMock()
-    mock_conn.__enter__.return_value = mock_conn
+    mock_connect.return_value.__enter__.return_value = mock_conn
     mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-    dao.get_connection = MagicMock(return_value=mock_conn)
-
+    
+    dao = DataAccess()
     result = dao.get_event_by_id(999)
     assert result is None
 
-def test_get_event_by_id_db_error():
+@patch('data_access.pymysql.connect')
+def test_get_event_by_id_db_error(mock_connect):
+    mock_connect.side_effect = Exception("DB error")
     dao = DataAccess()
-    dao.get_connection = MagicMock(side_effect=Exception("DB error"))
     result = dao.get_event_by_id(1)
     assert result is None
 
 # ---------------------------
 # Test get_event_schedule()
 # ---------------------------
-def test_get_event_schedule_with_timedelta():
-    dao = DataAccess()
+@patch('data_access.pymysql.connect')
+def test_get_event_schedule_with_timedelta(mock_connect):
     mock_cursor = MagicMock()
     mock_cursor.fetchall.return_value = [
         {"Time": timedelta(hours=1, minutes=30), "Title": "Intro", "Description": "Welcome"}
     ]
     mock_conn = MagicMock()
-    mock_conn.__enter__.return_value = mock_conn
+    mock_connect.return_value.__enter__.return_value = mock_conn
     mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-    dao.get_connection = MagicMock(return_value=mock_conn)
-
+    
+    dao = DataAccess()
     result = dao.get_event_schedule(1)
     assert result[0]["Time"] == "01:30:00"
 
-def test_get_event_schedule_empty():
-    dao = DataAccess()
+@patch('data_access.pymysql.connect')
+def test_get_event_schedule_empty(mock_connect):
     mock_cursor = MagicMock()
     mock_cursor.fetchall.return_value = []
     mock_conn = MagicMock()
-    mock_conn.__enter__.return_value = mock_conn
+    mock_connect.return_value.__enter__.return_value = mock_conn
     mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
-    dao.get_connection = MagicMock(return_value=mock_conn)
-
+    
+    dao = DataAccess()
     result = dao.get_event_schedule(1)
     assert result == []
 
-def test_get_event_schedule_db_error():
+@patch('data_access.pymysql.connect')
+def test_get_event_schedule_db_error(mock_connect):
+    mock_connect.side_effect = Exception("DB error")
     dao = DataAccess()
-    dao.get_connection = MagicMock(side_effect=Exception("DB error"))
     result = dao.get_event_schedule(1)
     assert result == []

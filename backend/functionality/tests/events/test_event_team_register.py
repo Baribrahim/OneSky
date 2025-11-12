@@ -1,13 +1,60 @@
 # Joining a team functionality Testing
 
 #Connector Methods
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import pytest
 from events.connector import EventConnector
 from events import routes
 from tests.test_validation import _login_get_token, _register_user
 
 SECRET = "supersecret"  # match app config
+
+@pytest.fixture(autouse=True)
+def mock_data_access():
+    """Auto-use fixture to mock all DataAccess instances and prevent real DB connections."""
+    with patch('data_access.pymysql.connect') as mock_connect, \
+         patch('auth.connector.DataAccess') as mock_auth_da_class, \
+         patch('badges.connector.DataAccess') as mock_badge_da_class, \
+         patch('events.connector.DataAccess') as mock_events_da_class:
+        
+        # Mock pymysql connection to prevent real DB connections
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_connect.return_value.__enter__.return_value = mock_conn
+        mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
+        
+        # Mock DataAccess instances for connectors
+        mock_auth_da_instance = MagicMock()
+        mock_badge_da_instance = MagicMock()
+        mock_events_da_instance = MagicMock()
+        
+        mock_auth_da_class.return_value = mock_auth_da_instance
+        mock_badge_da_class.return_value = mock_badge_da_instance
+        mock_events_da_class.return_value = mock_events_da_instance
+        
+        # Set up default return values for registration/login flow
+        mock_auth_da_instance.user_exists.return_value = False
+        mock_auth_da_instance.get_user_id_by_email.return_value = 1
+        mock_auth_da_instance.get_user_by_email.return_value = {
+            "ID": 1,
+            "Email": "test@sky.uk",
+            "Password": b"$2b$12$hashedpassword",
+            "FirstName": "Test",
+            "LastName": "User"
+        }
+        mock_auth_da_instance.verify_user_by_password.return_value = {
+            "ID": 1,
+            "Email": "test@sky.uk",
+            "FirstName": "Test",
+            "LastName": "User"
+        }
+        mock_badge_da_instance.check_and_award_event_badges.return_value = []
+        
+        yield {
+            'auth': mock_auth_da_instance,
+            'badge': mock_badge_da_instance,
+            'events': mock_events_da_instance
+        }
 
 @pytest.fixture
 def client():
