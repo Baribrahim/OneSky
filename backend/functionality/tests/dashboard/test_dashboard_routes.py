@@ -4,44 +4,13 @@ Tests cover all dashboard route endpoints with mocked authentication and data ac
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-import sys
-import os
-from flask import Flask, g
+from unittest.mock import Mock, patch
+from tests.conftest import setup_auth_patch, make_test_app
 
-# Add the parent directory to sys.path to import modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-# Patch token_required in auth.routes BEFORE importing dashboard_routes
-from auth import routes as auth_routes
-
-# Auth bypass for tests: set g.current_user and call the view
-def token_required_stub(f):
-    """Stub for token_required decorator."""
-    def wrapper(*args, **kwargs):
-        g.current_user = {"sub": "test@example.com", "first_name": "Test"}
-        return f(*args, **kwargs)
-    wrapper.__name__ = f.__name__
-    return wrapper
-
-# Patch token_required before importing routes that use it
-auth_routes.token_required = token_required_stub
+# Setup auth patch before importing routes
+setup_auth_patch()
 
 from dashboard import routes as dashboard_routes
-
-
-def make_app(bp):
-    """Create Flask app for testing."""
-    import os
-    app = Flask(__name__)  # NOSONAR: CSRF protection disabled for test environment
-    # Use environment variable for SECRET_KEY in tests, with test-only fallback
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")
-    app.config["TESTING"] = True
-    # CSRF protection is not needed in test environment as tests use mocked authentication
-    # Register auth blueprint for login_page route
-    app.register_blueprint(auth_routes.bp)
-    app.register_blueprint(bp)
-    return app
 
 
 class FakeDashboardConnector:
@@ -93,7 +62,7 @@ def test_dashboard_impact_success(monkeypatch, fake_connector):
         "badges": [{"ID": 1, "Name": "Badge 1"}]
     }
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/impact")
@@ -109,7 +78,7 @@ def test_dashboard_impact_with_limit(monkeypatch, fake_connector):
     """Test dashboard_impact with limit parameter."""
     monkeypatch.setattr(dashboard_routes, "dc", fake_connector, raising=True)
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/impact?limit=10")
@@ -122,7 +91,7 @@ def test_dashboard_impact_value_error(monkeypatch, fake_connector):
     
     fake_connector.get_dashboard = Mock(side_effect=ValueError("Invalid email"))
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/impact")
@@ -135,7 +104,7 @@ def test_dashboard_impact_exception(monkeypatch, fake_connector):
     
     fake_connector.get_dashboard = Mock(side_effect=Exception("Database error"))
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/impact")
@@ -152,7 +121,7 @@ def test_dashboard_impact_with_missing_keys(monkeypatch, fake_connector):
         # Missing other keys to test defaults
     }
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/impact")
@@ -177,7 +146,7 @@ def test_dashboard_upcoming_success(monkeypatch, fake_connector):
         {"ID": 2, "Title": "Event 2"}
     ]
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/upcoming")
@@ -195,7 +164,7 @@ def test_dashboard_upcoming_with_pagination(monkeypatch, fake_connector):
     
     fake_connector.upcoming_events = [{"ID": i, "Title": f"Event {i}"} for i in range(10)]
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/upcoming?limit=5&offset=0")
@@ -210,7 +179,7 @@ def test_dashboard_upcoming_value_error(monkeypatch, fake_connector):
     
     fake_connector.get_upcoming_events_paged = Mock(side_effect=ValueError("Invalid email"))
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/upcoming")
@@ -223,7 +192,7 @@ def test_dashboard_upcoming_exception(monkeypatch, fake_connector):
     
     fake_connector.get_upcoming_events_paged = Mock(side_effect=Exception("Database error"))
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/upcoming")
@@ -239,7 +208,7 @@ def test_dashboard_achievements_success(monkeypatch, fake_connector):
         {"ID": 2, "Name": "Badge 2", "Description": "Test", "IconURL": "/test2.png"}
     ]
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/achievements")
@@ -256,7 +225,7 @@ def test_dashboard_achievements_value_error(monkeypatch, fake_connector):
     
     fake_connector.get_badges = Mock(side_effect=ValueError("Invalid email"))
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/achievements")
@@ -269,7 +238,7 @@ def test_dashboard_achievements_exception(monkeypatch, fake_connector):
     
     fake_connector.get_badges = Mock(side_effect=Exception("Database error"))
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/achievements")
@@ -285,7 +254,7 @@ def test_dashboard_completed_events_success(monkeypatch, fake_connector):
         {"ID": 2, "Title": "Past Event 2"}
     ]
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/completed-events")
@@ -299,7 +268,7 @@ def test_dashboard_completed_events_with_limit(monkeypatch, fake_connector):
     """Test dashboard_completed_events with limit parameter."""
     monkeypatch.setattr(dashboard_routes, "dc", fake_connector, raising=True)
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/completed-events?limit=10")
@@ -312,7 +281,7 @@ def test_dashboard_completed_events_value_error(monkeypatch, fake_connector):
     
     fake_connector.get_completed_events = Mock(side_effect=ValueError("Invalid email"))
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/completed-events")
@@ -325,7 +294,7 @@ def test_dashboard_completed_events_exception(monkeypatch, fake_connector):
     
     fake_connector.get_completed_events = Mock(side_effect=Exception("Database error"))
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard/completed-events")
@@ -339,7 +308,7 @@ def test_dashboard_page_success(mock_render, monkeypatch, fake_connector):
     
     mock_render.return_value = "rendered template"
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard_page")
@@ -355,7 +324,7 @@ def test_dashboard_page_value_error(mock_render, monkeypatch, fake_connector):
     fake_connector.get_dashboard = Mock(side_effect=ValueError("Invalid email"))
     mock_render.return_value = "rendered template"
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard_page")
@@ -371,7 +340,7 @@ def test_dashboard_page_exception(mock_render, monkeypatch, fake_connector):
     fake_connector.get_dashboard = Mock(side_effect=Exception("Database error"))
     mock_render.return_value = "rendered template"
     
-    app = make_app(dashboard_routes.bp)
+    app = make_test_app(dashboard_routes.bp)
     client = app.test_client()
     
     response = client.get("/dashboard_page")

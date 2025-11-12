@@ -23,10 +23,10 @@ from chatbot.socket_chat import socketio
 
 def create_app():
     app = Flask(__name__, template_folder="templates", static_folder="static")
-    secret_key = os.getenv("SECRET_KEY")
+    secret_key = os.getenv("SECRET_KEY")  # NOSONAR - This is reading from env, not hard-coding
     if not secret_key:
-        raise RuntimeError("SECRET_KEY environment variable must be set")
-    app.config["SECRET_KEY"] = secret_key
+        raise RuntimeError("SECRET_KEY environment variable must be set")  # NOSONAR - Error message, not a credential
+    app.config["SECRET_KEY"] = secret_key  # NOSONAR - Configuration key name, value comes from env var
 
     CORS(
         app,
@@ -64,7 +64,7 @@ def create_app():
             return redirect(url_for("auth.login_page"))
 
         try:
-            jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+            jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])  # NOSONAR - Configuration key name, not a hard-coded credential
             # valid token → go home
             return redirect(url_for("auth.home"))
         except jwt.ExpiredSignatureError:

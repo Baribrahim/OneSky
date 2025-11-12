@@ -4,45 +4,14 @@ Tests cover all badge route endpoints with mocked authentication and data access
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-import sys
-import os
-from flask import Flask, g
+from unittest.mock import Mock
+import importlib
+from tests.conftest import setup_auth_patch, make_test_app
 
-# Add the parent directory to sys.path to import modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-# Patch token_required in auth.routes BEFORE importing badge_routes
-from auth import routes as auth_routes
-
-# Auth bypass for tests: set g.current_user and call the view
-def token_required_stub(f):
-    """Stub for token_required decorator."""
-    def wrapper(*args, **kwargs):
-        g.current_user = {"sub": "test@example.com", "first_name": "Test"}
-        return f(*args, **kwargs)
-    wrapper.__name__ = f.__name__
-    return wrapper
-
-# Patch token_required before importing routes that use it
-auth_routes.token_required = token_required_stub
+# Setup auth patch before importing routes
+auth_routes = setup_auth_patch()
 
 from badges import routes as badge_routes
-
-
-def make_app(bp):
-    """Create Flask app for testing."""
-    import os
-    app = Flask(__name__)  # NOSONAR: CSRF protection disabled for test environment
-    # Use environment variable for SECRET_KEY in tests, with test-only fallback
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")
-    app.config["TESTING"] = True
-    # CSRF protection is not needed in test environment as tests use mocked authentication
-    # Register auth blueprint for login_page route
-    from auth import routes as auth_routes
-    app.register_blueprint(auth_routes.bp)
-    app.register_blueprint(bp)
-    return app
 
 
 class FakeBadgeConnector:
@@ -86,7 +55,7 @@ def test_get_user_badges_success(monkeypatch, fake_connector):
         {"ID": 1, "Name": "Event Starter", "Description": "Test", "IconURL": "/test.png"}
     ]
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.get("/api/badges")
@@ -102,7 +71,7 @@ def test_get_user_badges_user_not_found(monkeypatch, fake_connector):
     
     fake_connector.data_access.get_user_id_by_email.return_value = None
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.get("/api/badges")
@@ -129,7 +98,7 @@ def test_get_user_badges_no_auth(monkeypatch, fake_connector):
     importlib.reload(badge_routes)
     monkeypatch.setattr(badge_routes, "BadgeConnector", lambda: fake_connector, raising=True)
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.get("/api/badges", follow_redirects=False)
@@ -147,7 +116,7 @@ def test_get_user_badges_exception(monkeypatch, fake_connector):
     
     fake_connector.get_user_badges = Mock(side_effect=Exception("Database error"))
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.get("/api/badges")
@@ -163,7 +132,7 @@ def test_get_all_badges_success(monkeypatch, fake_connector):
         {"ID": 2, "Name": "Event Enthusiast", "Description": "Test", "IconURL": "/test2.png"}
     ]
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.get("/api/badges/all")
@@ -179,7 +148,7 @@ def test_get_all_badges_exception(monkeypatch, fake_connector):
     
     fake_connector.get_all_badges = Mock(side_effect=Exception("Database error"))
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.get("/api/badges/all")
@@ -194,7 +163,7 @@ def test_check_and_award_badges_success(monkeypatch, fake_connector):
         {"ID": 1, "Name": "Event Starter", "Description": "Test", "IconURL": "/test.png"}
     ]
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.post("/api/badges/check")
@@ -212,7 +181,7 @@ def test_check_and_award_badges_user_not_found(monkeypatch, fake_connector):
     
     fake_connector.data_access.get_user_id_by_email.return_value = None
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.post("/api/badges/check")
@@ -225,7 +194,7 @@ def test_check_and_award_badges_exception(monkeypatch, fake_connector):
     
     fake_connector.check_and_award_event_badges = Mock(side_effect=Exception("Database error"))
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.post("/api/badges/check")
@@ -244,7 +213,7 @@ def test_get_badge_progress_success(monkeypatch, fake_connector):
         "badge_progress": {}
     }
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.get("/api/badges/progress")
@@ -260,7 +229,7 @@ def test_get_badge_progress_user_not_found(monkeypatch, fake_connector):
     
     fake_connector.data_access.get_user_id_by_email.return_value = None
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.get("/api/badges/progress")
@@ -273,7 +242,7 @@ def test_get_badge_progress_exception(monkeypatch, fake_connector):
     
     fake_connector.get_user_badge_progress = Mock(side_effect=Exception("Database error"))
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.get("/api/badges/progress")
@@ -284,7 +253,7 @@ def test_award_badge_success(monkeypatch, fake_connector):
     """Test successful badge award."""
     monkeypatch.setattr(badge_routes, "BadgeConnector", lambda: fake_connector, raising=True)
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.post("/api/badges/award", json={"badge_id": 1})
@@ -297,7 +266,7 @@ def test_award_badge_missing_id(monkeypatch, fake_connector):
     """Test award_badge without badge_id."""
     monkeypatch.setattr(badge_routes, "BadgeConnector", lambda: fake_connector, raising=True)
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.post("/api/badges/award", json={})
@@ -312,7 +281,7 @@ def test_award_badge_failure(monkeypatch, fake_connector):
     
     fake_connector.award_badge_to_user = Mock(return_value=(False, "User already has this badge"))
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.post("/api/badges/award", json={"badge_id": 1})
@@ -327,7 +296,7 @@ def test_award_badge_user_not_found(monkeypatch, fake_connector):
     
     fake_connector.data_access.get_user_id_by_email.return_value = None
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.post("/api/badges/award", json={"badge_id": 1})
@@ -340,7 +309,7 @@ def test_award_badge_exception(monkeypatch, fake_connector):
     
     fake_connector.award_badge_to_user = Mock(side_effect=Exception("Database error"))
     
-    app = make_app(badge_routes.bp)
+    app = make_test_app(badge_routes.bp)
     client = app.test_client()
     
     response = client.post("/api/badges/award", json={"badge_id": 1})

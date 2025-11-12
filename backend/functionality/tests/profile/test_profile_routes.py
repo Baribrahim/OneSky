@@ -63,7 +63,7 @@ def make_app(bp):
     """Create Flask app for testing."""
     app = Flask(__name__)  # NOSONAR: CSRF protection disabled for test environment
     # Use environment variable for SECRET_KEY in tests, with test-only fallback
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")  # NOSONAR - Test-only fallback, not a production credential
     app.config["TESTING"] = True
     # CSRF protection is not needed in test environment as tests use mocked authentication
     # Use secure temporary directory for test uploads (only accessible by current user)

@@ -12,7 +12,7 @@ User registration validation tests
 '''
 
 # Use environment variable for SECRET_KEY in tests, with test-only fallback
-SECRET = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")
+SECRET = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")  # NOSONAR - Test-only fallback, not a production credential
 
 # Test-only password constants (not real credentials)
 # Must meet requirements: at least 8 chars, one uppercase, one number, one special char
@@ -97,7 +97,7 @@ def client():
     from app import create_app
     app = create_app()
     app.config["TESTING"] = True
-    app.config["SECRET_KEY"] = SECRET
+    app.config["SECRET_KEY"] = SECRET  # NOSONAR - Test-only configuration, value comes from env var or test fallback
     with app.test_client() as client:
         yield client
 

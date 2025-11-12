@@ -30,7 +30,7 @@ def _get_user_email_from_cookie() -> str | None:
     if not token:
         return None
 
-    secret = current_app.config.get("SECRET_KEY")
+    secret = current_app.config.get("SECRET_KEY")  # NOSONAR - Configuration key name, not a hard-coded credential
     if not secret:
         return None
     try:

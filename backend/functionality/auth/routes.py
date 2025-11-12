@@ -20,7 +20,7 @@ def token_required(f):
             return redirect(url_for("auth.login_page"))
 
         try:
-            decoded = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+            decoded = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])  # NOSONAR - Configuration key name, not a hard-coded credential
             g.current_user = decoded  # store user info in flask.g
         except jwt.ExpiredSignatureError:
             flash("Your session has expired. Please log in again.", "warning")
@@ -45,9 +45,9 @@ def generate_token(user_data: dict):
         "first_name": user_data["first_name"],
         "exp": datetime.datetime.now(UTC) + datetime.timedelta(hours=1)
     }
-    secret = current_app.config.get("SECRET_KEY")
+    secret = current_app.config.get("SECRET_KEY")  # NOSONAR - Configuration key name, not a hard-coded credential
     if not isinstance(secret, str) or not secret:
-        raise RuntimeError("SECRET_KEY must be a non-empty string")
+        raise RuntimeError("SECRET_KEY must be a non-empty string")  # NOSONAR - Error message, not a credential
 
     token = jwt.encode(payload, secret, algorithm="HS256")
     return token if isinstance(token, str) else token.decode("utf-8")

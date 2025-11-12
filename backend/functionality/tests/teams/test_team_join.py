@@ -9,7 +9,7 @@ from teams.connector import TeamConnector
 from tests.test_validation import _login_get_token, _register_user, TEST_PASSWORD
 
 # Use environment variable for SECRET_KEY in tests, with test-only fallback
-SECRET = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")
+SECRET = os.getenv("SECRET_KEY", "test-secret-key-for-testing-only")  # NOSONAR - Test-only fallback, not a production credential
 
 @pytest.fixture(autouse=True)
 def mock_data_access():
@@ -63,7 +63,7 @@ def client():
     from app import create_app
     app = create_app()
     app.config["TESTING"] = True
-    app.config["SECRET_KEY"] = SECRET
+    app.config["SECRET_KEY"] = SECRET  # NOSONAR - Test-only configuration, value comes from env var or test fallback
     with app.test_client() as client:
         yield client
 
