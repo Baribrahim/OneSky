@@ -476,13 +476,13 @@ class DataAccess:
         try:
             with self.get_connection(use_dict_cursor=True) as conn:
                 with conn.cursor() as cursor:
-                    query = "SELECT LocationCity FROM event"
+                    query = "SELECT LocationCity FROM Event WHERE LocationCity IS NOT NULL"
                     cursor.execute(query)
                     result_set = cursor.fetchall()
-                    location_list = sorted(set(row['LocationCity'] for row in result_set if row ['LocationCity']))
+                    location_list = sorted(set(row['LocationCity'] for row in result_set if row['LocationCity']))
                     cursor.close()
         except Exception as e:
-            print(f"Database error in get_location: {e} ")
+            print(f"Database error in get_location: {e}")
         return location_list
     
 
