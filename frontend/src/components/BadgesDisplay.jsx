@@ -62,7 +62,7 @@ const BadgesDisplay = () => {
     };
 
     const iconFile = badgeIconMap[badgeName] || 'helpingHand.png';
-    return `/src/assets/badges/${iconFile}`;
+    return `../assets/badges/${iconFile}`;
   };
 
   // Handles opening and closing modal for badge details
@@ -106,7 +106,7 @@ const BadgesDisplay = () => {
                     src={getBadgeIcon(badge.Name)} 
                     alt={badge.Name}
                     onError={(e) => {
-                      e.target.src = '/src/assets/badges/helpingHand.png';
+                      e.target.src = '../assets/badges/helpingHand.png';
                     }}
                   />
                 </div>
@@ -133,7 +133,7 @@ const BadgesDisplay = () => {
                 alt={selectedBadge.Name}
                 className="badge-modal-icon"
                 onError={(e) => {
-                  e.target.src = '/src/assets/badges/helpingHand.png';
+                  e.target.src = '../assets/badges/helpingHand.png';
                 }}
               />
               <h3 className="badge-modal-title">{selectedBadge.Name}</h3>
