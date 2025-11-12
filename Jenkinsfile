@@ -34,5 +34,19 @@ pipeline {
         sh 'docker compose up --build -d'
       }
     }
+
+    stage('Debug Backend and DB') {
+      steps {
+        sh '''
+          echo "==== Backend Logs (last 50 lines) ===="
+          docker compose logs backend --tail=50 || true
+
+          echo ""
+          echo "==== DB Logs (last 50 lines) ===="
+          docker compose logs db --tail=50 || true
+        '''
+      }
+    }
+
   }
 }
