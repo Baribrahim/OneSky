@@ -31,7 +31,6 @@ pipeline {
 
     stage('Build & Start Docker Containers') {
       steps {
-        sh 'docker start 1fb7eb506b5b'
         sh 'docker compose up --build -d'
       }
     }
