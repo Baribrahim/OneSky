@@ -48,10 +48,17 @@ const BadgesDisplay = () => {
     fetchUserBadges();
   }, []);
 
-  // Selects the correct badge icon based on badge name
-  const getBadgeIcon = (badgeName) => {
+  // Gets badge icon from API IconURL or falls back to name-based mapping
+  const getBadgeIcon = (badge) => {
+    // Use IconURL from API if available
+    if (badge.IconURL) {
+      // Convert /src/assets/badges/ to ../assets/badges/ for frontend
+      const iconPath = badge.IconURL.replace('/src/assets/badges/', '../assets/badges/');
+      return iconPath;
+    }
+    
+    // Fallback to name-based mapping if IconURL is missing
     const badgeIconMap = {
-      // Actual badge names from the system
       'Event Starter': 'firstStep.png',
       'Event Enthusiast': 'eduEnthusiast.png',
       'First Step': 'firstStep.png',
@@ -61,7 +68,7 @@ const BadgesDisplay = () => {
       'Marathon Volunteer': 'marathonVolunteer.png',
     };
 
-    const iconFile = badgeIconMap[badgeName] || 'helpingHand.png';
+    const iconFile = badgeIconMap[badge.Name] || 'helpingHand.png';
     return `../assets/badges/${iconFile}`;
   };
 
@@ -103,7 +110,7 @@ const BadgesDisplay = () => {
                 {/* Badge icon preview */}
                 <div className="badge-icon">
                   <img 
-                    src={getBadgeIcon(badge.Name)} 
+                    src={getBadgeIcon(badge)} 
                     alt={badge.Name}
                     onError={(e) => {
                       e.target.src = '../assets/badges/helpingHand.png';
@@ -129,7 +136,7 @@ const BadgesDisplay = () => {
           <div className="badge-modal" onClick={(e) => e.stopPropagation()}>
             <div className="badge-modal-header">
               <img 
-                src={getBadgeIcon(selectedBadge.Name)} 
+                src={getBadgeIcon(selectedBadge)} 
                 alt={selectedBadge.Name}
                 className="badge-modal-icon"
                 onError={(e) => {
