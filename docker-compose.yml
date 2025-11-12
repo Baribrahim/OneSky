@@ -25,7 +25,6 @@ services:
       - "3301:3306"
     volumes:
       - team-1-project_db_data:/var/lib/mysql
-      - ./backend/database:/docker-entrypoint-initdb.d
 
 volumes:
   team-1-project_db_data:
