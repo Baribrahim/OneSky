@@ -2,7 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { api, toResult } from '../lib/apiClient.js';
 import '../styles/theme.css';
 import '../styles/badges.css';
-import helpingHandImg from '../assets/badges/helpingHand.png'
+// Import badge icons
+import firstStep from '../assets/badges/firstStep.png';
+import eduEnthusiast from '../assets/badges/eduEnthusiast.png';
+import volunteerVetran from '../assets/badges/volunteerVetran.png';
+import marathonVolunteer from '../assets/badges/marathonVolunteer.png';
+import weekendWarrior from '../assets/badges/weekendWarrior.png';
+import helpingHandImg from '../assets/badges/helpingHand.png';
 
 const BadgesDisplay = () => {
   const [badges, setBadges] = useState([]);
@@ -51,26 +57,40 @@ const BadgesDisplay = () => {
 
   // Gets badge icon from API IconURL or falls back to name-based mapping
   const getBadgeIcon = (badge) => {
-    // Use IconURL from API if available
-    if (badge.IconURL) {
-      // Convert /src/assets/badges/ to ../assets/badges/ for frontend
-      const iconPath = badge.IconURL.replace('/src/assets/badges/', '../assets/badges/');
-      return iconPath;
-    }
-    
-    // Fallback to name-based mapping if IconURL is missing
+    // Map badge names to imported images
     const badgeIconMap = {
-      'Event Starter': 'firstStep.png',
-      'Event Enthusiast': 'eduEnthusiast.png',
-      'First Step': 'firstStep.png',
-      'Volunteer Veteran': 'volunteerVetran.png',
-      'Marathon Helper': 'marathonVolunteer.png',
-      'Weekend Warrior': 'weekendWarrior.png',
-      'Marathon Volunteer': 'marathonVolunteer.png',
+      'Event Starter': firstStep,
+      'Event Enthusiast': eduEnthusiast,
+      'First Step': firstStep,
+      'Volunteer Veteran': volunteerVetran,
+      'Marathon Helper': marathonVolunteer,
+      'Weekend Warrior': weekendWarrior,
+      'Marathon Volunteer': marathonVolunteer,
     };
 
-    const iconFile = badgeIconMap[badge.Name] || 'helpingHand.png';
-    return `../assets/badges/${iconFile}`;
+    // Use IconURL from API if available, extract filename and map it
+    if (badge.IconURL) {
+      // Extract filename from IconURL (e.g., "/src/assets/badges/firstStep.png" -> "firstStep.png")
+      const filename = badge.IconURL.split('/').pop();
+      const iconName = filename.replace('.png', '');
+      
+      // Map icon name to imported image
+      const iconMapByName = {
+        'firstStep': firstStep,
+        'eduEnthusiast': eduEnthusiast,
+        'volunteerVetran': volunteerVetran,
+        'marathonVolunteer': marathonVolunteer,
+        'weekendWarrior': weekendWarrior,
+        'helpingHand': helpingHandImg,
+      };
+      
+      if (iconMapByName[iconName]) {
+        return iconMapByName[iconName];
+      }
+    }
+    
+    // Fallback to name-based mapping
+    return badgeIconMap[badge.Name] || helpingHandImg;
   };
 
   // Handles opening and closing modal for badge details
