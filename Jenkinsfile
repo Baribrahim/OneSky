@@ -36,6 +36,7 @@ pipeline {
           set -a
           . ./backend/functionality/.env
           set +a
+          docker compose down
           docker compose up --build -d
         '''
       }
