@@ -59,6 +59,7 @@ export default function Register() {
 
     if (err) {
       setError(err.message || "Registration failed.");
+      console.log(err.message)
       return;
     }
     navigate("/home", { replace: true });
