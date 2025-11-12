@@ -32,6 +32,10 @@ pipeline {
     stage('Build & Start Docker Containers') {
       steps {
         sh '''
+          # Source .env file to make variables available for docker-compose substitution
+          set -a
+          . ./backend/functionality/.env
+          set +a
           docker compose up --build -d
         '''
       }
