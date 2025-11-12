@@ -30,7 +30,7 @@ services:
       - ./backend/functionality/.env
     environment:
       - MYSQL_HOST=db
-      - MYSQL_PORT=3306
+      - MYSQL_PORT=3301
       - MYSQL_USER=onesky
       - MYSQL_PASSWORD=secretsecret1
       - MYSQL_DATABASE=oneskyv1
