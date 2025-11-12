@@ -26,8 +26,16 @@ services:
     image: mysql:8
     ports:
       - "3301:3306"
+    env_file:
+      - ./backend/functionality/.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+      - MYSQL_DATABASE=${MYSQL_DB:-oneskyv1}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:
       - team-1-project_db_data:/var/lib/mysql
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
 volumes:
   team-1-project_db_data:
