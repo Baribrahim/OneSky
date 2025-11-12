@@ -12,7 +12,10 @@ services:
       - MYSQL_PASSWORD=secretsecret1
       - MYSQL_DB=oneskyv1
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    networks:
+      - onesky-network
 
   frontend:
     build: ./frontend
@@ -24,19 +27,33 @@ services:
       - ./frontend/.env
     depends_on:
       - backend
+    networks:
+      - onesky-network
 
   db:
     image: mysql:8
     ports:
       - "3301:3306"
     environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_ROOT_PASSWORD=secretsecret1
       - MYSQL_USER=onesky
       - MYSQL_PASSWORD=secretsecret1
       - MYSQL_DATABASE=oneskyv1
     volumes:
-      - team-1-project_db_data:/var/lib/mysql
+      - onesky-project_db_dataproject_db_data:/var/lib/mysql
       - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uonesky", "-psecretsecret1"]
+      timeout: 20s
+      retries: 20
+      interval: 5s
+      start_period: 30s
+    networks:
+      - onesky-network
 
 volumes:
-  team-1-project_db_data:
+  onesky-project_db_data:
+
+networks:
+  onesky-network:
+    driver: bridge
