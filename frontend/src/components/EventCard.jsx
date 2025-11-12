@@ -57,13 +57,13 @@ function EventCard({ event}) {
           className="event-image"
           src={
             event.Image_path
-              ? `http://127.0.0.1:5000/static/${event.Image_path}`
-              : `http://127.0.0.1:5000/static/event-images/default-event.jpeg`
+              ? `http://35.210.202.5:5001/static/${event.Image_path}`
+              : `http://35.210.202.5:5001/static/event-images/default-event.jpeg`
           }
           alt={event.Title}
           onError={(e) => {
             e.target.onerror = null;
-            e.target.src = `http://127.0.0.1:5000/static/event-images/default-event.jpeg`;
+            e.target.src = `http://35.210.202.5:5001/static/event-images/default-event.jpeg`;
           }}
         />
         
