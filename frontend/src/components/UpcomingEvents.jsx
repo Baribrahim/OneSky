@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { api, toResult } from '../lib/apiClient.js';
 import '../styles/upcomingEvents.css'
 import { formatDate, formatTime } from '../utils/format.jsx'
+import defaultEvent from "../assets/default-event.png"
 
 const PAGE_SIZE = 5;
 
@@ -57,7 +58,7 @@ const UpcomingEvents = () => {
         {events?.map((event) => (
           <div key={event.ID} className="timeline-item">
             
-            <img src={event.Image_path ? `http://127.0.0.1:5000/static/${event.Image_path}` : "src/assets/default-event.png"} alt={event.Title} className="timeline-image" />
+            <img src={event.Image_path ? `http://127.0.0.1:5000/static/${event.Image_path}` : defaultEvent} alt={event.Title} className="timeline-image" />
             <div className="timeline-content">
               <h3>{event.Title}</h3>
               <p>{formatDate(event.Date)}</p>
