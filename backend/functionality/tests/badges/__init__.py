@@ -1,0 +1,2 @@
+# Badges tests package
+

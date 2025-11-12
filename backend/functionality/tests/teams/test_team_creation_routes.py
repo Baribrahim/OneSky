@@ -37,6 +37,10 @@ class FakeConnector:
     def browse_all_teams(self, user_email=None):
         # emulate list_all_teams newest-first
         return [] if not self.created else [self.created]
+    
+    def browse_joined_teams(self, user_email=None):
+        # emulate list_joined_teams
+        return [] if not self.created else [self.created]
 
 def test_post_teams_create_successfully(monkeypatch):
     # Monkeypatch the auth decorator on the module before building the app
@@ -94,3 +98,72 @@ def test_get_teams_list(monkeypatch):
     assert body["count"] == 1
     assert body["teams"][0]["name"] == "A"
     assert body["teams"][0]["join_code"] == "ZXCV1234"
+
+def test_get_joined_teams(monkeypatch):
+    """Test GET /api/teams/joined returns joined teams"""
+    monkeypatch.setattr(team_routes, "token_required", token_required_stub, raising=True)
+    fake = FakeConnector()
+    fake.create_team("owner@example.com", "Joined Team", "Desc", "Tech")
+    monkeypatch.setattr(team_routes, "connector", fake, raising=True)
+
+    app = make_app(team_routes.bp)
+    client = app.test_client()
+
+    resp = client.get("/api/teams/joined")
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert "teams" in body
+    assert "count" in body
+
+def test_leave_team_success(monkeypatch):
+    """Test POST /api/teams/<id>/leave returns 200 on success"""
+    monkeypatch.setattr(team_routes, "token_required", token_required_stub, raising=True)
+    fake = FakeConnector()
+    fake.leave_team = lambda email, team_id: None  # Mock leave_team method
+    monkeypatch.setattr(team_routes, "connector", fake, raising=True)
+
+    app = make_app(team_routes.bp)
+    client = app.test_client()
+
+    resp = client.post("/api/teams/1/leave")
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert "message" in body
+    assert "left team" in body["message"].lower()
+
+def test_leave_team_value_error(monkeypatch):
+    """Test POST /api/teams/<id>/leave returns 400 on ValueError"""
+    monkeypatch.setattr(team_routes, "token_required", token_required_stub, raising=True)
+    fake = FakeConnector()
+    def raise_value_error(email, team_id):
+        raise ValueError("Cannot leave team")
+    fake.leave_team = raise_value_error
+    monkeypatch.setattr(team_routes, "connector", fake, raising=True)
+
+    app = make_app(team_routes.bp)
+    client = app.test_client()
+
+    resp = client.post("/api/teams/1/leave")
+    assert resp.status_code == 400
+    body = resp.get_json()
+    assert "error" in body
+
+def test_get_team_members_success(monkeypatch):
+    """Test GET /api/teams/<id>/members returns team members"""
+    monkeypatch.setattr(team_routes, "token_required", token_required_stub, raising=True)
+    fake = FakeConnector()
+    fake.read_all_team_members = lambda team_id: [
+        {"ID": 1, "FirstName": "John", "LastName": "Doe", "Email": "john@example.com", "ProfileImgPath": None}
+    ]
+    monkeypatch.setattr(team_routes, "connector", fake, raising=True)
+
+    app = make_app(team_routes.bp)
+    client = app.test_client()
+
+    resp = client.get("/api/teams/1/members")
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert "members" in body
+    assert "count" in body
+    assert len(body["members"]) == 1
+    assert body["members"][0]["first_name"] == "John"
