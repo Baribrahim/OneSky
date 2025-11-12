@@ -148,23 +148,7 @@ class ChatbotConnector:
         Returns 6 values:
         (response_text, category, events, teams, badges, team_events)
         """
-        sanitised_message = self._sanitise_user_message(user_message)
-
-        # 1) Store user message in short-term memory
-        if user_email:
-            self._add_to_conversation_history(user_email, "user", sanitised_message)
-
-        # 2) Personalization
-        user_first_name = self._get_user_first_name(user_email) if user_email else None
-
-        # 3) Build base messages (system + history + user)
-        messages = [
-            {"role": "system", "content": self._build_system_prompt(user_first_name)}
-        ]
-        if user_email:
-            history = self._get_conversation_history(user_email)
-            messages.extend(history)
-        messages.append({"role": "user", "content": sanitised_message})
+        messages = self._prepare_messages(user_message, user_email)
 
         # 4) First call: let the model decide whether to call a tool
         try:
@@ -204,48 +188,14 @@ class ChatbotConnector:
                 self._add_to_conversation_history(user_email, "assistant", final_text)
             return final_text, "general", None, None, None, None
 
-        # 5) If we’re here, the model asked to call one or more tools
+        # 5) If we're here, the model asked to call one or more tools
         tool_calls = assistant_msg.tool_calls
-        tool_outputs_for_model = []
-        events_result: List[dict] = []
-        teams_result: List[dict] = []
-        badges_result: List[dict] = []
-        team_events_result: List[dict] = []
-        detected_category = "general"
-
-        for tool_call in tool_calls:
-            tool_name = tool_call.function.name
-            try:
-                tool_args = json.loads(tool_call.function.arguments or "{}")
-            except json.JSONDecodeError:
-                tool_args = {}
-
-            exec_result = self._execute_tool_call(tool_name, tool_args, user_email)
-
-            # For the model: we pass the raw data as JSON (stringify everything)
-            tool_outputs_for_model.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": json.dumps(exec_result.get("data", []), default=str),
-                }
-            )
-
-            # For the frontend: collect separately
-            result_type = exec_result.get("type")
-            if result_type == "events":
-                events_result = exec_result.get("data", [])
-                detected_category = "events"
-            elif result_type == "teams":
-                teams_result = exec_result.get("data", [])
-                detected_category = "teams"
-            elif result_type == "badges":
-                badges_result = exec_result.get("data", [])
-                detected_category = "badges"
-            elif result_type == "team_events":
-                team_events_result = exec_result.get("data", [])
-            elif result_type == "impact":
-                detected_category = "impact"
+        tool_outputs_for_model, results = self._execute_and_categorize_tools(tool_calls, user_email)
+        events_result = results["events"]
+        teams_result = results["teams"]
+        badges_result = results["badges"]
+        team_events_result = results["team_events"]
+        detected_category = results["category"]
 
         # 6) Second call: let the model phrase the answer
         try:
@@ -295,7 +245,7 @@ class ChatbotConnector:
         - Streams text progressively to improve UX
         """
         try:
-            sanitised_message = self._sanitise_user_message(user_message)
+            messages = self._prepare_messages(user_message, user_email)
         except PromptInjectionError:
             rejection_payload = {
                 "response": "Sorry, I can't process that request.",
@@ -308,20 +258,6 @@ class ChatbotConnector:
             else:
                 emit_fn("chatbot_response", rejection_payload)
             return
-
-        # Save user message in short-term memory (for conversational context)
-        if user_email:
-            self._add_to_conversation_history(user_email, "user", sanitised_message)
-
-        user_first_name = self._get_user_first_name(user_email) if user_email else None
-
-        # Construct message list with system prompt and chat history
-        messages = [
-            {"role": "system", "content": self._build_system_prompt(user_first_name)}
-        ]
-        if user_email:
-            messages.extend(self._get_conversation_history(user_email))
-        messages.append({"role": "user", "content": sanitised_message})
 
         detected_category = "general"
 
@@ -388,44 +324,12 @@ class ChatbotConnector:
         # ---------------- CASE 2: Tool(s) called ----------------
         # The model wants to retrieve or search data via one of our defined tools
         tool_calls = assistant_msg.tool_calls
-        tool_outputs_for_model = []
-        events_result, teams_result, badges_result, team_events_result = [], [], [], []
-
-        for tool_call in tool_calls:
-            tool_name = tool_call.function.name
-            try:
-                import json
-                tool_args = json.loads(tool_call.function.arguments or "{}")
-            except Exception:
-                tool_args = {}
-
-            # Execute the corresponding DataAccess method
-            exec_result = self._execute_tool_call(tool_name, tool_args, user_email)
-
-            # Pass tool results back to model (for second round)
-            tool_outputs_for_model.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": json.dumps(exec_result.get("data", []), default=str),
-                }
-            )
-
-            # Categorize results for frontend rendering
-            result_type = exec_result.get("type")
-            if result_type == "events":
-                events_result = exec_result.get("data", [])
-                detected_category = "events"
-            elif result_type == "teams":
-                teams_result = exec_result.get("data", [])
-                detected_category = "teams"
-            elif result_type == "badges":
-                badges_result = exec_result.get("data", [])
-                detected_category = "badges"
-            elif result_type == "team_events":
-                team_events_result = exec_result.get("data", [])
-            elif result_type == "impact":
-                detected_category = "impact"
+        tool_outputs_for_model, results = self._execute_and_categorize_tools(tool_calls, user_email)
+        events_result = results["events"]
+        teams_result = results["teams"]
+        badges_result = results["badges"]
+        team_events_result = results["team_events"]
+        detected_category = results["category"]
 
         # Send partial results (cards) to frontend right away
         partial_payload = {
@@ -670,81 +574,7 @@ class ChatbotConnector:
             if start_date_str:
                 start_lower = start_date_str.lower().strip()
                 end_lower = end_date_str.lower().strip() if end_date_str else ""
-                today = date.today()
-                weekday = today.weekday()
-                
-                # Handle "this weekend" - expand to Saturday-Sunday range
-                if start_lower == "this weekend":
-                    days_until_saturday = (5 - weekday) % 7
-                    if days_until_saturday == 0 and weekday == 5:
-                        saturday = today
-                        sunday = today + timedelta(days=1)
-                    elif days_until_saturday == 0:
-                        saturday = today - timedelta(days=1)
-                        sunday = today
-                    else:
-                        saturday = today + timedelta(days=days_until_saturday)
-                        sunday = saturday + timedelta(days=1)
-                    
-                    if end_lower == "this weekend" or not end_date_str:
-                        start_date = saturday
-                        end_date = sunday
-                    else:
-                        start_date = saturday
-                
-                # Handle "next weekend" - expand to Saturday-Sunday range
-                elif start_lower == "next weekend":
-                    days_until_next_saturday = (5 - weekday) % 7 + 7
-                    saturday = today + timedelta(days=days_until_next_saturday)
-                    sunday = saturday + timedelta(days=1)
-                    
-                    if end_lower == "next weekend" or not end_date_str:
-                        start_date = saturday
-                        end_date = sunday
-                    else:
-                        start_date = saturday
-                
-                # Handle "next week" - expand to Monday-Sunday range
-                elif start_lower == "next week":
-                    days_until_next_monday = (7 - weekday) % 7
-                    if days_until_next_monday == 0:
-                        days_until_next_monday = 7
-                    monday = today + timedelta(days=days_until_next_monday)
-                    sunday = monday + timedelta(days=6)
-                    
-                    if end_lower == "next week" or not end_date_str:
-                        start_date = monday
-                        end_date = sunday
-                    else:
-                        start_date = monday
-                
-                # Handle "this week" - expand to Monday-Sunday range
-                elif start_lower == "this week":
-                    days_since_monday = weekday
-                    monday = today - timedelta(days=days_since_monday)
-                    sunday = monday + timedelta(days=6)
-                    
-                    if end_lower == "this week" or not end_date_str:
-                        start_date = monday
-                        end_date = sunday
-                    else:
-                        start_date = monday
-                
-                # Handle "next month" - expand to full month range (first day to last day)
-                elif start_lower == "next month":
-                    if today.month == 12:
-                        # December -> January of next year
-                        first_day = date(today.year + 1, 1, 1)
-                        last_day = date(today.year + 1, 1, calendar.monthrange(today.year + 1, 1)[1])
-                    else:
-                        first_day = date(today.year, today.month + 1, 1)
-                        last_day = date(today.year, today.month + 1, calendar.monthrange(today.year, today.month + 1)[1])
-                    
-                    if end_lower == "next month" or not end_date_str:
-                        start_date = first_day
-                        end_date = last_day
-                    else:
-                        start_date = first_day
+                start_date, end_date = self._expand_date_range(start_lower, end_lower, start_date, end_date)
             
             limit = int(arguments.get("limit", 10))
             use_semantic = bool(arguments.get("use_semantic", True))
@@ -936,6 +766,170 @@ class ChatbotConnector:
     # ======================================================================
     # HELPERS
     # ======================================================================
+
+    def _prepare_messages(self, user_message: str, user_email: Optional[str]) -> List[Dict[str, str]]:
+        """
+        Prepare messages list with sanitization, history, and system prompt.
+        Shared between process_message and process_message_stream.
+        """
+        sanitised_message = self._sanitise_user_message(user_message)
+
+        # Store user message in short-term memory
+        if user_email:
+            self._add_to_conversation_history(user_email, "user", sanitised_message)
+
+        # Personalization
+        user_first_name = self._get_user_first_name(user_email) if user_email else None
+
+        # Build base messages (system + history + user)
+        messages = [
+            {"role": "system", "content": self._build_system_prompt(user_first_name)}
+        ]
+        if user_email:
+            history = self._get_conversation_history(user_email)
+            messages.extend(history)
+        messages.append({"role": "user", "content": sanitised_message})
+        
+        return messages
+
+    def _execute_and_categorize_tools(
+        self, tool_calls: List, user_email: Optional[str]
+    ) -> Tuple[List[dict], Dict[str, Any]]:
+        """
+        Execute tool calls and categorize results.
+        Returns (tool_outputs_for_model, results_dict) where results_dict contains:
+        {"events": [], "teams": [], "badges": [], "team_events": [], "category": "general"}
+        """
+        tool_outputs_for_model = []
+        events_result: List[dict] = []
+        teams_result: List[dict] = []
+        badges_result: List[dict] = []
+        team_events_result: List[dict] = []
+        detected_category = "general"
+
+        for tool_call in tool_calls:
+            tool_name = tool_call.function.name
+            try:
+                tool_args = json.loads(tool_call.function.arguments or "{}")
+            except (json.JSONDecodeError, Exception):
+                tool_args = {}
+
+            exec_result = self._execute_tool_call(tool_name, tool_args, user_email)
+
+            # For the model: we pass the raw data as JSON (stringify everything)
+            tool_outputs_for_model.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": json.dumps(exec_result.get("data", []), default=str),
+                }
+            )
+
+            # Categorize results for frontend rendering
+            result_type = exec_result.get("type")
+            if result_type == "events":
+                events_result = exec_result.get("data", [])
+                detected_category = "events"
+            elif result_type == "teams":
+                teams_result = exec_result.get("data", [])
+                detected_category = "teams"
+            elif result_type == "badges":
+                badges_result = exec_result.get("data", [])
+                detected_category = "badges"
+            elif result_type == "team_events":
+                team_events_result = exec_result.get("data", [])
+            elif result_type == "impact":
+                detected_category = "impact"
+
+        results = {
+            "events": events_result,
+            "teams": teams_result,
+            "badges": badges_result,
+            "team_events": team_events_result,
+            "category": detected_category,
+        }
+        return tool_outputs_for_model, results
+
+    def _expand_date_range(
+        self, start_lower: str, end_lower: str, start_date: Optional[date], end_date: Optional[date]
+    ) -> Tuple[Optional[date], Optional[date]]:
+        """
+        Expand relative date expressions to date ranges.
+        Returns (start_date, end_date) tuple.
+        """
+        today = date.today()
+        weekday = today.weekday()
+
+        # Handle "this weekend" - expand to Saturday-Sunday range
+        if start_lower == "this weekend":
+            days_until_saturday = (5 - weekday) % 7
+            if days_until_saturday == 0 and weekday == 5:
+                saturday = today
+                sunday = today + timedelta(days=1)
+            elif days_until_saturday == 0:
+                saturday = today - timedelta(days=1)
+                sunday = today
+            else:
+                saturday = today + timedelta(days=days_until_saturday)
+                sunday = saturday + timedelta(days=1)
+
+            if end_lower == "this weekend" or not end_lower:
+                return saturday, sunday
+            else:
+                return saturday, end_date
+
+        # Handle "next weekend" - expand to Saturday-Sunday range
+        elif start_lower == "next weekend":
+            days_until_next_saturday = (5 - weekday) % 7 + 7
+            saturday = today + timedelta(days=days_until_next_saturday)
+            sunday = saturday + timedelta(days=1)
+
+            if end_lower == "next weekend" or not end_lower:
+                return saturday, sunday
+            else:
+                return saturday, end_date
+
+        # Handle "next week" - expand to Monday-Sunday range
+        elif start_lower == "next week":
+            days_until_next_monday = (7 - weekday) % 7
+            if days_until_next_monday == 0:
+                days_until_next_monday = 7
+            monday = today + timedelta(days=days_until_next_monday)
+            sunday = monday + timedelta(days=6)
+
+            if end_lower == "next week" or not end_lower:
+                return monday, sunday
+            else:
+                return monday, end_date
+
+        # Handle "this week" - expand to Monday-Sunday range
+        elif start_lower == "this week":
+            days_since_monday = weekday
+            monday = today - timedelta(days=days_since_monday)
+            sunday = monday + timedelta(days=6)
+
+            if end_lower == "this week" or not end_lower:
+                return monday, sunday
+            else:
+                return monday, end_date
+
+        # Handle "next month" - expand to full month range (first day to last day)
+        elif start_lower == "next month":
+            if today.month == 12:
+                # December -> January of next year
+                first_day = date(today.year + 1, 1, 1)
+                last_day = date(today.year + 1, 1, calendar.monthrange(today.year + 1, 1)[1])
+            else:
+                first_day = date(today.year, today.month + 1, 1)
+                last_day = date(today.year, today.month + 1, calendar.monthrange(today.year, today.month + 1)[1])
+
+            if end_lower == "next month" or not end_lower:
+                return first_day, last_day
+            else:
+                return first_day, end_date
+
+        # No expansion needed, return as-is
+        return start_date, end_date
 
     def _build_system_prompt(self, user_first_name: Optional[str] = None) -> str:
         if user_first_name:
